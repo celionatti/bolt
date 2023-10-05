@@ -49,4 +49,11 @@ class PathResolver
         $path = ltrim($path, '/'); // Remove leading slashes from the path
         return $routerPath . DIRECTORY_SEPARATOR . $path;
     }
+
+    public function template_path($path = ''): string
+    {
+        $templatePath = $this->basePath . DIRECTORY_SEPARATOR . 'templates';
+        $path = ltrim($path, '/'); // Remove leading slashes from the path
+        return $templatePath . DIRECTORY_SEPARATOR . $path;
+    }
 }

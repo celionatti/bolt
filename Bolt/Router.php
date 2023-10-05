@@ -100,8 +100,7 @@ class Router
     {
         $method = $this->request->method();
         $url = $this->request->getPath();
-        $callback = self::$routeMap[$method][$url] ?? [];
-        // $callback = self::$routeMap[$method][$url] ?? false;
+        $callback = self::$routeMap[$method][$url] ?? false;
 
         if (!$callback) {
             $callback = $this->getCallback($method, $url);
@@ -128,113 +127,40 @@ class Router
         }
     }
 
-    public function getCallback()
+    private function getCallback($method, $url)
     {
-        $method = $this->request->method();
-        $url = $this->request->getPath();
-        // Trim slashes
-        $url = trim($url, '/');
+        // Implement route parameter matching and validation
+        foreach (self::$routeMap[$method] as $route => $callback) {
+            $route = rtrim($this->groupPrefix . '/' . $route, '/');
+            $urlParts = explode('/', trim($url, '/'));
+            $routeParts = explode('/', $route);
 
-        // Get all routes for current request method
-        $routes = self::$routeMap[$method][$url] ?? [];
-
-        $routeParams = false;
-
-        // Start iterating register routes
-        foreach ($routes as $route => $callback) {
-            // Trim slashes
-            $route = trim($route, '/');
-            $routeNames = [];
-
-            if (!$route) {
+            if (count($urlParts) !== count($routeParts)) {
                 continue;
             }
 
-            // Find all route names from route and save in $routeNames
-            if (preg_match_all('/\{(\w+)(:[^}]+)?}/', $route, $matches)) {
-                $routeNames = $matches[1];
+            $routeParams = [];
+            $match = true;
+
+            foreach ($routeParts as $index => $part) {
+                if (strpos($part, '{') === 0 && strpos($part, '}') === strlen($part) - 1) {
+                    // This part is a parameter
+                    $paramName = substr($part, 1, -1);
+                    $routeParams[$paramName] = $urlParts[$index];
+                } elseif ($part !== $urlParts[$index]) {
+                    // This part doesn't match
+                    $match = false;
+                    break;
+                }
             }
 
-            // Convert route name into regex pattern
-            $routeRegex = "@^" . preg_replace_callback('/\{\w+(:([^}]+))?}/', fn ($m) => isset($m[2]) ? "({$m[2]})" : '(\w+)', $route) . "$@";
-
-            // Test and match current route against $routeRegex
-            if (preg_match_all($routeRegex, $url, $valueMatches)) {
-                $values = [];
-                for ($i = 1; $i < count($valueMatches); $i++) {
-                    $values[] = $valueMatches[$i][0];
-                }
-                $routeParams = array_combine($routeNames, $values);
-
+            if ($match) {
                 $this->request->setParameters($routeParams);
                 return $callback;
             }
         }
 
         return false;
-    }
-    // private function getCallback($method, $url)
-    // {
-    //     // Implement route parameter matching and validation
-    //     foreach (self::$routeMap[$method] as $route => $callback) {
-    //         $route = rtrim($this->groupPrefix . '/' . $route, '/');
-    //         $urlParts = explode('/', trim($url, '/'));
-    //         $routeParts = explode('/', $route);
-
-    //         if (count($urlParts) !== count($routeParts)) {
-    //             continue;
-    //         }
-
-    //         $routeParams = [];
-    //         $match = true;
-
-    //         foreach ($routeParts as $index => $part) {
-    //             if (strpos($part, '{') === 0 && strpos($part, '}') === strlen($part) - 1) {
-    //                 // This part is a parameter
-    //                 $paramName = substr($part, 1, -1);
-    //                 $routeParams[$paramName] = $urlParts[$index];
-    //             } elseif ($part !== $urlParts[$index]) {
-    //                 // This part doesn't match
-    //                 $match = false;
-    //                 break;
-    //             }
-    //         }
-
-    //         if ($match) {
-    //             $this->request->setParameters($routeParams);
-    //             return $callback;
-    //         }
-    //     }
-
-    //     return false;
-    // }
-
-    private function extractDynamicParameters($route, $url)
-    {
-        $route = rtrim($this->groupPrefix . '/' . $route, '/');
-        $urlParts = explode('/', trim($url, '/'));
-        $routeParts = explode('/', $route);
-
-        if (count($urlParts) !== count($routeParts)) {
-            return false;
-        }
-
-        $routeParams = [];
-        $match = true;
-
-        foreach ($routeParts as $index => $part) {
-            if (strpos($part, '{') === 0 && strpos($part, '}') === strlen($part) - 1) {
-                // This part is a dynamic parameter
-                $paramName = substr($part, 1, -1);
-                $routeParams[$paramName] = $urlParts[$index];
-            } elseif ($part !== $urlParts[$index]) {
-                // This part doesn't match
-                $match = false;
-                break;
-            }
-        }
-
-        return $match ? $routeParams : false;
     }
 
     private function applyMiddleware()

@@ -13,7 +13,7 @@ namespace Bolt\Bolt;
 use Bolt\Bolt\Http\Request;
 use Bolt\Bolt\Http\Response;
 
-class Router_n
+class Router_g
 {
     private Request $request;
     private Response $response;
@@ -22,6 +22,7 @@ class Router_n
     private array $middleware = [];
     private string $groupPrefix = '';
     private array $groupMiddleware = [];
+    private array $parameterValidation = [];
 
     public function __construct(Request $request, Response $response)
     {
@@ -96,6 +97,45 @@ class Router_n
         $this->groupPrefix = $originalGroupPrefix;
     }
 
+    public function validate(string $parameter, string $rule)
+    {
+        // Store the validation rule for the parameter
+        $this->parameterValidation[$parameter] = $rule;
+    }
+
+    private function validateParameters()
+    {
+        $routeParams = $this->request->parameters(); // Fetch route parameters from the request.
+
+        foreach ($routeParams as $paramName => $paramValue) {
+            if (isset($this->parameterValidation[$paramName])) {
+                $rule = $this->parameterValidation[$paramName];
+
+                // Implement parameter validation based on the rule.
+                if (!$this->validateParam($paramValue, $rule)) {
+                    // Handle validation failure (e.g., return a response or throw an exception)
+                    $this->abort(Response::BAD_REQUEST, "Invalid parameter: $paramName");
+                }
+            }
+        }
+    }
+
+    private function validateParam($paramValue, $rule)
+    {
+        // Implement the parameter validation logic based on the provided rule.
+        // Example rule: 'int' for integer validation.
+        switch ($rule) {
+            case 'int':
+                return is_numeric($paramValue) && intval($paramValue) == $paramValue;
+            case 'string':
+                return is_string($paramValue);
+            // Add more validation rules as needed.
+            default:
+                // Handle unknown validation rules.
+                return false;
+        }
+    }
+
     public function resolve()
     {
         $method = $this->request->method();
@@ -111,6 +151,7 @@ class Router_n
         }
 
         $this->applyMiddleware();
+        $this->validateParameters(); // Validate route parameters before executing the route handler.
 
         if (is_string($callback)) {
             return require Bolt::$bolt->pathResolver->base_path($callback);
@@ -127,34 +168,44 @@ class Router_n
         }
     }
 
-    private function getCallback($method, $url)
+    public function getCallback()
     {
-        // Implement route parameter matching and validation
-        foreach (self::$routeMap[$method] as $route => $callback) {
-            $route = rtrim($this->groupPrefix . '/' . $route, '/');
-            $urlParts = explode('/', trim($url, '/'));
-            $routeParts = explode('/', $route);
+        $method = $this->request->method();
+        $url = $this->request->getPath();
+        // Trim slashes
+        $url = trim($url, '/');
 
-            if (count($urlParts) !== count($routeParts)) {
+        // Get all routes for current request method
+        $routes = self::$routeMap[$method][$url] ?? false;
+
+        $routeParams = false;
+
+        // Start iterating register routes
+        foreach ($routes as $route => $callback) {
+            // Trim slashes
+            $route = trim($route, '/');
+            $routeNames = [];
+
+            if (!$route) {
                 continue;
             }
 
-            $routeParams = [];
-            $match = true;
-
-            foreach ($routeParts as $index => $part) {
-                if (strpos($part, '{') === 0 && strpos($part, '}') === strlen($part) - 1) {
-                    // This part is a parameter
-                    $paramName = substr($part, 1, -1);
-                    $routeParams[$paramName] = $urlParts[$index];
-                } elseif ($part !== $urlParts[$index]) {
-                    // This part doesn't match
-                    $match = false;
-                    break;
-                }
+            // Find all route names from route and save in $routeNames
+            if (preg_match_all('/\{(\w+)(:[^}]+)?}/', $route, $matches)) {
+                $routeNames = $matches[1];
             }
 
-            if ($match) {
+            // Convert route name into regex pattern
+            $routeRegex = "@^" . preg_replace_callback('/\{\w+(:([^}]+))?}/', fn ($m) => isset($m[2]) ? "({$m[2]})" : '(\w+)', $route) . "$@";
+
+            // Test and match current route against $routeRegex
+            if (preg_match_all($routeRegex, $url, $valueMatches)) {
+                $values = [];
+                for ($i = 1; $i < count($valueMatches); $i++) {
+                    $values[] = $valueMatches[$i][0];
+                }
+                $routeParams = array_combine($routeNames, $values);
+
                 $this->request->setParameters($routeParams);
                 return $callback;
             }

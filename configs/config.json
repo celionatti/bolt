@@ -1,0 +1,11 @@
+{
+    "version": "1.0.0",
+    "debug_mode": true,
+    "database": {
+        "host": "localhost",
+        "username": "root",
+        "password": "password123",
+        "dbname": "myapp"
+    },
+    "app_name": "My Application"
+}
