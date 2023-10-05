@@ -1,0 +1,21 @@
+{
+    "name": "celionatti/bolt",
+    "description": "Bolt is a popular open-source content management system (CMS) and application framework that is designed to be easy to use and flexible. It's known for its simplicity and speed, making it a good choice for developers looking to create websites and web applications quickly.",
+    "type": "library",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "Bolt\\": "./"
+        }
+    },
+    "authors": [
+        {
+            "name": "celionatti",
+            "email": "amisuusman@gmail.com"
+        }
+    ],
+    "minimum-stability": "stable",
+    "require": {
+        "vlucas/phpdotenv": "^5.5"
+    }
+}
