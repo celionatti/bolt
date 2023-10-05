@@ -354,36 +354,9 @@ class BoltQueryBuilder
         return $this;
     }
 
-
-    // public function get($data_type = 'object')
-    // {
-    //     try {
-    //         $this->query = $this->query . '' . implode(' ', $this->joinClauses);
-    //         $stm = $this->connection->prepare($this->query);
-
-    //         foreach ($this->bindValues as $param => $value) {
-    //             $stm->bindValue($param, $value);
-    //         }
-
-    //         $stm->execute();
-
-    //         if ($data_type === 'object') {
-    //             return $stm->fetchAll(PDO::FETCH_OBJ);
-    //         } elseif ($data_type === 'assoc') {
-    //             return $stm->fetchAll(PDO::FETCH_ASSOC);
-    //         } else {
-    //             return $stm->fetchAll(PDO::FETCH_CLASS);
-    //         }
-    //     } catch (PDOException $e) {
-    //         // Handle database error, e.g., log or throw an exception
-    //         throw new DatabaseException($e->getMessage());
-    //     }
-    // }
-
     public function get($data_type = 'object')
     {
         try {
-            $this->connection->beginTransaction();
             $this->query = $this->query . '' . implode(' ', $this->joinClauses);
             $stm = $this->connection->prepare($this->query);
 
@@ -400,11 +373,7 @@ class BoltQueryBuilder
             } else {
                 return $stm->fetchAll(PDO::FETCH_CLASS);
             }
-            // Commit the transaction if the query was successful
-            $this->connection->commitTransaction();
         } catch (PDOException $e) {
-            // Rollback the transaction on error
-            $this->connection->rollbackTransaction();
             // Handle database error, e.g., log or throw an exception
             throw new DatabaseException($e->getMessage());
         }
