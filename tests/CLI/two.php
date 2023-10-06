@@ -2,36 +2,20 @@
 
 declare(strict_types=1);
 
-/**
- * ============================================
- * Bolt - BoltCLI =============================
- * ============================================
- */
-
 namespace Bolt\Bolt\CLI;
 
 class BoltCLI
 {
     protected $commands = [];
 
-    // public function registerCommand($name, $description, $callback, $options = [])
-    // {
-    //     $this->commands[$name] = [
-    //         'description' => $description,
-    //         'callback' => $callback,
-    //         'options' => $options,
-    //     ];
-    // }
-
-    public function registerCommand($name, $description, $commandClass, $options = [])
+    public function registerCommand($name, $description, $callback, $options = [])
     {
         $this->commands[$name] = [
             'description' => $description,
-            'commandClass' => $commandClass,
+            'callback' => $callback,
             'options' => $options,
         ];
     }
-
 
     public function parseArguments()
     {
@@ -67,34 +51,18 @@ class BoltCLI
         return [$command, $args, $options];
     }
 
-    // public function run()
-    // {
-    //     list($command, $args, $options) = $this->parseArguments();
-    //     $callback = $command['callback'];
-
-    //     if (is_callable($callback)) {
-    //         call_user_func($callback, $args, $options);
-    //     } else {
-    //         echo "Invalid callback for the command.\n";
-    //         exit(1);
-    //     }
-    // }
-
     public function run()
     {
-        list($commandName, $args, $options) = $this->parseArguments();
+        list($command, $args, $options) = $this->parseArguments();
+        $callback = $command['callback'];
 
-        if (!isset($this->commands[$commandName])) {
-            $this->printHelp();
+        if (is_callable($callback)) {
+            call_user_func($callback, $args, $options);
+        } else {
+            echo "Invalid callback for the command.\n";
             exit(1);
         }
-
-        $commandClass = $this->commands[$commandName]['commandClass'];
-        $commandInstance = new $commandClass();
-
-        $commandInstance->execute($args, $options);
     }
-
 
     protected function printHelp()
     {
