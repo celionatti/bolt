@@ -2,9 +2,15 @@
 
 declare(strict_types=1);
 
+/**
+ * ============================================
+ * Bolt - BoltCLI =============================
+ * ============================================
+ */
+
 namespace Bolt\Bolt\CLI;
 
-class BoltCLI_two
+class BoltCLI_bolt
 {
     protected $commands = [];
 
@@ -16,6 +22,16 @@ class BoltCLI_two
             'options' => $options,
         ];
     }
+
+    // public function registerCommand($name, $description, $commandClass, $options = [])
+    // {
+    //     $this->commands[$name] = [
+    //         'description' => $description,
+    //         'commandClass' => $commandClass,
+    //         'options' => $options,
+    //     ];
+    // }
+
 
     public function parseArguments()
     {
@@ -63,6 +79,24 @@ class BoltCLI_two
             exit(1);
         }
     }
+
+    // public function run()
+    // {
+    //     list($commandName, $args, $options) = $this->parseArguments();
+    //     var_dump($commandName);
+    //     die;
+
+    //     // if (!isset($this->commands[$commandName])) {
+    //     //     // $this->printHelp();
+    //     //     exit(1);
+    //     // }
+
+    //     $commandClass = $this->commands[$commandName]['commandClass'];
+    //     $commandInstance = new $commandClass();
+
+    //     $commandInstance->execute($args, $options);
+    // }
+
 
     protected function printHelp()
     {

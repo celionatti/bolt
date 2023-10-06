@@ -5,13 +5,22 @@ declare(strict_types=1);
 require __DIR__ . '/vendor/autoload.php';
 
 use Bolt\Bolt\CLI\BoltCLI;
+use Bolt\Bolt\CLI\Strike\GreetCommand;
 use Bolt\Bolt\CLI\Strike\ModelCommand;
-use Bolt\Bolt\CLI\Strike\ViewCommand;
 
 $strike = new BoltCLI();
 
-$strike->registerCommand("model", "Create a model and associated files", ModelCommand::class);
-$strike->registerCommand("view", "Create a View and associated files", ViewCommand::class);
+
+$strike->registerCommand('greet', 'Greet the user', new GreetCommand());
+$strike->registerCommand('model', 'Create a model and associated files', new ModelCommand);
 
 
+
+// Register an alias
+$strike->registerAlias('add', 'calculate');
+
+// Set interactive mode
+$strike->setInteractiveMode(true);
+
+// Run the strike
 $strike->run();

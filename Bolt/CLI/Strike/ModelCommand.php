@@ -10,15 +10,14 @@ declare(strict_types=1);
 
 namespace Bolt\Bolt\CLI\Strike;
 
-use Bolt\Bolt\CLI\StrikeCommands;
+use Bolt\Bolt\CLI\CommandInterface;
 
-class ModelCommand extends StrikeCommands
+class ModelCommand implements CommandInterface
 {
-    public function execute($args, $options)
+    public function execute(array $args)
     {
         // Logic for creating models, generating migrations, etc.
-        $modelName = $args[0] ?? null;
-        dd($modelName);
+        $modelName = $args["args"][0] ?? null;
         // ... (implementation specific to the 'model' command)
     }
 }

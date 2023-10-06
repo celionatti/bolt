@@ -11,7 +11,7 @@ declare(strict_types=1);
 namespace Bolt\Bolt\CLI;
 
 
-abstract class StrikeCommands
+interface CommandInterface
 {
-    public abstract function execute($args, $options);
+    public function execute(array $args);
 }
