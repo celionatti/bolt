@@ -2,7 +2,7 @@
 
 namespace App\Core;
 
-class Config
+class Config_r
 {
     private static array $config = [
         'version'               => '1.0.0',

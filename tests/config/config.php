@@ -10,7 +10,7 @@ declare(strict_types=1);
 
 namespace Bolt\Bolt;
 
-class Config
+class Config_ry
 {
     private static $config = [];
 

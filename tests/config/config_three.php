@@ -2,7 +2,7 @@
 
 namespace App\Core;
 
-class Config
+class Config_t
 {
     private static array $config = [];
     private static array $cache = [];

@@ -5,7 +5,7 @@ namespace Bolt\Bolt;
 use Bolt\Bolt\Http\Request;
 use Bolt\Bolt\Http\Response;
 
-class Router
+class Router_kjh
 {
     private Request $request;
     private Response $response;

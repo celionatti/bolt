@@ -5,7 +5,7 @@ namespace App\Core;
 use PDO;
 use PDOException;
 
-class Database
+class Database_d
 {
     private PDO $pdo;
 
