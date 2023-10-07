@@ -14,6 +14,26 @@ function bolt_env($data)
     return false;
 }
 
+function get_root_dir()
+{
+    // Get the current file's directory
+    $currentDirectory = __DIR__;
+
+    // Navigate up the directory tree until you reach the project's root
+    while (!file_exists($currentDirectory . '/composer.json')) {
+        // Go up one level
+        $currentDirectory = dirname($currentDirectory);
+
+        // Check if you have reached the filesystem root (to prevent infinite loop)
+        if ($currentDirectory === '/') {
+            echo "Error: Project root not found.\n";
+            exit(1);
+        }
+    }
+
+    return $currentDirectory;
+}
+
 
 function esc_url($url)
 {

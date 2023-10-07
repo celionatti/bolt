@@ -8,24 +8,24 @@ declare(strict_types=1);
  * ====================================
  */
 
- namespace Bolt\Bolt\Database;
+namespace Bolt\Bolt\Database;
 
- use Exception;
+use Exception;
 
- abstract class DatabaseModel extends Database
+abstract class DatabaseModel extends Database
 {
     public string $tableName;
     abstract public static function tableName(): string;
     protected $db;
     protected $queryBuilder;
 
-    public $order 			= 'desc';
-	public $order_column 	= 'id';
-	public $primary_key 	= 'id';
+    public $order             = 'desc';
+    public $order_column     = 'id';
+    public $primary_key     = 'id';
 
-	public $limit 			= 10;
-	public $offset 			= 0;
-	public $errors 			= [];
+    public $limit             = 10;
+    public $offset             = 0;
+    public $errors             = [];
 
     public function __construct()
     {
@@ -49,13 +49,17 @@ declare(strict_types=1);
 
     public function insert()
     {
+        $this->beforeSave();
         $this->db->beginTransaction();
 
         try {
-            
         } catch (Exception $e) {
             $this->db->rollbackTransaction();
             throw $e;
         }
+    }
+
+    public function beforeSave(): void
+    {
     }
 }
