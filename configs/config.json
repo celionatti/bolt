@@ -7,5 +7,6 @@
         "password": "password123",
         "dbname": "myapp"
     },
-    "app_name": "My Application"
+    "app_name": "My Application",
+    "controller_namespace": "Bolt\\controllers"
 }

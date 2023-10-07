@@ -13,6 +13,7 @@ namespace Bolt\Bolt;
 
 use Bolt\Bolt\Http\Request;
 use Bolt\Bolt\Http\Response;
+use Bolt\Bolt\Router\Router;
 use Bolt\Bolt\Resolver\PathResolver;
 
 
@@ -47,7 +48,7 @@ class Bolt
     public function run()
     {
         try {
-            echo $this->router->resolve();
+            $this->router->handleRequest();
         } catch (\Exception $e) {
             echo $e;
         }
