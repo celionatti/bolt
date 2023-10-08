@@ -10,6 +10,7 @@ declare(strict_types=1);
 
 namespace Bolt\Bolt\Database;
 
+use Bolt\Bolt\Config;
 use Bolt\Bolt\QueryBuilder\BoltQueryBuilder;
 use PDO;
 use PDOException;
@@ -36,13 +37,14 @@ class Database
 
     private function connect()
     {
+        $config = Config::get("database");
         // Replace $np_vars with your actual configuration
         $np_vars = [
-            'DB_DRIVER' => 'mysql',
-            'DB_HOST' => 'localhost',
-            'DB_NAME' => 'bolt',
-            'DB_USER' => 'root',
-            'DB_PASSWORD' => '',
+            'DB_DRIVER'     => $config["driver"] ?? 'mysql',
+            'DB_HOST'       => $config["host"] ?? 'localhost',
+            'DB_NAME'       => $config["dbname"] ?? 'bolt',
+            'DB_USER'       => $config["username"] ?? 'root',
+            'DB_PASSWORD'   => $config["password"] ?? '',
         ];
 
         $string = "{$np_vars['DB_DRIVER']}:host={$np_vars['DB_HOST']};dbname={$np_vars['DB_NAME']}";
@@ -114,10 +116,10 @@ class Database
     {
         $this->error = $errorMessage;
         $this->has_error = true;
-        
+
         // Example: Log error to a file
         error_log("Database Error: $errorMessage");
-        
+
         // You can also throw an exception if desired
         bolt_die("Database Error", $errorMessage);
     }

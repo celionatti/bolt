@@ -1,8 +1,9 @@
 version: 1.0.0
 debug_mode: true
 database:
-    host: localhost
+    driver: mysql
+    host: 127.0.0.1
     username: root
-    password: password123
-    dbname: myapp
+    password: 
+    dbname: bolt
 app_name: My Application

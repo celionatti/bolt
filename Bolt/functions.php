@@ -127,7 +127,7 @@ function bolt_die($value, $message = '', $title = 'BOLT Error - Oops! Something 
             .error-container {
                 width: 100%;
                 max-width: 900px;
-                height:400px;
+                height400px;
                 background-color: #fff;
                 border-radius: 5px;
                 box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
@@ -135,7 +135,7 @@ function bolt_die($value, $message = '', $title = 'BOLT Error - Oops! Something 
             }
     
             .left-section {
-                flex: 1;
+                flex: 2;
                 background-color: #025192;
                 padding: 60px;
                 text-align: center;
@@ -447,3 +447,38 @@ function verify_csrf_token($token, $name = 'csrf_token', $expiration = 3600)
 
     throw new Exception("CSRF token verification failed.");
 }
+
+function console_logger(string $message, bool $die = false, bool $timestamp = true, string $level = 'info'): void
+{
+    $output = '';
+
+    if ($timestamp) {
+        $output .= "[" . date("Y-m-d H:i:s") . "] - ";
+    }
+
+    $output .= ucfirst($message) . PHP_EOL;
+
+    switch ($level) {
+        case 'info':
+            $output = "\033[0;32m" . $output; // Green color for info
+            break;
+        case 'warning':
+            $output = "\033[0;33m" . $output; // Yellow color for warning
+            break;
+        case 'error':
+            $output = "\033[0;31m" . $output; // Red color for error
+            break;
+        default:
+            break;
+    }
+
+    $output .= "\033[0m"; // Reset color
+
+    echo $output;
+    ob_flush();
+
+    if ($die) {
+        die();
+    }
+}
+
