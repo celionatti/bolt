@@ -20,7 +20,7 @@ class Controller
 
     public function __construct()
     {
-        $this->view = new BoltView('', true, false);
+        $this->view = new BoltView('', false, false);
         $this->view->setLayout("default");
 
         $this->onConstruct();

@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bolt Framework</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(to bottom right, #3498db, #e74c3c);
+        }
+
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            /* Allow cards to wrap to the next line */
+            justify-content: space-between;
+            max-width: 1200px;
+            width: 100%;
+            padding: 20px;
+            /* Add some padding for margins */
+        }
+
+        .column {
+            flex-basis: calc(60% - 20px);
+            /* 50% width with some margin */
+            padding: 20px;
+            margin: 10px;
+            /* Margin to create space between columns */
+            border-radius: 5px;
+            background-color: #fff;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            min-height: 300px;
+            /* Increased height */
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            /* Space between content and button */
+        }
+
+        .column h2 {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+
+        .column p {
+            font-size: 16px;
+        }
+
+        /* Additional styles to control column heights */
+        .top-columns {
+            flex-basis: 50%;
+            height: 50%;
+        }
+
+        .bottom-columns {
+            flex-basis: 50%;
+            height: 50%;
+        }
+
+        .top-columns,
+        .bottom-columns {
+            flex-basis: 100%;
+            /* Full width for top and bottom columns */
+            min-height: unset;
+            /* Reset the min-height */
+        }
+
+        /* Framework title and button styles */
+        .framework-title {
+            font-size: 36px;
+            font-weight: bold;
+            color: #e74c3c;
+            /* Reddish color */
+            margin-bottom: 20px;
+        }
+
+        .get-started-button {
+            background-color: #3498db;
+            /* Bluish color */
+            color: #fff;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            font-size: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="framework-title"><span style="font-weight: bold;">⚡</span> Bolt Framework</div>
+    <div class="container row">
+        <div class="column top-columns">
+            <h2 class="framework-title">Framework Title 1</h2>
+            <p>Functionality 1</p>
+        </div>
+        <div class="column top-columns">
+            <h2 class="framework-title">Framework Title 2</h2>
+            <p>Functionality 2</p>
+        </div>
+        <div class="column bottom-columns">
+            <h2 class="framework-title">Framework Title 3</h2>
+            <p>Functionality 3</p>
+        </div>
+        <!-- <div class="column bottom-columns">
+            <h2 class="framework-title">Framework Title 4</h2>
+            <p>Functionality 4</p>
+        </div> -->
+    </div>
+    <div>
+        <a href="#" class="get-started-button">Get Started</a>
+    </div>
+</body>
+
+</html>

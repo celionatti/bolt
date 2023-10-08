@@ -5,7 +5,7 @@ declare(strict_types=1);
 /**
  * ===============================================
  * ==================           ==================
- * ****** {CLASSNAME}
+ * ****** AdminController
  * ==================           ==================
  * ===============================================
  */
@@ -14,7 +14,7 @@ namespace Bolt\controllers;
 
 use Bolt\Bolt\Controller;
 
-class {CLASSNAME} extends Controller
+class AdminController extends Controller
 {
     public function welcome()
     {
@@ -25,7 +25,7 @@ class {CLASSNAME} extends Controller
             'items' => ['Item 1', 'Item 2', 'Item 3'],
         ];
 
-        $this->view->render("{VIEWPATH}", $data);
+        $this->view->render("admin", $data);
     }
 
     public function onConstruct(): void

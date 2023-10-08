@@ -46,7 +46,7 @@ class ModelCommand implements CommandInterface
     {
         // Check if the required arguments are provided
         if (count($args["args"]) < 1) {
-            $this->message("Strike Usage: create-model <ModelName>");
+            $this->message("Strike Usage: model <ModelName>");
             exit(1);
         }
 
