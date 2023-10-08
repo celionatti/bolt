@@ -23,7 +23,7 @@ class BM_2023_10_07_043155_users extends BoltMigration
      */
     public function up()
     {
-        console_logger("Up Migration...");
+        $this->console_logger("Up Migration...");
     }
     
     /**
@@ -33,6 +33,6 @@ class BM_2023_10_07_043155_users extends BoltMigration
      */
     public function down()
     {
-        console_logger("Down Migration...");
+        $this->console_logger("Down Migration...");
     }
 }

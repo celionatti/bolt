@@ -87,7 +87,7 @@ class BoltCLI
 
         // Advanced argument parsing
         $parsedArgs = $this->parseArguments($args);
-        
+
         // Determine the command to execute
         $commandName = $parsedArgs['command'] ?? null;
 
@@ -158,14 +158,14 @@ class BoltCLI
     {
         $this->output("Available commands:");
         foreach ($this->commands as $name => $command) {
-            $this->output("$name: {$command['description']}");
+            $this->output("*** "."$name: {$command['description']}");
         }
     }
 
     protected function output($message, $verbosityLevel = 1)
     {
         if ($verbosityLevel <= $this->verbosity) {
-            echo "$message\n";
+            $this->message($message, false, false);
         }
     }
 
@@ -173,5 +173,38 @@ class BoltCLI
     {
         var_dump($data);
         die;
+    }
+
+    public function message(string $message, bool $die = false, bool $timestamp = true, string $level = 'info'): void
+    {
+        $output = '';
+
+        if ($timestamp) {
+            $output .= "[" . date("Y-m-d H:i:s") . "] - ";
+        }
+
+        $output .= ucfirst($message) . PHP_EOL;
+
+        switch ($level) {
+            case 'info':
+                $output = "\033[0;32m" . $output; // Green color for info
+                break;
+            case 'warning':
+                $output = "\033[0;33m" . $output; // Yellow color for warning
+                break;
+            case 'error':
+                $output = "\033[0;31m" . $output; // Red color for error
+                break;
+            default:
+                break;
+        }
+
+        $output .= "\033[0m"; // Reset color
+
+        echo $output;
+
+        if ($die) {
+            die();
+        }
     }
 }

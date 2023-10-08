@@ -28,8 +28,7 @@ class ViewCommand implements CommandInterface
 
             // Check if you have reached the filesystem root (to prevent infinite loop)
             if ($currentDirectory === '/') {
-                echo "Error: Project root not found.\n";
-                exit(1);
+                $this->message("Error: Project root not found.", true, true, "error");
             }
         }
 
@@ -40,8 +39,7 @@ class ViewCommand implements CommandInterface
     {
         // Check if the required arguments are provided
         if (count($args["args"]) < 1) {
-            $this->message("Strike Usage: view <ViewName> <folderName> -<extension> - For creating view with {Blade: .blade.php, Twig: .twig, PHP: .php} extension. The viewName is compulsory, while others are Optional. Also Note: If not define <folederName> only <fileName> will be created. If not define -<extension> the default extension will be .php");
-            exit(1);
+            $this->message("Strike Usage: view <ViewName> <folderName> -<extension> - For creating view with {Blade: .blade.php, Twig: .twig, PHP: .php} extension. The viewName is compulsory, while others are Optional. Also Note: If not define <folederName> only <fileName> will be created. If not define -<extension> the default extension will be .php", true, true, "warning");
         }
 
         $viewName = $args["args"][0];
@@ -74,7 +72,7 @@ class ViewCommand implements CommandInterface
         if (!is_dir($viewDir)) {
             // Create the model directory
             if (!mkdir($viewDir, 0755, true)) {
-                $this->message("Error: Unable to create the view directory.", true);
+                $this->message("Error: Unable to create the view directory.", true, true, "error");
             }
         }
 
@@ -84,7 +82,7 @@ class ViewCommand implements CommandInterface
         $viewFile = $viewDir . DIRECTORY_SEPARATOR . $viewName . $extension;
         if (file_exists($viewFile)) {
             $m = ucfirst($viewName . $extension);
-            $this->message("View File {$m} already exists.", true);
+            $this->message("View File {$m} already exists.", true, true, "warning");
         }
 
         /**
@@ -106,13 +104,13 @@ class ViewCommand implements CommandInterface
         }
 
         if (!file_exists($sample_file))
-            $this->message("Error: View Sample file not found in: " . $sample_file, true);
+            $this->message("Error: View Sample file not found in: " . $sample_file, true, true, "error");
 
 
         $content = file_get_contents($sample_file);
 
         if (file_put_contents($viewFile, $content) === false) {
-            $this->message("Error: Unable to create the view file.", true);
+            $this->message("Error: Unable to create the view file.", true, true, "error");
         }
 
         $m = ucfirst($viewName . $extension);

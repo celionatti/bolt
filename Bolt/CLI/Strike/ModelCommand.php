@@ -34,8 +34,7 @@ class ModelCommand implements CommandInterface
 
             // Check if you have reached the filesystem root (to prevent infinite loop)
             if ($currentDirectory === '/') {
-                echo "Error: Project root not found.\n";
-                exit(1);
+                $this->message("Error: Project root not found.", true, true, "error");
             }
         }
 
@@ -46,8 +45,7 @@ class ModelCommand implements CommandInterface
     {
         // Check if the required arguments are provided
         if (count($args["args"]) < 1) {
-            $this->message("Strike Usage: model <ModelName>");
-            exit(1);
+            $this->message("Strike Usage: model <ModelName>", true, true, "warning");
         }
 
         $modelName = $args["args"][0];
@@ -68,7 +66,7 @@ class ModelCommand implements CommandInterface
         if (!is_dir($modelDir)) {
             // Create the model directory
             if (!mkdir($modelDir, 0755, true)) {
-                $this->message("Error: Unable to create the model directory.", true);
+                $this->message("Error: Unable to create the model directory.", true, true, "error");
             }
         }
 
@@ -78,7 +76,7 @@ class ModelCommand implements CommandInterface
         $modelFile = $modelDir . ucfirst($modelName) . '.php';
         if (file_exists($modelFile)) {
             $m = ucfirst($modelName);
-            $this->message("Model File {$m} already exists.", true);
+            $this->message("Model File {$m} already exists.", true, true, "warning");
         }
 
         /**
@@ -93,7 +91,7 @@ class ModelCommand implements CommandInterface
         $sample_file = __DIR__ . "/samples/model-sample.php";
 
         if (!file_exists($sample_file))
-            $this->message("Error: Model Sample file not found in: " . $sample_file, true);
+            $this->message("Error: Model Sample file not found in: " . $sample_file, true, true, "error");
 
 
         $class_name = $this->rename_camel_case($modelName);
@@ -105,7 +103,7 @@ class ModelCommand implements CommandInterface
         $content = str_replace("{CLASSNAME}", $class_name, $content);
 
         if (file_put_contents($modelFile, $content) === false) {
-            $this->message("Error: Unable to create the model file.", true);
+            $this->message("Error: Unable to create the model file.", true, true, "error");
         }
 
         $this->message("Model file created successfully, FileName: '$modelName'!");
@@ -123,7 +121,7 @@ class ModelCommand implements CommandInterface
 
         // Check if the directory was created successfully
         if (!is_dir($migrationDir)) {
-            $this->message("Error: Unable to create the migration directory.", true);
+            $this->message("Error: Unable to create the migration directory.", true, true, "error");
         }
 
         /**
@@ -132,12 +130,12 @@ class ModelCommand implements CommandInterface
         $migrationFile = $migrationDir . date("Y-m-d_His_") . $modelName . '.php';
         if (file_exists($migrationFile)) {
             $mg = ucfirst($modelName);
-            $this->message("Migration File {$mg} already exists.", true);
+            $this->message("Migration File {$mg} already exists.", true, true, "warning");
         }
 
         // Create the migration file
         if (!touch($migrationFile)) {
-            $this->message("Error: Unable to create the migration file.", true);
+            $this->message("Error: Unable to create the migration file.", true, true, "error");
         }
 
         /**
@@ -147,7 +145,7 @@ class ModelCommand implements CommandInterface
         $sample_file = __DIR__ . "/samples/migration-sample.php";
 
         if (!file_exists($sample_file))
-            $this->message("Error: Migration Sample file not found in: " . $sample_file, true);
+            $this->message("Error: Migration Sample file not found in: " . $sample_file, true, true, "error");
 
         $class_name = "BM_" . pathinfo($migrationFile, PATHINFO_FILENAME);
         $class_name = str_replace("-", "_", $class_name);
@@ -160,7 +158,7 @@ class ModelCommand implements CommandInterface
 
         // file_put_contents($migrationFile, $content);
         if (file_put_contents($migrationFile, $content) === false) {
-            $this->message("Error: Unable to write content to the migration file.", true);
+            $this->message("Error: Unable to write content to the migration file.", true, true, "error");
         }
         $this->message("Migration file created successfully, FileName: '$migrationFile'!");
     }

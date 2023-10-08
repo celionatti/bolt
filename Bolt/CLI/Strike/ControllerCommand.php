@@ -41,7 +41,7 @@ class ControllerCommand implements CommandInterface
     {
         // Check if the required arguments are provided
         if (count($args["args"]) < 1) {
-            $this->message("Strike Usage: controller <ControllerName>", true, true, 'error');
+            $this->message("Strike Usage: controller <ControllerName>", true, true, 'warning');
         }
 
         $controllerName = $args["args"][0];

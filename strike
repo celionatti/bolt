@@ -22,8 +22,8 @@ $strike->registerCommand('controller', 'Create a controller and associated files
 $strike->registerCommand('view', 'Create a view file, for all types of extensions {Twig: .twig, Blade: .blade.php, or default: .php}', new ViewCommand);
 $strike->registerCommand('migration', 'Create a migration file, migrate, rollback, refresh', new MigrationCommand);
 $strike->registerCommand('make', 'Make Command is for creating complete Package, commands like Resource,', new MakeCommand);
-$strike->registerCommand('generate', 'Generate Command is for , commands like Resource,', new MakeCommand);
 $strike->registerCommand('layout', 'Create new Layout file', new LayoutCommand);
+// $strike->registerCommand('generate', 'Generate Command is for , commands like Resource,', new MakeCommand);
 
 
 

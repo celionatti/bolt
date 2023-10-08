@@ -49,7 +49,7 @@ class BoltMigration extends Database
 
             $this->console_logger("Table $table created successfully!");
         } else {
-            $this->console_logger("Column data not found! Could not create table: $table");
+            $this->console_logger("Column data not found! Could not create table: $table", false, true, 'error');
         }
 
         $this->currentTable = $table;
@@ -162,7 +162,7 @@ class BoltMigration extends Database
             $this->data = [];
             $this->console_logger("Data inserted successfully in table: $this->currentTable");
         } else {
-            $this->console_logger("Row data not found! No data inserted in table: $this->currentTable");
+            $this->console_logger("Row data not found! No data inserted in table: $this->currentTable", false, true, 'error');
         }
 
         return $this; // Return $this to enable method chaining
@@ -177,11 +177,36 @@ class BoltMigration extends Database
         return $this; // Return $this to enable method chaining
     }
 
-    private function console_logger(string $message, bool $die = false): void
+    public function console_logger(string $message, bool $die = false, bool $timestamp = true, string $level = 'info'): void
     {
-        echo "\n\r" . "[" . date("Y-m-d H:i:s") . "] - " . ucfirst($message) . PHP_EOL;
-        ob_flush();
+        $output = '';
 
-        if ($die) return;
+        if ($timestamp) {
+            $output .= "[" . date("Y-m-d H:i:s") . "] - ";
+        }
+
+        $output .= ucfirst($message) . PHP_EOL;
+
+        switch ($level) {
+            case 'info':
+                $output = "\033[0;32m" . $output; // Green color for info
+                break;
+            case 'warning':
+                $output = "\033[0;33m" . $output; // Yellow color for warning
+                break;
+            case 'error':
+                $output = "\033[0;31m" . $output; // Red color for error
+                break;
+            default:
+                break;
+        }
+
+        $output .= "\033[0m"; // Reset color
+
+        echo $output;
+
+        if ($die) {
+            die();
+        }
     }
 }

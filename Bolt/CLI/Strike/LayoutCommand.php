@@ -28,8 +28,7 @@ class LayoutCommand implements CommandInterface
 
             // Check if you have reached the filesystem root (to prevent infinite loop)
             if ($currentDirectory === '/') {
-                echo "Error: Project root not found.\n";
-                exit(1);
+                $this->message("Error: Project root not found.", true, true, "error");
             }
         }
 
@@ -40,8 +39,7 @@ class LayoutCommand implements CommandInterface
     {
         // Check if the required arguments are provided
         if (count($args["args"]) < 1) {
-            $this->message("Strike Usage: layout <layoutName> - For creating layouts. The layoutName is compulsory, while others are Optional.");
-            exit(1);
+            $this->message("Strike Usage: layout <layoutName> - For creating layouts. The layoutName is compulsory, while others are Optional.", true, true, "warning");
         }
 
         $layoutName = $args["args"][0];
@@ -58,7 +56,7 @@ class LayoutCommand implements CommandInterface
         if (!is_dir($layoutDir)) {
             // Create the layout directory
             if (!mkdir($layoutDir, 0755, true)) {
-                $this->message("Error: Unable to create the layouts directory.", true);
+                $this->message("Error: Unable to create the layouts directory.", true, true, "error");
             }
         }
 
@@ -68,7 +66,7 @@ class LayoutCommand implements CommandInterface
         $layoutFile = $layoutDir . $layoutName . ".php";
         if (file_exists($layoutFile)) {
             $m = ucfirst($layoutFile);
-            $this->message("Layout File {$m} already exists.", true);
+            $this->message("Layout File {$m} already exists.", true, true, "warning");
         }
 
         /**
@@ -83,13 +81,13 @@ class LayoutCommand implements CommandInterface
         $sample_file = __DIR__ . "/samples/layout-sample.php";
 
         if (!file_exists($sample_file))
-            $this->message("Error: Layout Sample file not found in: " . $sample_file, true);
+            $this->message("Error: Layout Sample file not found in: " . $sample_file, true, true, "error");
 
 
         $content = file_get_contents($sample_file);
 
         if (file_put_contents($layoutFile, $content) === false) {
-            $this->message("Error: Unable to create the layout file.", true);
+            $this->message("Error: Unable to create the layout file.", true, true, "error");
         }
 
         $m = ucfirst($layoutName);

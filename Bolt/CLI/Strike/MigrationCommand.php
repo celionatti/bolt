@@ -28,8 +28,7 @@ class MigrationCommand implements CommandInterface
 
             // Check if you have reached the filesystem root (to prevent infinite loop)
             if ($currentDirectory === '/') {
-                echo "Error: Project root not found.\n";
-                exit(1);
+                $this->message("Error: Project root not found.", true, true, 'error');
             }
         }
 
@@ -40,84 +39,153 @@ class MigrationCommand implements CommandInterface
     {
         // Check if the required arguments are provided
         if (count($args["args"]) < 1) {
-            $this->message("Strike Usage: view <ViewName> <folderName> -<extension> - For creating view with {Blade: .blade.php, Twig: .twig, PHP: .php} extension. The viewName is compulsory, while others are Optional. Also Note: If not define <folederName> only <fileName> will be created. If not define -<extension> the default extension will be .php");
-            exit(1);
+            $this->message("Strike Usage: migration <action> <filename: Optional>", true, true, 'warning');
         }
 
-        $viewName = $args["args"][0];
-        $folders = $args["args"][1] ?? null;
-
-        if (isset($args["options"]["blade"])) {
-            $extension = ".blade.php";
-        } elseif (isset($args["options"]["twig"])) {
-            $extension = ".twig";
-        } else {
-            $extension = ".php";
-        }
+        $action = $args["args"][0];
+        $filename = $args["args"][1] ?? null;
 
         // Create the view folder's and file
-        $this->createView($viewName, $folders, $extension);
+        $this->callAction($action, $filename);
     }
 
-    private function createView($viewName, $folders = null, $extension = ".php")
+    private function callAction($action, $filename = null)
     {
-        // Check for the extension to determine where to create folders.
-        // Check if the model directory already exists.
-        if ($extension == ".blade.php") {
-            $viewDir = $this->basePath . DIRECTORY_SEPARATOR . "templates" . DIRECTORY_SEPARATOR . "blade-views" . DIRECTORY_SEPARATOR . $folders;
-        } elseif ($extension == ".twig") {
-            $viewDir = $this->basePath . DIRECTORY_SEPARATOR . "templates" . DIRECTORY_SEPARATOR . "twig-views" . DIRECTORY_SEPARATOR . $folders;
+        // Check for the action type.
+        if ($action === "migrate") {
+            $this->migrate($action, $filename);
+        } elseif ($action === "rollback") {
+            $this->rollback($action, $filename);
+        } elseif ($action === "refresh") {
+            $this->refresh($action, $filename);
         } else {
-            $viewDir = $this->basePath . DIRECTORY_SEPARATOR . "templates" . DIRECTORY_SEPARATOR . $folders;
         }
+    }
 
-        if (!is_dir($viewDir)) {
-            // Create the model directory
-            if (!mkdir($viewDir, 0755, true)) {
-                $this->message("Error: Unable to create the view directory.", true);
+    private function migrate($action, $filename = null)
+    {
+        // Check if the model directory already exists.
+        $migrationDir = $this->basePath . DIRECTORY_SEPARATOR . "migrations" . DIRECTORY_SEPARATOR;
+
+        if (!is_dir($migrationDir)) {
+            // Create the migration directory
+            if (!mkdir($migrationDir, 0755, true)) {
+                $this->message("Error: Unable to create the migration directory.", true, true, "error");
             }
         }
 
-        /**
-         * Check if View file already exists.
-         */
-        $viewFile = $viewDir . DIRECTORY_SEPARATOR . $viewName . $extension;
-        if (file_exists($viewFile)) {
-            $m = ucfirst($viewName . $extension);
-            $this->message("View File {$m} already exists.", true);
+        if (!empty($filename)) {
+            $migrationFile = $migrationDir . $filename . ".php";
+            /** Run a single class filename migration */
+            $this->message("Migrating File: {$migrationFile}");
+
+            require_once $migrationFile;
+
+            $class_name = basename($migrationFile);
+            preg_match("/(\d{4}-\d{2}-\d{2}_\d{6}_\w+)/", $class_name, $match);
+            $class_name = ucfirst(str_replace(".php", "", $match[0]));
+            $class_name = ucfirst(str_replace("-", "_", $match[1]));
+            $class_name = trim($class_name, '_');
+            $class_name = "BM_" . $class_name;
+
+            $myclass = new ("\Bolt\migrations\\$class_name");
+
+            /** Call the Up method */
+            $myclass->up();
+            $this->message("Migration Complete!");
+            $this->message("Migrated File: {$migrationFile}");
         }
 
-        /**
-         * Create the view file, if not existing.
-         */
-        touch($viewFile);
+        /** Get all the files in the migrations folders */
+        $migrationFiles = glob($migrationDir . '*.php');
 
-        /**
-         * Customize the content of view file here.
-         * From the sample file.
-         */
+        if (!empty($migrationFiles)) {
+            foreach ($migrationFiles as $migrationFile) {
+                $this->message("Migrating File: {$migrationFile}");
 
-        if ($extension == ".blade.php") {
-            $sample_file = __DIR__ . "/samples/blade-view-sample.php";
-        } elseif ($extension == ".twig") {
-            $sample_file = __DIR__ . "/samples/twig-view-sample.php";
-        } else {
-            $sample_file = __DIR__ . "/samples/view-sample.php";
+                require_once $migrationFile;
+
+                $class_name = basename($migrationFile);
+                preg_match("/(\d{4}-\d{2}-\d{2}_\d{6}_\w+)/", $class_name, $match);
+                $class_name = ucfirst(str_replace(".php", "", $match[0]));
+                $class_name = ucfirst(str_replace("-", "_", $match[1]));
+                $class_name = trim($class_name, '_');
+                $class_name = "BM_" . $class_name;
+
+                $myclass = new ("\Bolt\migrations\\$class_name");
+
+                /** Call the Up method */
+                $myclass->up();
+                $this->message("Migration Complete!");
+                $this->message("Migrated File: {$migrationFile}");
+            }
+        }
+    }
+
+    private function rollback($action, $filename = null)
+    {
+        // Check if the model directory already exists.
+        $migrationDir = $this->basePath . DIRECTORY_SEPARATOR . "migrations" . DIRECTORY_SEPARATOR;
+
+        if (!is_dir($migrationDir)) {
+            // Create the migration directory
+            if (!mkdir($migrationDir, 0755, true)) {
+                $this->message("Error: Unable to create the migration directory.", true, true, "error");
+            }
         }
 
-        if (!file_exists($sample_file))
-            $this->message("Error: View Sample file not found in: " . $sample_file, true);
+        if (!empty($filename)) {
+            $migrationFile = $migrationDir . $filename . ".php";
+            /** Run a single class filename migration */
+            $this->message("Migrating File: {$migrationFile}");
 
+            require_once $migrationFile;
 
-        $content = file_get_contents($sample_file);
+            $class_name = basename($migrationFile);
+            preg_match("/(\d{4}-\d{2}-\d{2}_\d{6}_\w+)/", $class_name, $match);
+            $class_name = ucfirst(str_replace(".php", "", $match[0]));
+            $class_name = ucfirst(str_replace("-", "_", $match[1]));
+            $class_name = trim($class_name, '_');
+            $class_name = "BM_" . $class_name;
 
-        if (file_put_contents($viewFile, $content) === false) {
-            $this->message("Error: Unable to create the view file.", true);
+            $myclass = new ("\Bolt\migrations\\$class_name");
+
+            /** Call the Down method */
+            $myclass->down();
+            $this->message("Migration Complete!");
+            $this->message("Migrated File: {$migrationFile}");
         }
 
-        $m = ucfirst($viewName . $extension);
+        /** Get all the files in the migrations folders */
+        $migrationFiles = glob($migrationDir . '*.php');
 
-        $this->message("View file created successfully, FileName: '$m'!");
+        if (!empty($migrationFiles)) {
+            foreach ($migrationFiles as $migrationFile) {
+                $this->message("Migrating File: {$migrationFile}");
+
+                require_once $migrationFile;
+
+                $class_name = basename($migrationFile);
+                preg_match("/(\d{4}-\d{2}-\d{2}_\d{6}_\w+)/", $class_name, $match);
+                $class_name = ucfirst(str_replace(".php", "", $match[0]));
+                $class_name = ucfirst(str_replace("-", "_", $match[1]));
+                $class_name = trim($class_name, '_');
+                $class_name = "BM_" . $class_name;
+
+                $myclass = new ("\Bolt\migrations\\$class_name");
+
+                /** Call the Down method */
+                $myclass->down();
+                $this->message("Migration Complete!");
+                $this->message("Migrated File: {$migrationFile}");
+            }
+        }
+    }
+
+    private function refresh($action, $filename = null)
+    {
+        $this->rollback($action, $filename);
+        $this->migrate($action, $filename);
     }
 
     public function message(string $message, bool $die = false, bool $timestamp = true, string $level = 'info'): void
