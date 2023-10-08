@@ -13,6 +13,7 @@ namespace Bolt\Bolt;
 
 use Bolt\Bolt\Http\Request;
 use Bolt\Bolt\Http\Response;
+use Bolt\Bolt\Resolver\AssetManager;
 use Bolt\Bolt\Router\Router;
 use Bolt\Bolt\Resolver\PathResolver;
 
@@ -27,15 +28,16 @@ class Bolt
     public Router $router;
     public Session $session;
 
-    private static Bolt $instance;
     public static Bolt $bolt;
 
     public PathResolver $pathResolver;
+    public AssetManager $assetManager;
 
     public function __construct()
     {
         self::$bolt = $this;
         $this->pathResolver = new PathResolver(dirname(__DIR__));
+        $this->assetManager = new AssetManager(dirname(__DIR__));
 
         $this->session = new Session();
         $this->config = new Config();

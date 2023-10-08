@@ -38,97 +38,86 @@ class ViewCommand implements CommandInterface
 
     public function execute(array $args)
     {
-        var_dump($args);
-        die;
         // Check if the required arguments are provided
         if (count($args["args"]) < 1) {
-            $this->message("Strike Usage: view <ViewName> - For creating view with .php extension");
+            $this->message("Strike Usage: view <ViewName> <folderName> -<extension> - For creating view with {Blade: .blade.php, Twig: .twig, PHP: .php} extension. The viewName is compulsory, while others are Optional. Also Note: If not define <folederName> only <fileName> will be created. If not define -<extension> the default extension will be .php");
             exit(1);
         }
 
         $viewName = $args["args"][0];
-
-        // Create the view folder and file
-        $this->createView($viewName);
+        $folders = $args["args"][1] ?? null;
 
         if (isset($args["options"]["blade"])) {
-            // $this->createMigration($modelName);
-        }
-
-        if (isset($args["options"]["twig"])) {
-            // $this->createMigration($modelName);
-        }
-    }
-
-    private function createView($viewName)
-    {
-    }
-
-    private function create_folders_n_file($path)
-    {
-        $parts = explode("/", $path);
-        $numParts = count($parts);
-
-        if ($numParts === 1) {
-            // If there is only one part (no "/"), treat it as the filename
-            $filename = $path;
-            $fullPath = $filename;
-
-            // Create the file if it doesn't exist
-            if (!file_exists($fullPath)) {
-                file_put_contents($fullPath, '');
-            }
-
-            return $fullPath;
-        }
-
-        // Initialize the root path
-        $currentPath = '';
-
-        for ($i = 0; $i < $numParts - 1; $i++) {
-            // Append each part to the current path
-            $currentPath .= $parts[$i] . '/';
-
-            // Create the directory if it doesn't exist
-            if (!is_dir($currentPath)) {
-                mkdir($currentPath);
-            }
-        }
-
-        // The last part is the filename
-        $filename = $parts[$numParts - 1];
-
-        // Create the file within the last directory
-        $fullPath = $currentPath . $filename;
-        if (!file_exists($fullPath)) {
-            file_put_contents($fullPath, '');
-        }
-
-        return $fullPath;
-    }
-
-    private function create_file($path)
-    {
-        $parts = explode('/', $path);
-        $filePath = '';
-        $basePath = __DIR__; // You can specify your base directory here
-
-        foreach ($parts as $part) {
-            $filePath = rtrim($filePath, '/') . '/' . $part;
-
-            if (!is_dir($basePath . $filePath)) {
-                mkdir($basePath . $filePath);
-            }
-        }
-
-        $fullFilePath = $basePath . $filePath . '.txt'; // Append the file extension you want
-
-        if (!file_exists($fullFilePath)) {
-            file_put_contents($fullFilePath, $fileContent);
-            echo "File created successfully: $fullFilePath";
+            $extension = ".blade.php";
+        } elseif (isset($args["options"]["twig"])) {
+            $extension = ".twig";
         } else {
-            echo "File already exists: $fullFilePath";
+            $extension = ".php";
         }
+
+        // Create the view folder's and file
+        $this->createView($viewName, $folders, $extension);
+    }
+
+    private function createView($viewName, $folders = null, $extension = ".php")
+    {
+        // Check for the extension to determine where to create folders.
+        // Check if the model directory already exists.
+        if ($extension == ".blade.php") {
+            $viewDir = $this->basePath . DIRECTORY_SEPARATOR . "templates" . DIRECTORY_SEPARATOR . "blade-views" . DIRECTORY_SEPARATOR . $folders;
+        } elseif ($extension == ".twig") {
+            $viewDir = $this->basePath . DIRECTORY_SEPARATOR . "templates" . DIRECTORY_SEPARATOR . "twig-views" . DIRECTORY_SEPARATOR . $folders;
+        } else {
+            $viewDir = $this->basePath . DIRECTORY_SEPARATOR . "templates" . DIRECTORY_SEPARATOR . $folders;
+        }
+
+        if (!is_dir($viewDir)) {
+            // Create the model directory
+            if (!mkdir($viewDir, 0755, true)) {
+                $this->message("Error: Unable to create the view directory.", true);
+            }
+        }
+
+        /**
+         * Check if View file already exists.
+         */
+        $viewFile = $viewDir . DIRECTORY_SEPARATOR . $viewName . $extension;
+        if (file_exists($viewFile)) {
+            $m = ucfirst($viewName . $extension);
+            $this->message("View File {$m} already exists.", true);
+        }
+
+        /**
+         * Create the view file, if not existing.
+         */
+        touch($viewFile);
+
+        /**
+         * Customize the content of view file here.
+         * From the sample file.
+         */
+
+        if ($extension == ".blade.php") {
+            $sample_file = __DIR__ . "/samples/blade-view-sample.php";
+        } elseif ($extension == ".twig") {
+            $sample_file = __DIR__ . "/samples/twig-view-sample.php";
+        } else {
+            $sample_file = __DIR__ . "/samples/view-sample.php";
+        }
+
+        if (!file_exists($sample_file))
+            $this->message("Error: View Sample file not found in: " . $sample_file, true);
+
+
+        $content = file_get_contents($sample_file);
+
+        if (file_put_contents($viewFile, $content) === false) {
+            $this->message("Error: Unable to create the view file.", true);
+        }
+
+        $m = ucfirst($viewName . $extension);
+
+        $this->message("View file created successfully, FileName: '$m'!");
     }
 
     public function message(string $message, bool $die = false): void

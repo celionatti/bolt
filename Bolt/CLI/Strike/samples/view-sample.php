@@ -80,6 +80,15 @@
     .btn-primary:hover {
         background-color: #c82333;
     }
+
+    .desc {
+        margin: 0;
+        width: 700px;
+        border: 5px solid #ccc;
+        padding: 8px;
+        border-radius: 1rem;
+        font-size: 1.3rem;
+    }
 </style>
 <?php $this->end() ?>
 
@@ -88,8 +97,8 @@
 <div class="jumbotron">
     <div class="framework-title"><span style="font-weight: bold;">⚡</span> Bolt Framework</div>
     <h1>Welcome to Our Framework</h1>
-    <p>Build amazing web applications with ease.</p>
-    <a href="#" onclick="startedClicked()" class="btn-primary">Get Started</a>
+    <p class="desc">Bolt Framework is a modern, open-source web application framework designed to empower developers to build robust and scalable web applications with ease. It offers a comprehensive suite of tools and features, making it a versatile choice for both beginners and experienced developers.</p>
+    <a href="#" onclick="startedClicked()" class="btn-primary">Read Docs</a>
 </div>
 <?php $this->end() ?>
 

@@ -47,12 +47,13 @@ class ControllerCommand implements CommandInterface
         }
 
         $controllerName = $args["args"][0];
+        $crudMethod = $args["options"]["f"] ?? null;
 
         // Create the controller folder and file
-        $this->createController($controllerName);
+        $this->createController($controllerName, $crudMethod);
     }
 
-    private function createController($controllerName)
+    private function createController($controllerName, $allowCrud = null)
     {
         // Check if the controller directory already exists
         $controllerDir = $this->basePath . DIRECTORY_SEPARATOR . "controllers" . DIRECTORY_SEPARATOR;
@@ -69,7 +70,7 @@ class ControllerCommand implements CommandInterface
          */
         $controllerFile = $controllerDir . ucfirst($controllerName) . "Controller" . '.php';
         if (file_exists($controllerFile)) {
-            $m = ucfirst($controllerName)."Controller";
+            $m = ucfirst($controllerName) . "Controller";
             $this->message("Controller File {$m} already exists.", true);
         }
 
@@ -82,7 +83,11 @@ class ControllerCommand implements CommandInterface
          * Customize the content of controller class here.
          * From the sample class.
          */
-        $sample_file = __DIR__ . "/samples/controller-sample.php";
+        if($allowCrud) {
+            $sample_file = __DIR__ . "/samples/controller-with-crud-sample.php";
+        } else {
+            $sample_file = __DIR__ . "/samples/controller-sample.php";
+        }
 
         if (!file_exists($sample_file))
             $this->message("Error: Controller Sample file not found in: " . $sample_file, true);
@@ -100,7 +105,7 @@ class ControllerCommand implements CommandInterface
             $this->message("Error: Unable to create the controller file.", true);
         }
 
-        $m = ucfirst($controllerName)."Controller";
+        $m = ucfirst($controllerName) . "Controller";
 
         $this->message("Controller file created successfully, FileName: '$m'!");
     }

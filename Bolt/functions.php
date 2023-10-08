@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use Bolt\Bolt\Bolt;
+
 require __DIR__ . "/global-variables.php";
 
 
@@ -269,6 +271,21 @@ function get_image(?string $path = null, string $type = 'post'): string
     }
 
     return BOLT_ROOT . $defaultImageMap['post'];
+}
+
+function get_assets_directory($directory): string
+{
+    return Bolt::$bolt->assetManager->getAssetPath("public" . DIRECTORY_SEPARATOR . "assets" . DIRECTORY_SEPARATOR . $directory);
+}
+
+function get_stylesheet($path): string
+{
+    return Bolt::$bolt->assetManager->getAssetPath("public" . DIRECTORY_SEPARATOR . "assets" . DIRECTORY_SEPARATOR . "css" . $path);
+}
+
+function get_script($path): string
+{
+    return Bolt::$bolt->assetManager->getAssetPath("public" . DIRECTORY_SEPARATOR . "assets" . DIRECTORY_SEPARATOR . "css" . $path);
 }
 
 function get_date(?string $date = null, string $format = "jS M, Y", string $timezone = "UTC"): string
