@@ -1,0 +1,61 @@
+/**
+ * Methods of calling. 
+ */
+
+//  Closure Method
+// This is a simple and direct way to define a route with an inline closure that handles the request.
+
+// $router->get('/home', function () {
+//     return 'Welcome to the home page';
+// });
+
+
+// Controller Method: pending
+// In this example, you define a route that calls the index method of the ProfileController class.
+// $bolt->router->get('/profile', 'UserController@index');
+
+// Class Method with Callable Array: checked
+// This approach allows you to specify the controller class and method as an array.
+// $bolt->router->get('/admin', [UserController::class, 'admin']);
+
+// Named Routes:
+// Named routes let you assign a name to a route, making it easier to generate URLs for that route later.
+// $router->namedRoute('home', '/home', 'HomeController@index');
+
+// Middleware:
+// Middleware can be applied to specific routes or groups of routes to perform actions like authentication, authorization, or input validation.
+// $bolt->router->middleware('AuthMiddleware');
+
+// Route Groups: pending
+// Route groups allow you to apply common attributes or middleware to a group of routes.
+// $bolt->router->group(['middleware' => 'AuthMiddleware'], function ($router) {
+//     $router->get('/dashboard', 'UserController@create');
+//     $router->get('/profile', 'UserController@user');
+// });
+
+// $bolt->router->group(['url' => "/"], function ($router) {
+//     $router->get('dash', 'UserController@create');
+//     $router->get('profile', 'UserController@user');
+// });
+
+// $bolt->router->group(['middleware' => 'AuthMiddleware'], function ($router) {
+//     $router->group(['prefix' => 'admin'], function ($router) {
+//         // Routes within the nested group
+//     });
+// });
+
+// $bolt->router->group(['prefix' => '/admin', 'middleware' => 'AuthMiddleware'], function ($router) {
+//     $router->get('/dashboard', function () {
+//         // Route logic here
+//     });
+// });
+
+// Nested Routes (As you have implemented): checked
+// Nested routes are useful for organizing routes within a specific scope or section of your application.
+// $subRouter = $bolt->router->BoltRouter();
+// $subRouter->get('/admin', [UserController::class, 'admin']);
+
+// Route Parameters:
+// You can define routes with parameters, and the router will extract the values from the URL and pass them to the callback or controller method
+// $bolt->router->get('/user/{id}', 'UserController@show');
+// $bolt->router->get('/admin/{name}/{id}', [UserController::class, 'admin']);

@@ -13,6 +13,7 @@ namespace Bolt\Bolt;
 use Symfony\Component\Yaml\Yaml;
 
 
+
 class Config
 {
     private static array $config = [];

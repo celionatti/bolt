@@ -7,7 +7,7 @@ namespace Bolt\Bolt;
 use Exception;
 use Jenssegers\Blade\Blade; // You need to install the Blade template engine first
 
-class View
+class View_blade
 {
     private string $_title = '';
     private string $_header = 'Dashboard';

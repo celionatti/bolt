@@ -48,7 +48,7 @@ class Bolt
     public function run()
     {
         try {
-            $this->router->handleRequest();
+            $this->router->resolve();
         } catch (\Exception $e) {
             echo $e;
         }

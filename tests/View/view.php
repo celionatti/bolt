@@ -12,7 +12,7 @@ namespace Bolt\Bolt;
 
 use Exception;
 
-class View
+class View_v
 {
     private string $_title = '';
     private string $_header = 'Dashboard';

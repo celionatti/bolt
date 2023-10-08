@@ -4,7 +4,7 @@ namespace Bolt\Bolt;
 
 use Exception;
 
-class View
+class View_nn
 {
     // ... (existing properties and methods)
 

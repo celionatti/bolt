@@ -13,7 +13,7 @@ namespace Bolt\Bolt\Router;
 use Bolt\Bolt\Http\Request;
 use Bolt\Bolt\Http\Response;
 
-class Router
+class Router_te
 {
     private $routes = [];
     private $middleware = [];

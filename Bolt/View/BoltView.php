@@ -2,21 +2,27 @@
 
 declare(strict_types=1);
 
-namespace Bolt\Bolt;
+/**
+ * ==================================================
+ * ==================           =====================
+ * ******** BoltView Class
+ * ==================           =====================
+ * ==================================================
+ */
+
+namespace Bolt\Bolt\View;
 
 use Exception;
-use Jenssegers\Blade\Blade; // Optional: Blade template engine
-use Twig\Environment; // Optional: Twig template engine
-use Twig\Loader\FilesystemLoader; // Optional: Twig template engine
+use Bolt\Bolt\Bolt;
+use Twig\Environment;
+use Jenssegers\Blade\Blade;
+use Twig\Loader\FilesystemLoader;
 
-class View_new
+
+class BoltView
 {
     private string $_title = '';
     private string $_header = 'Dashboard';
-    private string $_metaTitle = '';
-    private string $_metaDescription = '';
-    private string $_metaKeywords = '';
-    private string $_author = '';
     private array $_content = [];
     private $_currentContent;
     private $_buffer;
@@ -28,7 +34,6 @@ class View_new
     public function __construct($path = '', $enableBlade = false, $enableTwig = false)
     {
         $this->_defaultViewPath = $path;
-        $this->_title = Config::get('title');
 
         // Initialize Blade if enabled
         if ($enableBlade) {
@@ -54,26 +59,6 @@ class View_new
     public function getTitle()
     {
         return $this->_title;
-    }
-
-    public function setMetaTitle($metaTitle): void
-    {
-        $this->_metaTitle = $metaTitle;
-    }
-
-    public function setMetaDescription($metaDescription): void
-    {
-        $this->_metaDescription = $metaDescription;
-    }
-
-    public function setMetaKeywords($metaKeywords): void
-    {
-        $this->_metaKeywords = $metaKeywords;
-    }
-
-    public function setAuthor($author): void
-    {
-        $this->_author = $author;
     }
 
     public function getHeader()
@@ -134,14 +119,18 @@ class View_new
         }
         // Render using Twig if enabled
         elseif ($this->_twig) {
-            echo $this->_twig->render($path, $params);
+            try {
+                echo $this->_twig->render($path, $params);
+            } catch (Exception $e) {
+                echo 'Twig Error: ' . $e->getMessage();
+            }
+            
+            // echo $this->_twig->render($path, $params);
         }
         // Fallback to .php rendering if no template engine is enabled
         else {
-            // $layoutPath = Bolt::$bolt->pathResolver->template_path(DIRECTORY_SEPARATOR . 'layouts' . DIRECTORY_SEPARATOR . $this->_layout . '.php');
-            $layoutPath = base_path('templates' . DIRECTORY_SEPARATOR . 'layouts' . DIRECTORY_SEPARATOR . $this->_layout . '.php');
-            // $fullPath = Bolt::$bolt->pathResolver->template_path(DIRECTORY_SEPARATOR . $path . '.php');
-            $fullPath = base_path('templates' . DIRECTORY_SEPARATOR . $path . '.php');
+            $layoutPath = Bolt::$bolt->pathResolver->template_path(DIRECTORY_SEPARATOR . 'layouts' . DIRECTORY_SEPARATOR . $this->_layout . '.php');
+            $fullPath = Bolt::$bolt->pathResolver->template_path(DIRECTORY_SEPARATOR . $path . '.php');
 
             if (!file_exists($fullPath)) {
                 throw new Exception("The view \"{$path}\" does not exist.");
@@ -150,6 +139,7 @@ class View_new
                 throw new Exception("The layout \"{$this->_layout}\" does not exist.");
             }
 
+            require($fullPath);
             require($layoutPath);
         }
     }
@@ -157,15 +147,26 @@ class View_new
     // Optional: Initialize Blade template engine
     private function initializeBlade()
     {
-        $this->_blade = new Blade('/path/to/your/views', '/path/to/compiled/views'); // Adjust these paths accordingly
+        $path = get_root_dir() . DIRECTORY_SEPARATOR . "templates" . DIRECTORY_SEPARATOR . "blade-views";
+        $cache_path = get_root_dir() . DIRECTORY_SEPARATOR . "non-existence/cache" . DIRECTORY_SEPARATOR . "blade";
+        $this->_blade = new Blade($path, $cache_path); // Adjust these paths accordingly
     }
 
     // Optional: Initialize Twig template engine
     private function initializeTwig()
     {
-        $loader = new FilesystemLoader('/path/to/your/twig/templates'); // Adjust this path accordingly
-        $this->_twig = new Environment($loader, [
-            // Twig configuration options here
-        ]);
+        $path = get_root_dir() . DIRECTORY_SEPARATOR . "templates" . DIRECTORY_SEPARATOR . "twig-views";
+        $cache_path = get_root_dir() . DIRECTORY_SEPARATOR . "cache" . DIRECTORY_SEPARATOR . "twig";
+        $loader = new FilesystemLoader($path); // Adjust this path accordingly
+        // Configure Twig options
+        $twigOptions = [
+            // 'cache' => $cache_path, // Adjust the cache directory
+            'cache' => false, // Adjust the cache directory
+            'auto_reload' => true,       // Automatically reload the template if the source code changes (for development)
+            'debug' => true,            // Enable debugging mode (shows detailed error messages)
+            'strict_variables' => true, // Enforces strict variable access (throws an error for undefined variables)
+            'autoescape' => 'html',      // Auto-escaping strategy ('html', 'js', 'css', 'url', 'html_attr', or false)
+        ];
+        $this->_twig = new Environment($loader, $twigOptions);
     }
 }

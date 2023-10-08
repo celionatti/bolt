@@ -8,9 +8,11 @@ declare(strict_types=1);
  * ================================
  */
 
-namespace Bolt\Bolt;
+namespace Bolt\Bolt\View;
 
 use Exception;
+use Bolt\Bolt\Bolt;
+use Bolt\Bolt\Config;
 
 class View
 {
@@ -29,7 +31,6 @@ class View
     public function __construct($path = '')
     {
         $this->_defaultViewPath = $path;
-        $this->_title = Config::get('title');
     }
 
     public function setLayout($layout): void
@@ -124,9 +125,7 @@ class View
             $$key = $value;
         }
 
-        // $layoutPath = base_path('templates/layouts/' . $this->_layout . '.php');
         $layoutPath = Bolt::$bolt->pathResolver->template_path(DIRECTORY_SEPARATOR . 'layouts/' . $this->_layout . '.php');
-        // $fullPath = base_path('templates' . DIRECTORY_SEPARATOR . $path . '.php');
         $fullPath = Bolt::$bolt->pathResolver->template_path(DIRECTORY_SEPARATOR . $path . '.php');
 
         if (!file_exists($fullPath)) {
@@ -136,6 +135,7 @@ class View
             throw new Exception("The layout \"{$this->_layout}\" does not exist.");
         }
 
+        require($fullPath);
         require($layoutPath);
     }
 }
