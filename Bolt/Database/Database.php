@@ -40,9 +40,9 @@ class Database
         $np_vars = [
             'DB_DRIVER' => 'mysql',
             'DB_HOST' => 'localhost',
-            'DB_NAME' => 'your_database_name',
-            'DB_USER' => 'your_database_user',
-            'DB_PASSWORD' => 'your_database_password',
+            'DB_NAME' => 'bolt',
+            'DB_USER' => 'root',
+            'DB_PASSWORD' => '',
         ];
 
         $string = "{$np_vars['DB_DRIVER']}:host={$np_vars['DB_HOST']};dbname={$np_vars['DB_NAME']}";
@@ -114,12 +114,12 @@ class Database
     {
         $this->error = $errorMessage;
         $this->has_error = true;
-
+        
         // Example: Log error to a file
         error_log("Database Error: $errorMessage");
-
+        
         // You can also throw an exception if desired
-        throw new DatabaseException($errorMessage);
+        bolt_die("Database Error", $errorMessage);
     }
 
     public function get_row(string $query, array $data = [], string $data_type = 'object')

@@ -100,31 +100,113 @@ function esc($data, $context = 'html', $encoding = 'UTF-8')
     }
 }
 
-function bolt_die($value, $message = '', $title = '<span style="color:teal;">B</span>OLT Error', $status_code = 500)
+function bolt_die($value, $message = '', $title = 'BOLT Error - Oops! Something went wrong.', $status_code = 500)
 {
     http_response_code($status_code);
+
+    $value = str_replace('"', '', $value);
 
     echo "<!DOCTYPE html>
     <html lang='en'>
     <head>
         <meta charset='UTF-8'>
+        <meta name='viewport' content='width=device-width, initial-scale=1.0'>
         <title>{$title}</title>
         <style>
-            body {font-family: Arial, sans-serif;}
-            .error-container {background-color: #F8F8F8; border: 1px solid #E0E0E0; margin: 20px; padding: 20px; text-align:center;}
-            .error-title {font-size: 24px; color: #FF0000; font-weight: bold; margin-bottom: 10px;}
-            .error-message {font-size: 18px; color: #333; margin-bottom: 20px;}
-            .error-details {font-size: 16px; color: #777;}
+            body {
+                margin: 0;
+                font-family: Arial, sans-serif;
+                background: linear-gradient(45deg, #ff5733, #007bff);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                height: 100vh;
+                overflow: hidden;
+            }
+    
+            .error-container {
+                width: 100%;
+                max-width: 900px;
+                height:400px;
+                background-color: #fff;
+                border-radius: 5px;
+                box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+                display: flex;
+            }
+    
+            .left-section {
+                flex: 1;
+                background-color: #025192;
+                padding: 60px;
+                text-align: center;
+            }
+    
+            .right-section {
+                flex: 1;
+                background-color: #ff5733;
+                padding: 20px;
+                text-align: center;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+            }
+    
+            h1 {
+                font-size: 36px;
+                color: #fff;
+            }
+    
+            p {
+                font-size: 28px;
+                color: #ccc;
+            }
+    
+            img {
+                max-width: 100px;
+            }
+    
+            a {
+                text-decoration: none;
+                color: #fff;
+            }
+            /* Style for the call-to-action button */
+            .btn-primary {
+                background-color: #054774;
+                color: #fff;
+                padding: 1rem 2rem;
+                font-size: 1.25rem;
+                border: none;
+                border-radius: 0.25rem;
+                cursor: pointer;
+                transition: background-color 0.3s;
+                text-decoration: none;
+            }
+        
+            .btn-primary:hover {
+                background-color: #054762;
+            }
+
+            .error-title {
+                color: #fff;
+                font-size: 20px;
+            }
         </style>
     </head>
     <body>
         <div class='error-container'>
+            <div class='left-section'>
             <div class='error-title'>{$title}</div>
-            <div class='error-message'>{$message}</div>
-            <div class='error-details'><pre>" . print_r($value, true) . "</pre></div>
+                <h1>{$message}</h1>
+                <p>" . print_r($value, true) . "</p>
+            </div>
+            <div class='right-section'>
+                <img src='/assets/img/404.svg' alt='Error Icon'>
+            </div>
         </div>
     </body>
-    </html>";
+    </html>
+    ";
 
     die;
 }

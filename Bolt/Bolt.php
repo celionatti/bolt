@@ -11,6 +11,7 @@ declare(strict_types=1);
 
 namespace Bolt\Bolt;
 
+use Bolt\Bolt\Database\Database;
 use Bolt\Bolt\Http\Request;
 use Bolt\Bolt\Http\Response;
 use Bolt\Bolt\Resolver\AssetManager;
@@ -27,6 +28,8 @@ class Bolt
     public Response $response;
     public Router $router;
     public Session $session;
+    public Container $container;
+    public Database $database;
 
     public static Bolt $bolt;
 
@@ -42,9 +45,16 @@ class Bolt
         $this->session = new Session();
         $this->config = new Config();
         $this->config::load($this->pathResolver->base_path("configs/config.json"));
+        $this->container = new Container();
         $this->request = new Request();
         $this->response = new Response();
         $this->router = new Router($this->request, $this->response);
+
+        $this->container->singleton("Database", function(){
+            return new Database();
+        });
+
+        $this->database = $this->container->make("Database");
     }
 
     public function run()
