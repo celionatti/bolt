@@ -37,7 +37,7 @@ class Bolt
     {
         self::$bolt = $this;
         $this->pathResolver = new PathResolver(dirname(__DIR__));
-        $this->assetManager = new AssetManager(dirname(__DIR__));
+        $this->assetManager = new AssetManager(URL_ROOT);
 
         $this->session = new Session();
         $this->config = new Config();

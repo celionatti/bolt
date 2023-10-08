@@ -14,7 +14,7 @@
 ?>
 
 <!-- For Adding CSS Styles -->
-<?php $this->start('style') ?>
+<?php $this->start('header') ?>
 <style>
     /* Reset some default styles */
     body,
@@ -98,15 +98,11 @@
     <div class="framework-title"><span style="font-weight: bold;">⚡</span> Bolt Framework</div>
     <h1>Welcome to Our Framework</h1>
     <p class="desc">Bolt Framework is a modern, open-source web application framework designed to empower developers to build robust and scalable web applications with ease. It offers a comprehensive suite of tools and features, making it a versatile choice for both beginners and experienced developers.</p>
-    <a href="#" onclick="startedClicked()" class="btn-primary">Read Docs</a>
+    <a href="https://github.com/celionatti/bolt" target="_blank" class="btn-primary">Read Docs</a>
 </div>
 <?php $this->end() ?>
 
 <!-- For Including JS function -->
 <?php $this->start('script') ?>
-<script>
-    function startedClicked() {
-        alert("Get Started Button Clicked...");
-    }
-</script>
+
 <?php $this->end() ?>

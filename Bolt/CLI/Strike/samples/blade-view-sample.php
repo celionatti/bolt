@@ -89,7 +89,7 @@
             Bolt Framework
         </div>
         <p class="desc">Bolt Framework is a modern, open-source web application framework designed to empower developers to build robust and scalable web applications with ease. It offers a comprehensive suite of tools and features, making it a versatile choice for both beginners and experienced developers.</p>
-        <a href="#" onclick="startedClicked()" class="btn-primary">Read Docs</a>
+        <a href="https://github.com/celionatti/bolt" target="_blank" class="btn-primary">Read Docs</a>
     </div>
 
     <script>

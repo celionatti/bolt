@@ -255,9 +255,10 @@ function old_checked(string $key, string $value, $default = '', string $type = '
 function get_image(?string $path = null, string $type = 'post'): string
 {
     $defaultImageMap = [
-        'post' => '/assets/images/no_image.jpg',
-        'male' => '/assets/images/user_male.jpg',
-        'female' => '/assets/images/user_female.jpg',
+        'post' => '/assets/img/no_image.jpg',
+        'male' => '/assets/img/user_male.jpg',
+        'female' => '/assets/img/user_female.jpg',
+        'icon' => '/assets/img/favicon.ico',
     ];
 
     $path = $path ?? '';
@@ -275,17 +276,27 @@ function get_image(?string $path = null, string $type = 'post'): string
 
 function get_assets_directory($directory): string
 {
-    return Bolt::$bolt->assetManager->getAssetPath("public" . DIRECTORY_SEPARATOR . "assets" . DIRECTORY_SEPARATOR . $directory);
+    return Bolt::$bolt->assetManager->getAssetPath("assets" . $directory);
+}
+
+function get_package($package): string
+{
+    return get_assets_directory(DIRECTORY_SEPARATOR . "packages" . DIRECTORY_SEPARATOR . $package);
+}
+
+function get_bootstrap($path): string
+{
+    return get_assets_directory(DIRECTORY_SEPARATOR . "bootstrap" . DIRECTORY_SEPARATOR . $path);
 }
 
 function get_stylesheet($path): string
 {
-    return Bolt::$bolt->assetManager->getAssetPath("public" . DIRECTORY_SEPARATOR . "assets" . DIRECTORY_SEPARATOR . "css" . $path);
+    return get_assets_directory(DIRECTORY_SEPARATOR . "css" . DIRECTORY_SEPARATOR . $path);
 }
 
 function get_script($path): string
 {
-    return Bolt::$bolt->assetManager->getAssetPath("public" . DIRECTORY_SEPARATOR . "assets" . DIRECTORY_SEPARATOR . "css" . $path);
+    return get_assets_directory(DIRECTORY_SEPARATOR . "js" . DIRECTORY_SEPARATOR . $path);
 }
 
 function get_date(?string $date = null, string $format = "jS M, Y", string $timezone = "UTC"): string

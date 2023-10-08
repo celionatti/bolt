@@ -8,10 +8,14 @@ declare(strict_types=1);
  * =================================
  */
 
- if ( ! defined( 'BOLT_ROOT' ) ) {
-    define( 'BOLT_ROOT', dirname(__DIR__) );
+if (!defined('BOLT_ROOT')) {
+    define('BOLT_ROOT', dirname(__DIR__));
 }
 
- if ( ! defined( 'DEBUG' ) ) {
-    define( 'DEBUG', true );
+if (!defined('URL_ROOT')) {
+    define('URL_ROOT', "");
+}
+
+if (!defined('DEBUG')) {
+    define('DEBUG', true);
 }

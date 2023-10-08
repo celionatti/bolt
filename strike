@@ -7,6 +7,9 @@ require __DIR__ . '/vendor/autoload.php';
 use Bolt\Bolt\CLI\BoltCLI;
 use Bolt\Bolt\CLI\Strike\ControllerCommand;
 use Bolt\Bolt\CLI\Strike\GreetCommand;
+use Bolt\Bolt\CLI\Strike\LayoutCommand;
+use Bolt\Bolt\CLI\Strike\MakeCommand;
+use Bolt\Bolt\CLI\Strike\MigrationCommand;
 use Bolt\Bolt\CLI\Strike\ModelCommand;
 use Bolt\Bolt\CLI\Strike\ViewCommand;
 
@@ -17,6 +20,10 @@ $strike->registerCommand('greet', 'Greet the user', new GreetCommand());
 $strike->registerCommand('model', 'Create a model and associated files like migration', new ModelCommand);
 $strike->registerCommand('controller', 'Create a controller and associated files like view file', new ControllerCommand);
 $strike->registerCommand('view', 'Create a view file, for all types of extensions {Twig: .twig, Blade: .blade.php, or default: .php}', new ViewCommand);
+$strike->registerCommand('migration', 'Create a migration file, migrate, rollback, refresh', new MigrationCommand);
+$strike->registerCommand('make', 'Make Command is for creating complete Package, commands like Resource,', new MakeCommand);
+$strike->registerCommand('generate', 'Generate Command is for , commands like Resource,', new MakeCommand);
+$strike->registerCommand('layout', 'Create new Layout file', new LayoutCommand);
 
 
 
