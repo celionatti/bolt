@@ -183,6 +183,43 @@ class BoltQueryBuilder
         return $this;
     }
 
+    // ...
+
+    public function offset($offset)
+    {
+        if ($this->currentStep !== 'select' && $this->currentStep !== 'where' && $this->currentStep !== 'order' && $this->currentStep !== 'group' && $this->currentStep !== 'limit') {
+            throw new \Exception('Invalid method order. OFFSET should come after SELECT, WHERE, ORDER BY, GROUP BY, LIMIT, or a previous OFFSET.');
+        }
+
+        if (!is_numeric($offset) || $offset < 0) {
+            throw new \InvalidArgumentException('Invalid argument for OFFSET method. Offset must be a non-negative numeric value.');
+        }
+
+        $this->query .= " OFFSET $offset";
+        $this->currentStep = 'offset';
+
+        return $this;
+    }
+
+    public function execute()
+    {
+        try {
+            $this->query = $this->query . ' ' . implode(' ', $this->joinClauses);
+            $stm = $this->connection->prepare($this->query);
+
+            foreach ($this->bindValues as $param => $value) {
+                $stm->bindValue($param, $value);
+            }
+
+            $stm->execute();
+
+            return $stm->rowCount();
+        } catch (PDOException $e) {
+            // Handle database error, e.g., log or throw an exception
+            throw new DatabaseException($e->getMessage());
+        }
+    }
+
     public function join($table, $onClause, $type = 'INNER')
     {
         if ($this->currentStep !== 'select' && $this->currentStep !== 'where' && $this->currentStep !== 'order' && $this->currentStep !== 'group') {

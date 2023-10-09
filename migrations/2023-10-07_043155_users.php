@@ -24,10 +24,12 @@ class BM_2023_10_07_043155_users extends BoltMigration
     public function up()
     {
         $this->createTable("users")
-            ->id()
-            ->string("username", 255)
-            ->string("email", 255)
-            ->string("password")
+            ->id()->primaryKey()
+            ->varchar("username", 255)->nullable()->index("username")
+            ->varchar("email", 255)->uniquekey("email")
+            ->enum("acl", ['guest', 'admin'])->defaultValue("guest")
+            ->varchar("password")
+            ->timestamps()
             ->build();
     }
     

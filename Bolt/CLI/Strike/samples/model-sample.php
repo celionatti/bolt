@@ -27,6 +27,17 @@ class {CLASSNAME} extends DatabaseModel
     public string $name = "Bolt";
     public string $version;
 
+    public function __construct()
+    {
+        parent::__construct();
+
+        // Set some default values
+        $this->limit = 20;
+        $this->order = 'asc';
+
+        // Additional custom initialization code
+    }
+
     public static function tableName():string
     {
         return "{TABLENAME}";
