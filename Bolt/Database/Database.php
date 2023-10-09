@@ -20,7 +20,7 @@ class Database
 {
     public static $query_id = '';
     public int $affected_rows = 0;
-    public int $insert_id = 0;
+    public mixed $insert_id = 0;
     public $error = '';
     public bool $has_error = false;
 
@@ -140,9 +140,6 @@ class Database
         $this->has_error = false;
 
         try {
-            // Start a transaction
-            $this->beginTransaction();
-
             $stm = $this->connection->prepare($query);
 
             $result = $stm->execute($data);
@@ -158,11 +155,7 @@ class Database
                     $rows = $stm->fetchAll(PDO::FETCH_CLASS);
                 }
             }
-            // Commit the transaction if the query was successful
-            $this->commitTransaction();
         } catch (PDOException $e) {
-            // Rollback the transaction on error
-            $this->rollbackTransaction();
             $this->error = $e->getMessage();
             $this->has_error = true;
         }
@@ -172,7 +165,7 @@ class Database
         $arr['data'] = $data;
         $arr['result'] = $rows ?? [];
         $arr['query_id'] = self::$query_id;
-        self::$query_id = '';
+        self::$query_id;
 
         if (is_array($arr) && count($arr) > 0) {
             return $arr;

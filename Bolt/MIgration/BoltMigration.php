@@ -14,170 +14,120 @@ use Bolt\Bolt\Database\Database;
 
 class BoltMigration extends Database
 {
+    private $table;
     private $columns = [];
-    private $keys = [];
-    private $data = [];
-    private $primaryKeys = [];
-    private $uniqueKeys = [];
-    private $fullTextKeys = [];
-    private $currentTable;
 
-    public function createTable(string $table)
+    public function createTable($tableName)
     {
+        $this->table = $tableName;
+        return $this;
+    }
+
+    public function id()
+    {
+        $this->columns[] = [
+            'name' => 'id',
+            'type' => 'INT',
+            'constraints' => 'AUTO_INCREMENT PRIMARY KEY',
+        ];
+        return $this;
+    }
+
+    public function string($columnName, $length = 255)
+    {
+        $this->columns[] = [
+            'name' => $columnName,
+            'type' => "VARCHAR($length)",
+        ];
+        return $this;
+    }
+
+    public function integer($columnName)
+    {
+        $this->columns[] = [
+            'name' => $columnName,
+            'type' => 'INT',
+        ];
+        return $this;
+    }
+
+    public function primary()
+    {
+        // Add primary key constraint to the last added column
         if (!empty($this->columns)) {
-
-            $query = "CREATE TABLE IF NOT EXISTS $table (";
-
-            $query .= implode(",", $this->columns) . ',';
-
-            foreach ($this->primaryKeys as $key) {
-                $query .= "primary key ($key),";
-            }
-
-            $query = trim($query, ",");
-
-            $query .= ") ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4";
-
-            $this->query($query);
-
-            $this->columns = [];
-            $this->keys = [];
-            $this->data = [];
-            $this->primaryKeys = [];
-            $this->uniqueKeys = [];
-            $this->fullTextKeys = [];
-
-            $this->console_logger("Table $table created successfully!");
-        } else {
-            $this->console_logger("Column data not found! Could not create table: $table", false, true, 'error');
+            $this->columns[count($this->columns) - 1]['constraints'] .= ' PRIMARY KEY';
         }
-
-        $this->currentTable = $table;
-        return $this; // Return $this to enable method chaining
-    }
-
-    public function addColumn(string $column)
-    {
-        $this->columns[] = $column;
-        return $this; // Return $this to enable method chaining
-    }
-
-    public function int(string $columnName)
-    {
-        $this->addColumn("$columnName INT");
-        return $this; // Return $this to enable method chaining
-    }
-
-    public function varchar(string $columnName, int $length)
-    {
-        $this->addColumn("$columnName VARCHAR($length)");
-        return $this; // Return $this to enable method chaining
-    }
-
-    public function bigint(string $columnName)
-    {
-        $this->addColumn("$columnName BIGINT");
-        return $this; // Return $this to enable method chaining
-    }
-
-    public function enum(string $columnName, array $enumValues)
-    {
-        // Validate enum values to prevent SQL injection
-        $enumValuesStr = implode(',', array_map(function ($value) {
-            return "'" . addslashes($value) . "'";
-        }, $enumValues));
-
-        $this->addColumn("$columnName ENUM($enumValuesStr)");
-        return $this; // Return $this to enable method chaining
-    }
-
-    public function tinyint(string $columnName)
-    {
-        // Add a TINYINT column
-        $this->addColumn("$columnName TINYINT");
-        return $this; // Return $this to enable method chaining
-    }
-
-    public function autoIncrement()
-    {
-        // Set the auto-increment attribute for the last added column
-        if (!empty($this->columns)) {
-            $lastColumnIndex = count($this->columns) - 1;
-            $this->columns[$lastColumnIndex] .= ' AUTO_INCREMENT';
-        }
-        return $this; // Return $this to enable method chaining
+        return $this;
     }
 
     public function nullable()
     {
-        // Set the nullable attribute for the last added column
+        // Make the last added column nullable
         if (!empty($this->columns)) {
-            $lastColumnIndex = count($this->columns) - 1;
-            $this->columns[$lastColumnIndex] .= ' NULL';
+            $this->columns[count($this->columns) - 1]['constraints'] .= ' NULL';
         }
-        return $this; // Return $this to enable method chaining
+        return $this;
     }
 
-    public function addPrimaryKey(string $columnName)
+    public function timestamps()
     {
-        $query = "ALTER TABLE $this->currentTable ADD PRIMARY KEY ($columnName)";
-        $this->query($query);
-        return $this; // Return $this to enable method chaining
+        $this->columns[] = [
+            'name' => 'created_at',
+            'type' => 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP',
+        ];
+
+        $this->columns[] = [
+            'name' => 'updated_at',
+            'type' => 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP',
+        ];
+
+        return $this;
     }
 
-    public function addUniqueIndex(string $columnName)
+    public function unique($columnName)
     {
-        $query = "CREATE UNIQUE INDEX idx_unique_$columnName ON $this->currentTable ($columnName)";
-        $this->query($query);
-        return $this; // Return $this to enable method chaining
+        // Add a unique constraint to the last added column
+        if (!empty($this->columns)) {
+            $this->columns[count($this->columns) - 1]['constraints'] .= " UNIQUE KEY ($columnName)";
+        }
+        return $this;
     }
 
-    public function addIndex(string $columnName)
+    public function defaultValue($value)
     {
-        $query = "CREATE INDEX idx_$columnName ON $this->currentTable ($columnName)";
-        $this->query($query);
-        return $this; // Return $this to enable method chaining
+        // Set a default value for the last added column
+        if (!empty($this->columns)) {
+            $this->columns[count($this->columns) - 1]['constraints'] .= " DEFAULT '$value'";
+        }
+        return $this;
     }
 
-    public function addData(array $data)
+    public function build()
     {
-        $this->data[] = $data;
-        return $this; // Return $this to enable method chaining
-    }
+        $sql = "CREATE TABLE IF NOT EXISTS {$this->table} (";
 
-    public function insert()
-    {
-        if (!empty($this->data) && is_array($this->data)) {
+        foreach ($this->columns as $column) {
+            $sql .= "{$column['name']} {$column['type']}";
 
-            foreach ($this->data as $row) {
-
-                $keys = array_keys($row);
-                $columns_string = implode(",", $keys);
-                $values_string = ':' . implode(",:", $keys);
-
-                $query = "INSERT INTO $this->currentTable ($columns_string) VALUES ($values_string)";
-                $this->query($query, $row);
+            if (isset($column['constraints'])) {
+                $sql .= " {$column['constraints']}";
             }
 
-            $this->data = [];
-            $this->console_logger("Data inserted successfully in table: $this->currentTable");
-        } else {
-            $this->console_logger("Row data not found! No data inserted in table: $this->currentTable", false, true, 'error');
+            $sql .= ', ';
         }
 
-        return $this; // Return $this to enable method chaining
+        $sql = rtrim($sql, ', ');
+        $sql .= ') ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4';
+
+        // Execute the SQL query on the database
+        if ($this->query($sql)) {
+            $this->consoleLog("Table '{$this->table}' created successfully");
+        } else {
+            $this->consoleLog("Error creating table: {$this->error}");
+        }
     }
 
-    public function dropTable(string $table)
-    {
-        $query = "DROP TABLE IF EXISTS $table ";
-        $this->query($query);
-
-        $this->console_logger("Table $table deleted successfully!");
-        return $this; // Return $this to enable method chaining
-    }
-
-    public function console_logger(string $message, bool $die = false, bool $timestamp = true, string $level = 'info'): void
+    public function consoleLog(string $message, bool $die = false, bool $timestamp = true, string $level = 'info'): void
     {
         $output = '';
 
@@ -208,5 +158,11 @@ class BoltMigration extends Database
         if ($die) {
             die();
         }
+    }
+
+    private function dd($data)
+    {
+        var_dump($data);
+        die;
     }
 }

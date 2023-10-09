@@ -78,7 +78,8 @@ class MigrationCommand implements CommandInterface
         if (!empty($filename)) {
             $migrationFile = $migrationDir . $filename . ".php";
             /** Run a single class filename migration */
-            $this->message("Migrating File: {$migrationFile}");
+            $mFile = pathinfo($migrationFile, PATHINFO_FILENAME);
+            $this->message("Migrating File: {$mFile}");
 
             require_once $migrationFile;
 
@@ -94,7 +95,7 @@ class MigrationCommand implements CommandInterface
             /** Call the Up method */
             $myclass->up();
             $this->message("Migration Complete!");
-            $this->message("Migrated File: {$migrationFile}");
+            $this->message("Migrated File: {$mFile}");
         }
 
         /** Get all the files in the migrations folders */
@@ -102,7 +103,8 @@ class MigrationCommand implements CommandInterface
 
         if (!empty($migrationFiles)) {
             foreach ($migrationFiles as $migrationFile) {
-                $this->message("Migrating File: {$migrationFile}");
+                $mFile = pathinfo($migrationFile, PATHINFO_FILENAME);
+                $this->message("Migrating File: {$mFile}");
 
                 require_once $migrationFile;
 
@@ -118,7 +120,7 @@ class MigrationCommand implements CommandInterface
                 /** Call the Up method */
                 $myclass->up();
                 $this->message("Migration Complete!");
-                $this->message("Migrated File: {$migrationFile}");
+                $this->message("Migrated Class: {$class_name}");
             }
         }
     }
@@ -137,8 +139,9 @@ class MigrationCommand implements CommandInterface
 
         if (!empty($filename)) {
             $migrationFile = $migrationDir . $filename . ".php";
+            $mFile = pathinfo($migrationFile, PATHINFO_FILENAME);
             /** Run a single class filename migration */
-            $this->message("Migrating File: {$migrationFile}");
+            $this->message("Migrating File: {$mFile}");
 
             require_once $migrationFile;
 
@@ -162,7 +165,8 @@ class MigrationCommand implements CommandInterface
 
         if (!empty($migrationFiles)) {
             foreach ($migrationFiles as $migrationFile) {
-                $this->message("Migrating File: {$migrationFile}");
+                $mFile = pathinfo($migrationFile, PATHINFO_FILENAME);
+                $this->message("Migrating File: {$mFile}");
 
                 require_once $migrationFile;
 
