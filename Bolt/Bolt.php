@@ -48,7 +48,7 @@ class Bolt
 
         $this->session = new Session();
         $this->config = new Config();
-        $this->config::load($this->pathResolver->base_path("configs/config.json"));
+        $this->config::load($this->pathResolver->base_path(CONFIG_ROOT));
         $this->container = new Container();
         $this->request = new Request();
         $this->response = new Response();

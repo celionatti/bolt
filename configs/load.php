@@ -12,6 +12,10 @@ if (!defined('URL_ROOT')) {
     define('URL_ROOT', "");
 }
 
+if (!defined('CONFIG_ROOT')) {
+    define('CONFIG_ROOT', "configs/config.json");
+}
+
 if (!defined('DEBUG')) {
     define('DEBUG', true);
 }
