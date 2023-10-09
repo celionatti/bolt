@@ -14,6 +14,27 @@ use Bolt\Bolt\CLI\CommandInterface;
 
 class MakeCommand implements CommandInterface
 {
+    public $basePath;
+
+    public function __construct()
+    {
+        // Get the current file's directory
+        $currentDirectory = __DIR__;
+
+        // Navigate up the directory tree until you reach the project's root
+        while (!file_exists($currentDirectory . '/composer.json')) {
+            // Go up one level
+            $currentDirectory = dirname($currentDirectory);
+
+            // Check if you have reached the filesystem root (to prevent infinite loop)
+            if ($currentDirectory === '/') {
+                $this->message("Error: Project root not found.", true, true, "error");
+            }
+        }
+
+        $this->basePath = $currentDirectory;
+    }
+    
     public function execute(array $args)
     {
         // Logic for creating views, generating migrations, etc.

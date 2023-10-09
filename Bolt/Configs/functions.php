@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 use Bolt\Bolt\Bolt;
 
-require __DIR__ . "/global-variables.php";
-
 
 function bolt_env($data)
 {
@@ -482,3 +480,25 @@ function console_logger(string $message, bool $die = false, bool $timestamp = tr
     }
 }
 
+function load_required_files($directoryPath) {
+    $requiredFileExtensions = ['php', 'txt', 'html']; // Define the file extensions you consider as required
+
+    if (!is_dir($directoryPath)) {
+        return []; // Return an empty array if the directory doesn't exist
+    }
+
+    $requiredFiles = [];
+
+    // Scan the directory for files
+    $files = scandir($directoryPath);
+
+    foreach ($files as $file) {
+        // Check if the file has one of the required extensions
+        $fileInfo = pathinfo($file);
+        if (in_array($fileInfo['extension'], $requiredFileExtensions)) {
+            $requiredFiles[] = $file;
+        }
+    }
+
+    return $requiredFiles;
+}

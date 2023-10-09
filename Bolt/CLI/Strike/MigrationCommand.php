@@ -59,12 +59,13 @@ class MigrationCommand implements CommandInterface
         } elseif ($action === "refresh") {
             $this->refresh($action, $filename);
         } else {
+            $this->message("Unknown Command - You can check help or docs, to see the lists of command and method of calling.", true, true, 'warning');
         }
     }
 
     private function migrate($action, $filename = null)
     {
-        // Check if the model directory already exists.
+        // Check if the migrations directory already exists.
         $migrationDir = $this->basePath . DIRECTORY_SEPARATOR . "migrations" . DIRECTORY_SEPARATOR;
 
         if (!is_dir($migrationDir)) {

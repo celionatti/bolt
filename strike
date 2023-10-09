@@ -6,6 +6,7 @@ require __DIR__ . '/vendor/autoload.php';
 
 use Bolt\Bolt\CLI\BoltCLI;
 use Bolt\Bolt\CLI\Strike\ControllerCommand;
+use Bolt\Bolt\CLI\Strike\GenerateCommand;
 use Bolt\Bolt\CLI\Strike\GreetCommand;
 use Bolt\Bolt\CLI\Strike\LayoutCommand;
 use Bolt\Bolt\CLI\Strike\MakeCommand;
@@ -23,7 +24,7 @@ $strike->registerCommand('view', 'Create a view file, for all types of extension
 $strike->registerCommand('migration', 'Create a migration file, migrate, rollback, refresh', new MigrationCommand);
 $strike->registerCommand('make', 'Make Command is for creating complete Package, commands like Resource,', new MakeCommand);
 $strike->registerCommand('layout', 'Create new Layout file', new LayoutCommand);
-// $strike->registerCommand('generate', 'Generate Command is for , commands like Resource,', new MakeCommand);
+$strike->registerCommand('generate', 'Generate Command is for , commands like app key,', new GenerateCommand);
 
 
 

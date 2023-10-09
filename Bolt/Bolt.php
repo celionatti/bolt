@@ -38,6 +38,10 @@ class Bolt
 
     public function __construct()
     {
+        $this->require_files();
+
+        $this->bolt_run();
+
         self::$bolt = $this;
         $this->pathResolver = new PathResolver(dirname(__DIR__));
         $this->assetManager = new AssetManager(URL_ROOT);
@@ -50,7 +54,7 @@ class Bolt
         $this->response = new Response();
         $this->router = new Router($this->request, $this->response);
 
-        $this->container->singleton("Database", function(){
+        $this->container->singleton("Database", function () {
             return new Database();
         });
 
@@ -64,5 +68,29 @@ class Bolt
         } catch (\Exception $e) {
             echo $e;
         }
+    }
+
+    private function require_files()
+    {
+        return [
+            require __DIR__ . "/Configs/load.php",
+            require __DIR__ . "/Configs/functions.php",
+            require __DIR__ . "/Configs/global-variables.php",
+            require dirname(__DIR__) . "/configs/load.php"
+        ];
+    }
+
+    private function bolt_run()
+    {
+        // Evaluate the expressions and store their results
+        $result1 = BOLT_APP_KEY;
+        $result2 = APP_KEY;
+
+        // Check if both results are not empty and equal
+        if (!empty($result1) && !empty($result2) && $result1 === $result2) {
+            return true; // Both expressions are not empty and equal
+        }
+
+        return bolt_die("Bolt Application Key is Missing, Kindly run the generate key command, to get a valid key", "BOLT KEY", "BOLT KEY ERROR - Generate New Key"); // Expressions are empty or not equal
     }
 }

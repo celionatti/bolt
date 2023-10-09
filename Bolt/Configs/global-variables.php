@@ -12,10 +12,14 @@ if (!defined('BOLT_ROOT')) {
     define('BOLT_ROOT', dirname(__DIR__));
 }
 
-if (!defined('URL_ROOT')) {
-    define('URL_ROOT', "");
-}
+// if (!defined('APP_KEY')) {
+//     define('APP_KEY', $key);
+// }
 
-if (!defined('DEBUG')) {
-    define('DEBUG', true);
-}
+// if (!defined('URL_ROOT')) {
+//     define('URL_ROOT', "");
+// }
+
+// if (!defined('DEBUG')) {
+//     define('DEBUG', true);
+// }
