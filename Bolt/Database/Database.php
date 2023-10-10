@@ -32,24 +32,32 @@ class Database
 
     public $databaseType;
 
-    public function __construct(string $connectionName = 'default')
+    public function __construct()
     {
-        $this->connect($connectionName);
-    }
-
-    private function connect($connectionName)
-    {
-        $config = Config::get("database", $connectionName); // Use a specific connection configuration
-        // Replace $np_vars with your actual configuration
-        $np_vars = [
-            'DB_DRIVER'     => $config["driver"] ?? 'mysql',
-            'DB_HOST'       => $config["host"] ?? 'localhost',
-            'DB_NAME'       => $config["dbname"] ?? 'bolt',
-            'DB_USER'       => $config["username"] ?? 'root',
-            'DB_PASSWORD'   => $config["password"] ?? '',
+        $database = [
+            "drivers" => "mysql",
+            "host" => "127.0.0.1",
+            "dbname" => "",
+            "username" => "",
+            "password" => ""
         ];
 
-        $string = "{$np_vars['DB_DRIVER']}:host={$np_vars['DB_HOST']};dbname={$np_vars['DB_NAME']}";
+        $config = Config::get(BOLT_DATABASE, $database);
+        $this->connect($config);
+    }
+
+    private function connect($config)
+    {
+        // Replace $np_vars with your actual configuration
+        $np_vars = [
+            'DB_DRIVERS'     => $config["drivers"],
+            'DB_HOST'       => $config["host"],
+            'DB_NAME'       => $config["dbname"],
+            'DB_USER'       => $config["username"],
+            'DB_PASSWORD'   => $config["password"],
+        ];
+
+        $string = "{$np_vars['DB_DRIVERS']}:host={$np_vars['DB_HOST']};dbname={$np_vars['DB_NAME']}";
 
         try {
             $this->connection = new PDO($string, $np_vars['DB_USER'], $np_vars['DB_PASSWORD']);

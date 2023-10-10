@@ -1,8 +1,8 @@
 {
     "version": "1.0.0",
     "debug_mode": true,
-    "database": {
-        "driver": "mysql",
+    "bolt_database": {
+        "drivers": "mysql",
         "host": "127.0.0.1",
         "username": "root",
         "password": "",

@@ -1,6 +1,6 @@
 <?php
 
-class Database
+class Database_new
 {
     // ... (existing class properties and methods)
 

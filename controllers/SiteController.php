@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Bolt\controllers;
 
 use Bolt\Bolt\Controller;
+use Bolt\models\Users;
 
 class SiteController extends Controller
 {
@@ -23,5 +24,20 @@ class SiteController extends Controller
         ];
 
         $this->view->render("welcome", $data);
+    }
+
+    public function users()
+    {
+        $user = new Users();
+
+        $data = [
+            "username" => "celiotilly12",
+            "email" => "celiotilly12@mail.com",
+            "password" => "password"
+        ];
+        
+        $res = $user->create($data);
+
+        dd($res);
     }
 }

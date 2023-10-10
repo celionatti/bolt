@@ -24,3 +24,4 @@ use Bolt\controllers\UserController;
 // $subRouter->get('/admin', [UserController::class, 'admin']);
 
 $bolt->router->get("/", [SiteController::class, "welcome"]);
+$bolt->router->get("/users", [SiteController::class, "users"]);

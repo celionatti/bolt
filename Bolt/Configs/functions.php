@@ -215,7 +215,7 @@ function dd($value): void
     echo "<div style='background-color:#000; color:lightgreen; margin: 5px; padding:5px;border:3px solid;'>";
     echo "<h2 style='border:3px solid; border-color:teal; padding:5px; text-align:center;font-weight:bold;font-weight: bold;
     text-transform: uppercase;'>";
-    echo "Error Type: Dump and die";
+    echo "Bolt: Dump and die";
     echo "</h2>";
     var_dump($value);
     echo "</div>";

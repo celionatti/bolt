@@ -420,8 +420,15 @@ class BoltQueryBuilder
     {
         try {
             $this->query = $this->query . '' . implode(' ', $this->joinClauses);
-            $result = $this->connection->query($this->query, $this->bindValues);
-            return $result;
+            $stm = $this->connection->prepare($this->query);
+
+            foreach ($this->bindValues as $param => $value) {
+                $stm->bindValue($param, $value);
+            }
+
+            $stm->execute();
+
+            return $stm;
         } catch (PDOException $e) {
             // Handle database error, e.g., log or throw an exception
             throw new DatabaseException($e->getMessage());

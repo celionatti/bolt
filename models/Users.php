@@ -14,23 +14,17 @@ use Bolt\Bolt\Database\DatabaseModel;
 
 class Users extends DatabaseModel
 {
-    /**
-     * here is how to define const
-     */
-    const GREETING = "Bolt Users";
-
-    /**
-     * Also for defining variables
-     */
-    public string $name = "Bolt";
-    public string $version;
+    public function __construct()
+    {
+        parent::__construct();
+    }
 
     public static function tableName():string
     {
         return "users";
     }
 
-    public function others()
+    public function users()
     {
         
     }

@@ -1,74 +1,93 @@
 <?php
 
-declare(strict_types=1);
-
-/**
- * ==================================
- * Bolt - Config Class ==============
- * ==================================
- */
-
-namespace Bolt\Bolt;
-
-class Config_ry
+private static function validateValue($key, $value)
 {
-    private static $config = [];
+    switch ($key) {
+        case 'version':
+            // Validate that version is a valid semantic version (e.g., "1.2.3")
+            if (!preg_match('/^\d+\.\d+\.\d+$/', $value)) {
+                throw new \InvalidArgumentException("Invalid version format: $value");
+            }
+            break;
+        case 'debug_mode':
+            // Validate that debug_mode is a boolean value
+            if (!is_bool($value)) {
+                throw new \InvalidArgumentException("Invalid debug_mode value: $value");
+            }
+            break;
+        case 'database':
+            // Validate database configuration
+            if (!is_array($value)) {
+                throw new \InvalidArgumentException("Invalid database configuration: $value");
+            }
 
-    /**
-     * Load configuration settings from a PHP file.
-     *
-     * @param string $configFile The path to the configuration file.
-     */
-    public static function load(string $configFile)
-    {
-        if (file_exists($configFile)) {
-            self::$config = require $configFile;
-        } else {
-            throw new \Exception("Configuration file not found: $configFile");
-        }
-    }
+            $requiredKeys = ['driver', 'host', 'dbname', 'username', 'password'];
+            foreach ($requiredKeys as $requiredKey) {
+                if (!array_key_exists($requiredKey, $value)) {
+                    throw new \InvalidArgumentException("Missing '$requiredKey' in database configuration");
+                }
+            }
 
-    /**
-     * Get a configuration setting by key.
-     *
-     * @param string $key The key of the configuration setting.
-     * @param mixed $default The default value to return if the key is not found.
-     * @return mixed The value of the configuration setting, or the default value if not found.
-     */
-    public static function get(string $key, $default = null)
-    {
-        return self::$config[$key] ?? $default;
-    }
+            // Validate supported database drivers
+            $supportedDrivers = ['mysql', 'pgsql', 'sqlite', 'sqlsrv']; // Add more as needed
+            if (!in_array($value['driver'], $supportedDrivers)) {
+                throw new \InvalidArgumentException("Unsupported database driver: {$value['driver']}");
+            }
 
-    /**
-     * Set a configuration setting by key.
-     *
-     * @param string $key The key of the configuration setting.
-     * @param mixed $value The value to set.
-     */
-    public static function set(string $key, $value)
-    {
-        self::$config[$key] = $value;
-    }
+            // Optional validation for additional database parameters
+            if (isset($value['charset'])) {
+                // Validate charset value if provided
+                $validCharsets = ['utf8', 'utf8mb4', 'latin1', 'latin2']; // Add more as needed
+                if (!in_array($value['charset'], $validCharsets)) {
+                    throw new \InvalidArgumentException("Invalid database charset: {$value['charset']}");
+                }
+            }
 
-    /**
-     * Check if a configuration setting exists.
-     *
-     * @param string $key The key of the configuration setting.
-     * @return bool True if the key exists, false otherwise.
-     */
-    public static function has(string $key)
-    {
-        return isset(self::$config[$key]);
-    }
-
-    /**
-     * Get all configuration settings as an array.
-     *
-     * @return array All configuration settings.
-     */
-    public static function all()
-    {
-        return self::$config;
-    }
-}
+            if (isset($value['collation'])) {
+                // Validate collation value if provided
+                // Add your collation validation logic here
+            }
+            // Add further validation for specific database configuration values if needed.
+            break;
+        case 'cache':
+            // Validate cache configuration
+            if (!is_array($value)) {
+                throw new \InvalidArgumentException("Invalid cache configuration: $value");
+            }
+            $requiredKeys = ['type', 'host', 'port'];
+            foreach ($requiredKeys as $requiredKey) {
+                if (!array_key_exists($requiredKey, $value)) {
+                    throw new \InvalidArgumentException("Missing '$requiredKey' in cache configuration");
+                }
+            }
+            // Add further validation for specific cache configuration values if needed.
+            break;
+        case 'security':
+            // Validate security configuration
+            if (!is_array($value)) {
+                throw new \InvalidArgumentException("Invalid security configuration: $value");
+            }
+            // Add specific validation logic for security-related configuration options.
+            break;
+        case 'logging':
+            // Validate logging configuration
+            if (!is_array($value)) {
+                throw new \InvalidArgumentException("Invalid logging configuration: $value");
+            }
+            // Add specific validation logic for logging-related configuration options.
+            break;
+        case 'api':
+            // Validate API configuration
+            if (!is_array($value)) {
+                throw new \InvalidArgumentException("Invalid API configuration: $value");
+            }
+            // Add specific validation logic for API-related configuration options.
+            break;
+        case 'email':
+            // Validate email configuration
+            if (!is_array($value)) {
+                throw new \InvalidArgumentException("Invalid email configuration: $value");
+            }
+            // Add specific validation logic for email-related configuration options.
+            break;
+        // Add more cases for other configuration keys as needed.

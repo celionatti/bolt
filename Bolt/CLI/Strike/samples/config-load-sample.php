@@ -28,3 +28,7 @@ if (!defined('CONFIG_ROOT')) {
 if (!defined('DEBUG')) {
     define('DEBUG', true);
 }
+
+if (!defined('BOLT_DATABASE')) {
+    define('BOLT_DATABASE', "bolt_database");
+}

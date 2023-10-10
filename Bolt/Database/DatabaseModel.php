@@ -26,9 +26,9 @@ abstract class DatabaseModel
     public $offset             = 0;
     public $errors             = [];
 
-    public function __construct(Database $database)
+    public function __construct()
     {
-        $this->db = $database;
+        $this->db = new Database();
         $this->tableName = static::tableName();
         $this->queryBuilder = $this->db->queryBuilder($this->tableName);
     }
@@ -81,7 +81,7 @@ abstract class DatabaseModel
     {
         return $this->queryBuilder
             ->insert($data)
-            ->executeQuery();
+            ->execute();
     }
 
     // Create a new record
