@@ -10,10 +10,10 @@ declare(strict_types=1);
 
 namespace Bolt\Bolt\Database;
 
-use Bolt\Bolt\Config;
-use Bolt\Bolt\QueryBuilder\BoltQueryBuilder;
 use PDO;
 use PDOException;
+use Bolt\Bolt\Config;
+use Bolt\Bolt\BoltQueryBuilder\BoltQueryBuilder;
 
 
 class Database

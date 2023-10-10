@@ -31,13 +31,13 @@ class SiteController extends Controller
         $user = new Users();
 
         $data = [
-            "username" => "celiotilly12",
-            "email" => "celiotilly12@mail.com",
+            "username" => "celiosmith",
+            "email" => "celiosmith@mail.com",
             "password" => "password"
         ];
-        
-        $res = $user->create($data);
 
-        dd($res);
+        $u = $user->findOneBy(["acl" => "guest"]);
+        
+        dd($u);
     }
 }

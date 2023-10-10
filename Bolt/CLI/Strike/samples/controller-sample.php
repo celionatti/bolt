@@ -31,4 +31,19 @@ class {CLASSNAME} extends Controller
     public function onConstruct(): void
     {   
     }
+
+    public function users()
+    {
+        $user = new Users();
+
+        $data = [
+            "username" => "",
+            "email" => "",
+            "password" => ""
+        ];
+
+        $u = $user->findOneBy(["acl" => "guest"]);
+        
+        dd($u);
+    }
 }

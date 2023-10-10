@@ -10,7 +10,8 @@ declare(strict_types=1);
 
 namespace Bolt\Bolt\Database;
 
-use Bolt\Bolt\QueryBuilder\BoltQueryBuilder;
+use Bolt\Bolt\BoltQueryBuilder\BoltQueryBuilder;
+
 
 abstract class DatabaseModel
 {
@@ -35,11 +36,13 @@ abstract class DatabaseModel
 
     abstract public static function tableName(): string;
 
-    public function find($column = "*")
-    {
-        return $this->queryBuilder
-            ->select($column);
-    }
+    // public function find(array $criteria)
+    // {
+    //     return $this->queryBuilder
+    //         ->select()
+    //         ->where($criteria)
+    //         ->get();
+    // }
 
     // Find all records in the table
     public function findAll()
@@ -64,7 +67,7 @@ abstract class DatabaseModel
         return $this->queryBuilder
             ->select()
             ->where(['email' => $email])
-            ->get();
+            ->get()[0] ?? null;
     }
 
     // Find a single record by custom criteria
@@ -73,7 +76,8 @@ abstract class DatabaseModel
         return $this->queryBuilder
             ->select()
             ->where($criteria)
-            ->get();
+            ->limit(1)
+            ->get()[0] ?? null;
     }
 
     // Create a new record
@@ -95,7 +99,7 @@ abstract class DatabaseModel
 
             $result = $this->queryBuilder
                 ->insert($data)
-                ->executeQuery();
+                ->execute();
 
             // Optionally, you can check if the insert was successful
             if ($result) {
@@ -119,7 +123,7 @@ abstract class DatabaseModel
         return $this->queryBuilder
             ->update($data)
             ->where([$this->primary_key => $id])
-            ->executeQuery();
+            ->execute();
     }
 
     // Delete a record by primary key
@@ -128,7 +132,7 @@ abstract class DatabaseModel
         return $this->queryBuilder
             ->delete()
             ->where([$this->primary_key => $id])
-            ->executeQuery();
+            ->execute();
     }
 
     // Find all records with custom conditions

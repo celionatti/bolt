@@ -8,7 +8,7 @@ declare(strict_types=1);
  * ========================================
  */
 
-namespace Bolt\Bolt\QueryBuilder;
+namespace Bolt\Bolt\BoltQueryBuilder;
 
 use PDO;
 use PDOException;
@@ -18,18 +18,30 @@ use Bolt\Bolt\Database\DatabaseException;
 class BoltQueryBuilder
 {
     private $connection;
-    private $table;
+    private string $table;
     private $query;
     private $bindValues = [];
     private $joinClauses = [];
     private $currentStep = 'initial';
 
-    public function __construct($connection, $table)
+    public function __construct($connection, string $table)
     {
+        if (empty($table)) {
+            throw new \InvalidArgumentException('Table name must not be empty.');
+        }
+
         $this->connection = $connection;
         $this->table = $table;
     }
 
+    /**
+     * Select columns for the query.
+     *
+     * @param string|array $columns The columns to select.
+     * @return $this
+     * @throws \Exception If called in an invalid method order.
+     * @throws \InvalidArgumentException If $columns is invalid.
+     */
     public function select($columns = '*')
     {
         if ($this->currentStep !== 'initial') {
@@ -75,8 +87,8 @@ class BoltQueryBuilder
         if (empty($data)) {
             throw new \InvalidArgumentException('Invalid argument for UPDATE method. Data array must not be empty.');
         }
-
-        if ($this->currentStep !== 'initial') {
+        
+        if ($this->currentStep !== 'initial' && $this->currentStep !== 'where') {
             throw new \Exception('Invalid method order. UPDATE should come before other query building methods.');
         }
 
@@ -98,7 +110,7 @@ class BoltQueryBuilder
 
     public function delete()
     {
-        if ($this->currentStep !== 'initial') {
+        if ($this->currentStep !== 'initial' && $this->currentStep !== 'where' && $this->currentStep !== 'select' && $this->currentStep !== 'limit') {
             throw new \Exception('Invalid method order. DELETE should come before other query building methods.');
         }
 
@@ -110,8 +122,8 @@ class BoltQueryBuilder
 
     public function where(array $conditions)
     {
-        if ($this->currentStep !== 'select' && $this->currentStep !== 'where') {
-            throw new \Exception('Invalid method order. WHERE should come after SELECT or a previous WHERE.');
+        if ($this->currentStep !== 'update' && $this->currentStep !== 'select' && $this->currentStep !== 'where' && $this->currentStep !== 'delete' && $this->currentStep !== 'count' && $this->currentStep !== 'join') {
+            throw new \Exception('Invalid method order. WHERE should come after SELECT, UPDATE, DELETE or a previous WHERE.');
         }
 
         if (empty($conditions)) {
@@ -204,14 +216,7 @@ class BoltQueryBuilder
     public function execute()
     {
         try {
-            $this->query = $this->query . ' ' . implode(' ', $this->joinClauses);
-            $stm = $this->connection->prepare($this->query);
-
-            foreach ($this->bindValues as $param => $value) {
-                $stm->bindValue($param, $value);
-            }
-
-            $stm->execute();
+            $stm = $this->executeQuery();
 
             return $stm->rowCount();
         } catch (PDOException $e) {
@@ -220,9 +225,46 @@ class BoltQueryBuilder
         }
     }
 
+    public function get($data_type = 'object')
+    {
+        try {
+            $stm = $this->executeQuery();
+
+            if ($data_type === 'object') {
+                return $stm->fetchAll(PDO::FETCH_OBJ);
+            } elseif ($data_type === 'assoc') {
+                return $stm->fetchAll(PDO::FETCH_ASSOC);
+            } else {
+                return $stm->fetchAll(PDO::FETCH_CLASS);
+            }
+        } catch (PDOException $e) {
+            // Handle database error, e.g., log or throw an exception
+            throw new DatabaseException($e->getMessage());
+        }
+    }
+
+    private function executeQuery()
+    {
+        try {
+            $this->query = $this->query . '' . implode(' ', $this->joinClauses);
+            $stm = $this->connection->prepare($this->query);
+
+            foreach ($this->bindValues as $param => $value) {
+                $stm->bindValue($param, $value);
+            }
+
+            $stm->execute();
+
+            return $stm;
+        } catch (PDOException $e) {
+            // Handle database error, e.g., log or throw an exception
+            throw new DatabaseException($e->getMessage());
+        }
+    }
+
     public function join($table, $onClause, $type = 'INNER')
     {
-        if ($this->currentStep !== 'select' && $this->currentStep !== 'where' && $this->currentStep !== 'order' && $this->currentStep !== 'group') {
+        if ($this->currentStep !== 'initial' && $this->currentStep !== 'select' && $this->currentStep !== 'count') {
             throw new \Exception('Invalid method order. JOIN should come after SELECT, WHERE, ORDER BY, GROUP BY, or a previous JOIN.');
         }
 
@@ -263,7 +305,7 @@ class BoltQueryBuilder
 
     public function count()
     {
-        if ($this->currentStep !== 'initial') {
+        if ($this->currentStep !== 'initial' && $this->currentStep !== 'select') {
             throw new \Exception('Invalid method order. COUNT should come before other query building methods.');
         }
 
@@ -389,49 +431,5 @@ class BoltQueryBuilder
         $this->query .= " HAVING " . implode(' AND ', $having);
 
         return $this;
-    }
-
-    public function get($data_type = 'object')
-    {
-        try {
-            $this->query = $this->query . '' . implode(' ', $this->joinClauses);
-            $stm = $this->connection->prepare($this->query);
-
-            foreach ($this->bindValues as $param => $value) {
-                $stm->bindValue($param, $value);
-            }
-
-            $stm->execute();
-
-            if ($data_type === 'object') {
-                return $stm->fetchAll(PDO::FETCH_OBJ);
-            } elseif ($data_type === 'assoc') {
-                return $stm->fetchAll(PDO::FETCH_ASSOC);
-            } else {
-                return $stm->fetchAll(PDO::FETCH_CLASS);
-            }
-        } catch (PDOException $e) {
-            // Handle database error, e.g., log or throw an exception
-            throw new DatabaseException($e->getMessage());
-        }
-    }
-
-    public function executeQuery()
-    {
-        try {
-            $this->query = $this->query . '' . implode(' ', $this->joinClauses);
-            $stm = $this->connection->prepare($this->query);
-
-            foreach ($this->bindValues as $param => $value) {
-                $stm->bindValue($param, $value);
-            }
-
-            $stm->execute();
-
-            return $stm;
-        } catch (PDOException $e) {
-            // Handle database error, e.g., log or throw an exception
-            throw new DatabaseException($e->getMessage());
-        }
     }
 }
