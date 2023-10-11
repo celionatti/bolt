@@ -72,7 +72,7 @@ class Database
         return $this->connection;
     }
 
-    public static function getInstance(string $connectionName = 'default')
+    public static function getInstance(string $connectionName = 'database')
     {
         if (!isset(self::$instances[$connectionName])) {
             self::$instances[$connectionName] = new self($connectionName);

@@ -10,6 +10,7 @@ declare(strict_types=1);
 
 namespace Bolt\Bolt\Database;
 
+use Bolt\Bolt\BoltException\BoltException;
 use Bolt\Bolt\BoltQueryBuilder\BoltQueryBuilder;
 
 
@@ -109,9 +110,10 @@ abstract class DatabaseModel
                 $this->db->rollbackTransaction(); // Rollback the transaction on failure
                 return false;
             }
-        } catch (\Exception $e) {
+        } catch (BoltException $e) {
             $this->db->rollbackTransaction(); // Rollback the transaction on exception
-            throw $e; // Rethrow the exception for handling at a higher level
+            // echo "Error: " . $e->getMessage();
+            //throw $e; // Rethrow the exception for handling at a higher level
         }
     }
 

@@ -31,12 +31,12 @@ class SiteController extends Controller
         $user = new Users();
 
         $data = [
-            "username" => "celiosmith",
-            "email" => "celiosmith@mail.com",
+            "username" => "celiotilly1",
+            "email" => "celiotilly1@mail.com",
             "password" => "password"
         ];
 
-        $u = $user->findOneBy(["acl" => "guest"]);
+        $u = $user->findAllByWithOrder(['acl' => 'guest'], 'acl', 'desc');
         
         dd($u);
     }

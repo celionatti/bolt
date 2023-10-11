@@ -1,0 +1,1 @@
+[2023-10-12 00:02:12] [ Database Error ] SQLSTATE[23000]: Integrity constraint violation: 1062 Duplicate entry 'celiotilly@mail.com' for key 'email'
