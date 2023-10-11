@@ -19,12 +19,17 @@ class BoltApi
     private $apiBaseUrl;
     private $headers;
 
-    public function __construct($apiKey, $apiBaseUrl)
+    public function __construct($apiKey = null, $apiBaseUrl)
     {
         $this->apiKey = $apiKey;
         $this->apiBaseUrl = rtrim($apiBaseUrl, '/');
+        if (null === $this->apiKey) {
+            $this->headers = [
+                'Authorization: Bearer ' . $this->apiKey,
+                'Content-Type: application/json',
+            ];
+        }
         $this->headers = [
-            'Authorization: Bearer ' . $this->apiKey,
             'Content-Type: application/json',
         ];
     }

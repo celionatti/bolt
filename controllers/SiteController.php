@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Bolt\controllers;
 
+use Bolt\Bolt\API\BoltApi;
 use Bolt\Bolt\Controller;
 use Bolt\models\Users;
 
@@ -28,16 +29,16 @@ class SiteController extends Controller
 
     public function users()
     {
-        $user = new Users();
+        // Initialize the BoltApi client with your API key and base URL
+        $apiBaseUrl = 'https://jsonplaceholder.typicode.com';
+        $boltApi = new BoltApi($apiKey = null, $apiBaseUrl);
 
-        $data = [
-            "username" => "celiotilly1",
-            "email" => "celiotilly1@mail.com",
-            "password" => "password"
-        ];
-
-        $u = $user->findAllByWithOrder(['acl' => 'guest'], 'acl', 'desc');
-        
-        dd($u);
+        try {
+            $endpoint = "/todos";
+            $response = $boltApi->sendRequest($endpoint);
+            dd($response);
+        } catch (\Exception $e) {
+            echo 'Error: ' . $e->getMessage();
+        }
     }
 }
