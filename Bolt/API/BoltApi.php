@@ -43,7 +43,6 @@ class BoltApi
         try {
             $response = $this->httpClient->get($endpoint, ['query' => $params]);
             $data = $this->getData($response);
-            // $data = json_decode((string)$response->getBody(), true);
             return $data;
         } catch (\GuzzleHttp\Exception\RequestException $e) {
             throw new Exception("Error: " . $e->getResponse()->getBody());
@@ -56,7 +55,7 @@ class BoltApi
             $response = $this->httpClient->post($endpoint, [
                 'json' => $data,
             ]);
-            $data = json_decode($response->getBody(), true);
+            $data = $this->getData($response);
             return $data;
         } catch (\GuzzleHttp\Exception\RequestException $e) {
             throw new Exception("Error: " . $e->getResponse()->getBody());
@@ -69,7 +68,7 @@ class BoltApi
             $response = $this->httpClient->put($endpoint, [
                 'json' => $data,
             ]);
-            $data = json_decode($response->getBody(), true);
+            $data = $this->getData($response);
             return $data;
         } catch (\GuzzleHttp\Exception\RequestException $e) {
             throw new Exception("Error: " . $e->getResponse()->getBody());

@@ -25,12 +25,14 @@ class SiteController extends Controller
     public function users()
     {
         // Initialize the BoltApi client with your API key and base URL
-        $apiBaseUrl = 'https://jsonplaceholder.typicode.com';
+        $apiBaseUrl = 'https://my-json-server.typicode.com/typicode/demo/celionatti/bolt';
+        // $apiBaseUrl = 'https://jsonplaceholder.typicode.com';
         $boltApi = new BoltApi($apiBaseUrl);
 
         try {
-            $endpoint = "/posts";
+            $endpoint = "/posts/2";
             $response = $boltApi->get($endpoint);
+            dd($response);
             $data = [
                 "response" => $response,
                 "title" => "JSON Placeholder Post Request API."
@@ -41,3 +43,6 @@ class SiteController extends Controller
         }
     }
 }
+
+
+// https://my-json-server.typicode.com/typicode/demo/celionatti/bolt
