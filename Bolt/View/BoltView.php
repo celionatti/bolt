@@ -124,11 +124,14 @@ class BoltView
             } catch (Exception $e) {
                 echo 'Twig Error: ' . $e->getMessage();
             }
-            
-            // echo $this->_twig->render($path, $params);
         }
         // Fallback to .php rendering if no template engine is enabled
         else {
+
+            foreach ($params as $key => $value) {
+                $$key = $value;
+            }
+
             $layoutPath = Bolt::$bolt->pathResolver->template_path(DIRECTORY_SEPARATOR . 'layouts' . DIRECTORY_SEPARATOR . $this->_layout . '.php');
             $fullPath = Bolt::$bolt->pathResolver->template_path(DIRECTORY_SEPARATOR . $path . '.php');
 

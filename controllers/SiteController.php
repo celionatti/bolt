@@ -12,11 +12,6 @@ class SiteController extends Controller
 {
     public function welcome()
     {
-        // $data = [
-        //     'title' => 'Welcome to My Website',
-        //     'header' => 'Hello, Blade!',
-        //     'items' => ['Item 1', 'Item 2', 'Item 3'],
-        // ];
         $data = [
             'title' => 'Hello World',
             'header' => 'Welcome To Bolt',
@@ -31,12 +26,16 @@ class SiteController extends Controller
     {
         // Initialize the BoltApi client with your API key and base URL
         $apiBaseUrl = 'https://jsonplaceholder.typicode.com';
-        $boltApi = new BoltApi($apiKey = null, $apiBaseUrl);
+        $boltApi = new BoltApi($apiBaseUrl);
 
         try {
-            $endpoint = "/todos";
-            $response = $boltApi->sendRequest($endpoint);
-            dd($response);
+            $endpoint = "/posts";
+            $response = $boltApi->get($endpoint);
+            $data = [
+                "response" => $response,
+                "title" => "JSON Placeholder Post Request API."
+            ];
+            $this->view->render("users", $data);
         } catch (\Exception $e) {
             echo 'Error: ' . $e->getMessage();
         }

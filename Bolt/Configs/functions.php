@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use Bolt\Bolt\Bolt;
-
+use Bolt\Bolt\View\BoltView;
 
 function bolt_env($data)
 {
@@ -359,17 +359,17 @@ function get_assets_directory($directory): string
     return Bolt::$bolt->assetManager->getAssetPath("assets" . $directory);
 }
 
-function get_package($package): string
+function get_package(string $package): string
 {
     return get_assets_directory(DIRECTORY_SEPARATOR . "packages" . DIRECTORY_SEPARATOR . $package);
 }
 
-function get_bootstrap($path): string
+function get_bootstrap(string $path): string
 {
     return get_assets_directory(DIRECTORY_SEPARATOR . "bootstrap" . DIRECTORY_SEPARATOR . $path);
 }
 
-function get_stylesheet($path): string
+function get_stylesheet(string $path): string
 {
     return get_assets_directory(DIRECTORY_SEPARATOR . "css" . DIRECTORY_SEPARATOR . $path);
 }
@@ -378,6 +378,7 @@ function get_script($path): string
 {
     return get_assets_directory(DIRECTORY_SEPARATOR . "js" . DIRECTORY_SEPARATOR . $path);
 }
+
 
 function get_date(?string $date = null, string $format = "jS M, Y", string $timezone = "UTC"): string
 {
@@ -400,7 +401,7 @@ function get_date(?string $date = null, string $format = "jS M, Y", string $time
     return $dateTime->format($format);
 }
 
-function csrf_token($name = 'csrf_token', $expiration = 3600, $tokenLength = 32)
+function csrf_token(string $name = 'csrf_token', int|float $expiration = 3600, int|float $tokenLength = 32)
 {
     // Generate a CSRF token if one doesn't exist
     if (!isset($_SESSION[$name])) {
@@ -418,7 +419,7 @@ function csrf_token($name = 'csrf_token', $expiration = 3600, $tokenLength = 32)
     return $_SESSION[$name];
 }
 
-function require_csrf_token($name = 'csrf_token', $expiration = 3600)
+function check_csrf_token(string $name = 'csrf_token', int|float $expiration = 3600)
 {
     if (!isset($_SESSION[$name]) || !isset($_SESSION[$name . '_timestamp'])) {
         throw new Exception("CSRF token is missing or expired.");
@@ -432,9 +433,9 @@ function require_csrf_token($name = 'csrf_token', $expiration = 3600)
     }
 }
 
-function verify_csrf_token($token, $name = 'csrf_token', $expiration = 3600)
+function verify_csrf_token($token, string $name = 'csrf_token', int|float $expiration = 3600)
 {
-    require_csrf_token($name, $expiration);
+    check_csrf_token($name, $expiration);
 
     if ($token === $_SESSION[$name]) {
         // Remove the token to prevent reuse
@@ -446,6 +447,15 @@ function verify_csrf_token($token, $name = 'csrf_token', $expiration = 3600)
     throw new Exception("CSRF token verification failed.");
 }
 
+/**
+ * For displaying a color message, on the screen or in the console.
+ *
+ * @param string $message
+ * @param boolean $die
+ * @param boolean $timestamp
+ * @param string $level
+ * @return void
+ */
 function console_logger(string $message, bool $die = false, bool $timestamp = true, string $level = 'info'): void
 {
     $output = '';
@@ -501,4 +511,23 @@ function load_required_files($directoryPath) {
     }
 
     return $requiredFiles;
+}
+
+/**
+ * Bolt View Method
+ * for rendering a view template
+ * and can also set layout.
+ *
+ * @param string $path
+ * @param array $data
+ * @param string $layout
+ * @return void
+ */
+function view(string $path, array $data = [], string $layout): void
+{
+    $view = new BoltView('', false, false);
+
+    $view->setLayout($layout);
+
+    $view->render($path, $data);
 }

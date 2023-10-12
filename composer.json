@@ -20,6 +20,7 @@
         "firebase/php-jwt": "^6.9",
         "symfony/yaml": "^6.3",
         "twig/twig": "^3.7",
-        "jenssegers/blade": "^1.4"
+        "jenssegers/blade": "^1.4",
+        "guzzlehttp/guzzle": "^7.8"
     }
 }

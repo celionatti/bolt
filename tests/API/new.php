@@ -1,37 +1,24 @@
 <?php
 
-declare(strict_types=1);
+require 'vendor/autoload.php'; // Include GuzzleHTTP library
 
-/**
- * ===================================
- * Bolt - BoltApi ====================
- * ===================================
- */
-
-namespace Bolt\Bolt\API;
-
-use Exception;
-use GuzzleHttp\Client;
-use GuzzleHttp\Exception\RequestException;
-
-
-class BoltApi
+class BaseAPIClient
 {
     protected $httpClient;
     protected $baseUrl;
     protected $apiKey;
-
+    
     public function __construct($baseUrl, $apiKey = null)
     {
         $this->baseUrl = $baseUrl;
         $this->apiKey = $apiKey;
-
+        
         $headers = ['Content-Type' => 'application/json'];
-
+        
         if ($this->apiKey) {
             $headers['Authorization'] = 'Bearer ' . $this->apiKey;
         }
-
+        
         $this->httpClient = new \GuzzleHttp\Client([
             'base_uri' => $this->baseUrl,
             'headers' => $headers,
@@ -42,8 +29,7 @@ class BoltApi
     {
         try {
             $response = $this->httpClient->get($endpoint, ['query' => $params]);
-            $data = $this->getData($response);
-            // $data = json_decode((string)$response->getBody(), true);
+            $data = json_decode($response->getBody(), true);
             return $data;
         } catch (\GuzzleHttp\Exception\RequestException $e) {
             throw new Exception("Error: " . $e->getResponse()->getBody());
@@ -58,7 +44,7 @@ class BoltApi
             ]);
             $data = json_decode($response->getBody(), true);
             return $data;
-        } catch (\GuzzleHttp\Exception\RequestException $e) {
+        } catch (\GuzzleHttp\Exception.RequestException $e) {
             throw new Exception("Error: " . $e->getResponse()->getBody());
         }
     }
@@ -81,16 +67,8 @@ class BoltApi
         try {
             $response = $this->httpClient->delete($endpoint);
             return $response->getStatusCode() === 204; // 204 indicates a successful deletion
-        } catch (\GuzzleHttp\Exception\RequestException $e) {
+        } catch (\GuzzleHttp\Exception.RequestException $e) {
             throw new Exception("Error: " . $e->getResponse()->getBody());
         }
-    }
-
-    public function getData($response)
-    {
-        $responseBody = (string)$response->getBody();
-
-        if ($response && $response->getStatusCode() === 200)
-            return json_decode($responseBody, true);
     }
 }
