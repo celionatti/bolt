@@ -25,3 +25,6 @@ use Bolt\controllers\UserController;
 
 $bolt->router->get("/", [SiteController::class, "welcome"]);
 $bolt->router->get("/users", [SiteController::class, "users"]);
+$bolt->router->get("/create", [SiteController::class, "create"]);
+$bolt->router->get("/delete", [SiteController::class, "delete"]);
+$bolt->router->get("/update", [SiteController::class, "update"]);
