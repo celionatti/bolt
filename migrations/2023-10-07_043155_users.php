@@ -40,6 +40,6 @@ class BM_2023_10_07_043155_users extends BoltMigration
      */
     public function down()
     {
-        $this->consoleLog("Down Migration...");
+        $this->dropTable("users");
     }
 }

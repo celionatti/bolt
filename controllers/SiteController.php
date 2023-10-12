@@ -31,7 +31,7 @@ class SiteController extends Controller
 
         try {
             $endpoint = "/posts";
-            $response = $boltApi->get($endpoint);
+            $response = $boltApi->getWithRetry($endpoint);
             $data = [
                 "response" => $response,
                 "title" => "JSON Placeholder Post Request API."

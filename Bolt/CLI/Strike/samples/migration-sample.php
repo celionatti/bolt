@@ -23,7 +23,14 @@ class {CLASSNAME} extends BoltMigration
      */
     public function up()
     {
-        
+        $this->createTable("users")
+            ->id()->primaryKey()
+            ->varchar("username", 255)->nullable()->index("username")
+            ->varchar("email", 255)->uniquekey("email")
+            ->enum("acl", ['guest', 'admin'])->defaultValue("guest")
+            ->varchar("password")
+            ->timestamps()
+            ->build();
     }
 
     /**
@@ -33,6 +40,6 @@ class {CLASSNAME} extends BoltMigration
      */
     public function down()
     {
-
+        $this->dropTable("users");
     }
 }

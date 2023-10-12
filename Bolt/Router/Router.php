@@ -12,6 +12,7 @@ namespace Bolt\Bolt\Router;
 
 use Bolt\Bolt\Http\Request;
 use Bolt\Bolt\Http\Response;
+use GuzzleHttp\Client;
 
 class Router
 {
