@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use Bolt\controllers\SiteController;
-use Bolt\controllers\UserController;
 
 /** @var TYPE_NAME $bolt */
 

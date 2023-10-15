@@ -30,6 +30,7 @@ class Bolt
     public Session $session;
     public Container $container;
     public Database $database;
+    public ?Controller $controller;
 
     public static Bolt $bolt;
 

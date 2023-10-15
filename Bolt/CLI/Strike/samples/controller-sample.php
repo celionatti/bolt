@@ -16,6 +16,11 @@ use Bolt\Bolt\Controller;
 
 class {CLASSNAME} extends Controller
 {
+    public function onConstruct(): void
+    {
+        $this->registerMiddleware(new AuthMiddleware(['users']));    
+    }
+
     public function welcome()
     {
         $data = [
