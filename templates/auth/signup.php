@@ -65,7 +65,7 @@ use Bolt\Bolt\Forms\BootstrapForm;
                 <?= BootstrapForm::inputField("Name", "name", "", ['class' => 'form-control'], ['class' => 'form-floating mb-3'], $errors) ?>
             </div>
             <div class="col-md-6 col-sm-12">
-                <?= BootstrapForm::inputField("Phone", "phone", "", ['class' => 'form-control', 'type' => 'email'], ['class' => 'form-floating mb-3'], $errors) ?>
+                <?= BootstrapForm::inputField("Phone", "phone", "", ['class' => 'form-control', 'type' => 'tel'], ['class' => 'form-floating mb-3'], $errors) ?>
             </div>
         </div>
         <div class="row">

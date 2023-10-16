@@ -12,9 +12,9 @@ namespace Bolt\Bolt\Database;
 
 use Bolt\Bolt\BoltException\BoltException;
 use Bolt\Bolt\BoltQueryBuilder\BoltQueryBuilder;
-use Bolt\Bolt\Model;
+use AllowDynamicProperties;
 
-abstract class DatabaseModel extends Model
+#[AllowDynamicProperties] abstract class DatabaseModel
 {
     public string $tableName;
     protected Database $db;
@@ -28,27 +28,23 @@ abstract class DatabaseModel extends Model
     public $offset             = 0;
     public $errors             = [];
 
-    public function __construct()
-    {
-        $this->db = new Database();
-        $this->tableName = static::tableName();
-        $this->queryBuilder = $this->db->queryBuilder($this->tableName);
-    }
-
     abstract public static function tableName(): string;
 
-    // public function find(array $criteria)
-    // {
-    //     return $this->queryBuilder
-    //         ->select()
-    //         ->where($criteria)
-    //         ->get();
-    // }
+    // Initialize and return the query builder
+    protected function getQueryBuilder()
+    {
+        if (!isset($this->queryBuilder)) {
+            $this->db = new Database();
+            $this->tableName = static::tableName();
+            $this->queryBuilder = $this->db->queryBuilder($this->tableName);
+        }
+        return $this->queryBuilder;
+    }
 
     // Find all records in the table
     public function findAll()
     {
-        return $this->queryBuilder
+        return $this->getQueryBuilder()
             ->select()
             ->get();
     }
@@ -56,7 +52,7 @@ abstract class DatabaseModel extends Model
     // Find a single record by its primary key
     public function findById($id)
     {
-        return $this->queryBuilder
+        return $this->getQueryBuilder()
             ->select()
             ->where([$this->primary_key => $id])
             ->get();
@@ -65,7 +61,7 @@ abstract class DatabaseModel extends Model
     // Find a single record by email (assuming there's an 'email' column)
     public function findByEmail($email)
     {
-        return $this->queryBuilder
+        return $this->getQueryBuilder()
             ->select()
             ->where(['email' => $email])
             ->get()[0] ?? null;
@@ -74,7 +70,7 @@ abstract class DatabaseModel extends Model
     // Find a single record by custom criteria
     public function findOne(array $criteria)
     {
-        return $this->queryBuilder
+        return $this->getQueryBuilder()
             ->select()
             ->where($criteria)
             ->limit(1)
@@ -84,7 +80,7 @@ abstract class DatabaseModel extends Model
     // Create a new record
     public function create(array $data)
     {
-        return $this->queryBuilder
+        return $this->getQueryBuilder()
             ->insert($data)
             ->execute();
     }
@@ -98,7 +94,7 @@ abstract class DatabaseModel extends Model
             // Optionally, you can call a custom method before saving
             $this->beforeSave();
 
-            $result = $this->queryBuilder
+            $result = $this->getQueryBuilder()
                 ->insert($data)
                 ->execute();
 
@@ -122,7 +118,7 @@ abstract class DatabaseModel extends Model
     // Update a record by primary key
     public function updateById($id, array $data)
     {
-        return $this->queryBuilder
+        return $this->getQueryBuilder()
             ->update($data)
             ->where([$this->primary_key => $id])
             ->execute();
@@ -131,7 +127,7 @@ abstract class DatabaseModel extends Model
     // Delete a record by primary key
     public function deleteById($id)
     {
-        return $this->queryBuilder
+        return $this->getQueryBuilder()
             ->delete()
             ->where([$this->primary_key => $id])
             ->execute();
@@ -140,7 +136,7 @@ abstract class DatabaseModel extends Model
     // Find all records with custom conditions
     public function findAllBy(array $conditions)
     {
-        return $this->queryBuilder
+        return $this->getQueryBuilder()
             ->select()
             ->where($conditions)
             ->get();
@@ -149,7 +145,7 @@ abstract class DatabaseModel extends Model
     // Find records with custom conditions and order
     public function findAllByWithOrder(array $conditions, $orderByColumn, $orderDirection = 'asc')
     {
-        return $this->queryBuilder
+        return $this->getQueryBuilder()
             ->select()
             ->where($conditions)
             ->orderBy($orderByColumn, $orderDirection)
@@ -159,7 +155,7 @@ abstract class DatabaseModel extends Model
     // Find records with custom conditions and limit the results
     public function findAllByWithLimit(array $conditions, $limit)
     {
-        return $this->queryBuilder
+        return $this->getQueryBuilder()
             ->select()
             ->where($conditions)
             ->limit($limit)
@@ -170,7 +166,7 @@ abstract class DatabaseModel extends Model
     public function findAllByWithPagination(array $conditions, $page, $perPage, $orderByColumn, $orderDirection = 'asc')
     {
         $offset = ($page - 1) * $perPage;
-        return $this->queryBuilder
+        return $this->getQueryBuilder()
             ->select()
             ->where($conditions)
             ->orderBy($orderByColumn, $orderDirection)
@@ -182,7 +178,7 @@ abstract class DatabaseModel extends Model
     // Count records with custom conditions
     public function countBy(array $conditions)
     {
-        return $this->queryBuilder
+        return $this->getQueryBuilder()
             ->count()
             ->where($conditions)
             ->get()[0]->count;
@@ -191,7 +187,7 @@ abstract class DatabaseModel extends Model
     // Find the first record matching the given conditions
     public function findOneBy(array $conditions)
     {
-        return $this->queryBuilder
+        return $this->getQueryBuilder()
             ->select()
             ->where($conditions)
             ->limit(1)
@@ -201,7 +197,7 @@ abstract class DatabaseModel extends Model
     // Find the maximum value of a specific column
     public function max($column)
     {
-        return $this->queryBuilder
+        return $this->getQueryBuilder()
             ->select("MAX($column) as max")
             ->get()[0]->max ?? null;
     }
@@ -209,7 +205,7 @@ abstract class DatabaseModel extends Model
     // Find the minimum value of a specific column
     public function min($column)
     {
-        return $this->queryBuilder
+        return $this->getQueryBuilder()
             ->select("MIN($column) as min")
             ->get()[0]->min ?? null;
     }
@@ -217,7 +213,7 @@ abstract class DatabaseModel extends Model
     // Find the average value of a specific column
     public function avg($column)
     {
-        return $this->queryBuilder
+        return $this->getQueryBuilder()
             ->select("AVG($column) as avg")
             ->get()[0]->avg ?? null;
     }
@@ -225,7 +221,7 @@ abstract class DatabaseModel extends Model
     // Find the sum of values in a specific column
     public function sum($column)
     {
-        return $this->queryBuilder
+        return $this->getQueryBuilder()
             ->select("SUM($column) as sum")
             ->get()[0]->sum ?? null;
     }
@@ -233,7 +229,7 @@ abstract class DatabaseModel extends Model
     // Delete records based on conditions
     public function deleteBy(array $conditions)
     {
-        return $this->queryBuilder
+        return $this->getQueryBuilder()
             ->delete()
             ->where($conditions)
             ->execute();
@@ -242,7 +238,7 @@ abstract class DatabaseModel extends Model
     // Update records based on conditions
     public function updateBy(array $data, array $conditions)
     {
-        return $this->queryBuilder
+        return $this->getQueryBuilder()
             ->update($data)
             ->where($conditions)
             ->execute();
@@ -251,7 +247,7 @@ abstract class DatabaseModel extends Model
     // Execute a custom SQL query and return the result
     public function executeRawQuery(string $sql, array $bindValues = [])
     {
-        return $this->queryBuilder
+        return $this->getQueryBuilder()
             ->rawQuery($sql, $bindValues)
             ->get();
     }

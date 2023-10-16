@@ -14,18 +14,8 @@ use Bolt\Bolt\Database\DatabaseModel;
 
 class Users extends DatabaseModel
 {
-    public function __construct()
-    {
-        parent::__construct();
-    }
-
-    public static function tableName():string
+    public static function tableName(): string
     {
         return "users";
-    }
-
-    public function users()
-    {
-        
     }
 }

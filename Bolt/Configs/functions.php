@@ -545,3 +545,74 @@ function view(string $path, array $data = [], string $layout): void
 
     $view->render($path, $data);
 }
+
+function loadData($object, $data, $options = [])
+{
+    $defaults = [
+        'validate' => false,
+        'type_cast' => false,
+        'ignore_unknown' => false,
+    ];
+
+    $options = array_merge($defaults, $options);
+
+    foreach ($data as $key => $value) {
+        if (property_exists($object, $key)) {
+            if ($options['validate']) {
+                if (!validateData($key, $value)) {
+                    // Handle validation errors (e.g., log, throw exceptions).
+                    continue;
+                }
+            }
+
+            if ($options['type_cast']) {
+                $value = typeCastData($key, $value);
+            }
+
+            $object->{$key} = $value;
+        } elseif (!$options['ignore_unknown']) {
+            // Handle unknown properties (e.g., log, throw exceptions).
+        }
+    }
+}
+
+function validateData($key, $value)
+{
+    // Implement custom validation logic for each property.
+    switch ($key) {
+        case 'name':
+            return is_string($value) && strlen($value) <= 255;
+        case 'age':
+            return is_int($value) && $value >= 18;
+        case 'email':
+            return filter_var($value, FILTER_VALIDATE_EMAIL) !== false;
+        case 'isSubscribed':
+            return is_bool($value);
+        case 'birthDate':
+            return \DateTime::createFromFormat('Y-m-d', $value) !== false;
+        default:
+            return true;
+    }
+}
+
+function typeCastData($key, $value)
+{
+    // Implement custom type casting logic for each property.
+    switch ($key) {
+        case 'age':
+            return (int)$value;
+        case 'name':
+            return (string)$value;
+        case 'username':
+            return (string)$value;
+        case 'surname':
+            return (string)$value;
+        case 'birthDate':
+            return \DateTime::createFromFormat('Y-m-d', $value);
+        case 'password':
+            // Hash the password using a secure hashing algorithm like password_hash().
+            return password_hash($value, PASSWORD_DEFAULT);
+        default:
+            return $value;
+    }
+}
