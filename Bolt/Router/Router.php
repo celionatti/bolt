@@ -11,7 +11,6 @@ declare(strict_types=1);
 namespace Bolt\Bolt\Router;
 
 use Bolt\Bolt\Bolt;
-use GuzzleHttp\Client;
 use Bolt\Bolt\Http\Request;
 use Bolt\Bolt\Http\Response;
 use Bolt\Bolt\BoltException\BoltException;
@@ -21,6 +20,8 @@ class Router
     public Request $request;
     public Response $response;
     private array $routeMap = [];
+    protected array $namedRoutes = [];
+    private string $currentPrefix = '';
 
     public function __construct(Request $request, Response $response)
     {
@@ -31,13 +32,82 @@ class Router
     public function get(string $url, $callback)
     {
         $this->routeMap['GET'][$url] = $callback;
-
-        return $this;
     }
 
     public function post(string $url, $callback)
     {
         $this->routeMap['POST'][$url] = $callback;
+    }
+
+    public function put(string $url, $callback)
+    {
+        $this->routeMap['PUT'][$url] = $callback;
+    }
+
+    public function delete(string $url, $callback)
+    {
+        $this->routeMap['DELETE'][$url] = $callback;
+    }
+
+    public function patch(string $url, $callback)
+    {
+        $this->routeMap['PATCH'][$url] = $callback;
+    }
+
+    public function resource(string $url, string $controller)
+    {
+        // Implement resource controllers for CRUD routes
+        self::get("$url", "$controller@index");
+        self::get("$url/create", "$controller@create");
+        self::post("$url", "$controller@store");
+        self::get("$url/{id}", "$controller@show");
+        self::get("$url/{id}/edit", "$controller@edit");
+        self::put("$url/{id}", "$controller@update");
+        self::delete("$url/{id}", "$controller@destroy");
+    }
+
+    public function namedRoute(string $name, string $url, $callback)
+    {
+        // Add the route to the route map and support for named routes
+        self::$routeMap['GET'][$url] = $callback;
+        $this->namedRoutes[$name] = $url;
+    }
+
+    public function generateUrl(string $name, array $params = []): string
+    {
+        // Generate URLs using named routes
+        if (isset($this->namedRoutes[$name])) {
+            $url = $this->namedRoutes[$name];
+
+            foreach ($params as $key => $value) {
+                $url = str_replace("{{$key}}", $value, $url);
+            }
+
+            return $url;
+        }
+
+        return '';
+    }
+
+    public function group(array $attributes, callable $callback)
+    {
+        // Store the previous prefix and middleware
+        $previousPrefix = $this->currentPrefix;
+
+        // Update the current prefix with the one from the group attributes (if provided)
+        $this->currentPrefix .= $attributes['prefix'] ?? '';
+
+        // Execute the callback, which may contain nested routes or middleware
+        $callback($this);
+
+        // Restore the previous prefix and middleware after the group is finished
+        $this->currentPrefix = $previousPrefix;
+    }
+
+
+    public function getCurrentPrefix(): string
+    {
+        return $this->currentPrefix;
     }
 
     /**
