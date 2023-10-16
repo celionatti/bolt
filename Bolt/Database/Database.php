@@ -72,6 +72,11 @@ class Database
         return $this->connection;
     }
 
+    public function getConnection()
+    {
+        return $this->connection;
+    }
+
     public static function getInstance(string $connectionName = 'database')
     {
         if (!isset(self::$instances[$connectionName])) {

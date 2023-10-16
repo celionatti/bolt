@@ -129,8 +129,6 @@ class Session
         return session_id();
     }
 
-    // ... (existing methods)
-
     public function unsetArray(array $keys): void
     {
         foreach ($keys as $key) {
@@ -146,11 +144,6 @@ class Session
     public function getAuthenticatedUser()
     {
         return $this->get('user');
-    }
-
-    public function isAuthenticated(): bool
-    {
-        return $this->has('user');
     }
 
     public function clearAuthenticatedUser(): void
