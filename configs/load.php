@@ -23,3 +23,23 @@ if (!defined('DEBUG')) {
 if (!defined('BOLT_DATABASE')) {
     define('BOLT_DATABASE', "bolt_database");
 }
+
+if (!defined('DB_NAME')) {
+    define('DB_NAME', "bolt");
+}
+
+if (!defined('DB_USERNAME')) {
+    define('DB_USERNAME', "root");
+}
+
+if (!defined('DB_PASSWORD')) {
+    define('DB_PASSWORD', "");
+}
+
+if (!defined('DB_DRIVERS')) {
+    define('DB_DRIVERS', "mysql");
+}
+
+if (!defined('DB_HOST')) {
+    define('DB_HOST', "127.0.0.1");
+}

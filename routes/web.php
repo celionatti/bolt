@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Bolt\controllers\AuthController;
 use Bolt\controllers\SiteController;
 
 /** @var TYPE_NAME $bolt */
@@ -16,15 +17,9 @@ use Bolt\controllers\SiteController;
 //     echo "User function routing...";
 // });
 
-// // Create a SubRouter for nested routing
-// $subRouter = $bolt->router->BoltRouter();
-
-// // Define a route using the SubRouter
-// $subRouter->get('/admin', [UserController::class, 'admin']);
+// $bolt->router->get("/", [SiteController::class, "welcome"]);
+// $bolt->router->get("/testing", "SiteController@testing");
 
 $bolt->router->get("/", [SiteController::class, "welcome"]);
-$bolt->router->get("/users", [SiteController::class, "users"]);
-$bolt->router->get("/create", [SiteController::class, "create"]);
-$bolt->router->get("/delete", [SiteController::class, "delete"]);
-$bolt->router->get("/update", [SiteController::class, "update"]);
-$bolt->router->get("/testing", "SiteController@testing");
+$bolt->router->get("/login", [AuthController::class, "login"]);
+$bolt->router->get("/signup", [AuthController::class, "signup"]);

@@ -10,6 +10,7 @@ declare(strict_types=1);
 
 namespace Bolt\Bolt\Database;
 
+use Bolt\Bolt\Bolt;
 use PDO;
 use PDOException;
 use Bolt\Bolt\Config;
@@ -35,11 +36,11 @@ class Database
     public function __construct()
     {
         $database = [
-            "drivers" => "mysql",
-            "host" => "127.0.0.1",
-            "dbname" => "",
-            "username" => "",
-            "password" => ""
+            "drivers" => DB_DRIVERS ?? "mysql",
+            "host" => DB_HOST ?? "127.0.0.1",
+            "dbname" => DB_NAME ?? "",
+            "username" => DB_USERNAME ?? "root",
+            "password" => DB_PASSWORD ?? ""
         ];
 
         $config = Config::get(BOLT_DATABASE, $database);

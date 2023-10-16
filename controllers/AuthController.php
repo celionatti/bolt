@@ -5,7 +5,7 @@ declare(strict_types=1);
 /**
  * ===================================================
  * =================            ======================
- * SiteController
+ * AuthController
  * =================            ======================
  * ===================================================
  */ 
@@ -15,17 +15,19 @@ namespace Bolt\controllers;
 use Bolt\Bolt\Controller;
 use Bolt\Bolt\Http\Request;
 
-class SiteController extends Controller
+class AuthController extends Controller
 {
-    public function welcome()
+    public function signup()
     {
-        $data = [
-            'title' => 'Hello World',
-            'header' => 'Welcome To Bolt',
-            'text' => 'You are most welcome to our world.',
-            'greeting' => 'Hello, World!',
+        $view = [
+            'errors' => []
         ];
 
-        $this->view->render("welcome", $data);
+        $this->view->render("auth/signup", $view);
+    }
+
+    public function login()
+    {
+        $this->view->render("auth/login");
     }
 }

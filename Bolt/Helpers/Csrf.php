@@ -12,7 +12,7 @@ namespace Bolt\Bolt\Helpers;
 
 class Csrf
 {
-    protected $token;
+    protected $token = "";
     protected $tokenName = '_csrf_token';
     protected $tokenLifetime = 3600; // Token lifetime in seconds (default: 1 hour, 3600 seconds)
 
