@@ -27,3 +27,4 @@ $bolt->router->get("/users", [SiteController::class, "users"]);
 $bolt->router->get("/create", [SiteController::class, "create"]);
 $bolt->router->get("/delete", [SiteController::class, "delete"]);
 $bolt->router->get("/update", [SiteController::class, "update"]);
+$bolt->router->get("/testing", "SiteController@testing");

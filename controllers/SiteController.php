@@ -12,11 +12,6 @@ use Bolt\models\Users;
 
 class SiteController extends Controller
 {
-    public function onConstruct(): void
-    {
-        // $this->registerMiddleware(new AuthMiddleware(['users']));    
-    }
-
     public function welcome()
     {
         $data = [
@@ -30,6 +25,11 @@ class SiteController extends Controller
     }
 
     public function users(Request $request)
+    {
+        $this->view->render("users");
+    }
+
+    public function testing(Request $request)
     {
         $this->view->render("users");
     }

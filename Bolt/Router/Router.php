@@ -108,12 +108,35 @@ class Router
             }
         }
         if (is_string($callback)) {
-            // return $this->renderView($callback);
-            dd($callback);
+            // Split the string based on the "@" symbol
+            $callbackParts = explode('@', $callback);
+
+            // Ensure we have both controller and action parts
+            if (count($callbackParts) === 2) {
+                $controllerName = $callbackParts[0];
+                $actionName = $callbackParts[1];
+
+                // Create the controller instance
+                $controllerClass = "\\Bolt\\controllers\\$controllerName";
+                $controller = new $controllerClass();
+                $controller->action = $actionName;
+
+                // Set the controller in your application (you'll need to modify this according to your application's structure)
+                Bolt::$bolt->controller = $controller;
+
+                // Execute any middlewares
+                $middlewares = $controller->getMiddlewares();
+                foreach ($middlewares as $middleware) {
+                    $middleware->execute();
+                }
+
+                // Replace the $callback variable with the controller and action
+                $callback = [$controller, $actionName];
+            }
         }
         if (is_array($callback)) {
             /**
-             * @var $controller \thecodeholic\phpmvc\Controller
+             * @var $controller \Bolt\Bolt\Controller
              */
             $controller = new $callback[0];
             $controller->action = $callback[1];
@@ -125,12 +148,5 @@ class Router
             $callback[0] = $controller;
         }
         return call_user_func($callback, $this->request, $this->response);
-    }
-
-    protected function abort(int $code = Response::NOT_FOUND)
-    {
-        http_response_code($code);
-        echo "errors/{$code}";
-        die();
     }
 }
