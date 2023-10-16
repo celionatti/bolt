@@ -135,19 +135,4 @@ class Session
             unset($_SESSION[$key]);
         }
     }
-
-    public function setAuthenticatedUser(array $user): void
-    {
-        $this->set('user', $user);
-    }
-
-    public function getAuthenticatedUser()
-    {
-        return $this->get('user');
-    }
-
-    public function clearAuthenticatedUser(): void
-    {
-        $this->remove('user');
-    }
 }
