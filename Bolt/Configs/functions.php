@@ -14,6 +14,21 @@ function bolt_env($data)
     return false;
 }
 
+function generateUuidV4()
+{
+    // Generate 16 bytes of random data
+    $data = random_bytes(16);
+
+    // Set the version (4) and variant (10xxxxxx) bits
+    $data[6] = chr(ord($data[6]) & 0x0F | 0x40);
+    $data[8] = chr(ord($data[8]) & 0x3F | 0x80);
+
+    // Format the UUID
+    $uuid = vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($data), 4));
+
+    return $uuid;
+}
+
 function get_root_dir()
 {
     // Get the current file's directory
@@ -33,7 +48,6 @@ function get_root_dir()
 
     return $currentDirectory;
 }
-
 
 function esc_url($url)
 {
@@ -379,7 +393,6 @@ function get_script($path): string
     return get_assets_directory(DIRECTORY_SEPARATOR . "js" . DIRECTORY_SEPARATOR . $path);
 }
 
-
 function get_date(?string $date = null, string $format = "jS M, Y", string $timezone = "UTC"): string
 {
     $date = $date ?? '';
@@ -490,7 +503,8 @@ function console_logger(string $message, bool $die = false, bool $timestamp = tr
     }
 }
 
-function load_required_files($directoryPath) {
+function load_required_files($directoryPath)
+{
     $requiredFileExtensions = ['php', 'txt', 'html']; // Define the file extensions you consider as required
 
     if (!is_dir($directoryPath)) {

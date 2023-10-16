@@ -20,7 +20,8 @@ class AuthController extends Controller
     public function signup()
     {
         $view = [
-            'errors' => []
+            'errors' => [],
+            'uuid' => generateUuidV4()
         ];
 
         $this->view->render("auth/signup", $view);

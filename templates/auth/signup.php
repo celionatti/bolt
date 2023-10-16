@@ -47,6 +47,8 @@ use Bolt\Bolt\Forms\BootstrapForm;
         <h1 class="text-body-emphasis">Bolt Account Registration</h1>
         <p class="fs-5 col-md-8">Bolt Framework is a modern, open-source web application framework designed to empower developers to build robust and scalable web applications with ease. It offers a comprehensive suite of tools and features, making it a versatile choice for both beginners and experienced developers.</p>
 
+        <p>User UUID: <?= $uuid ?></p>
+
         <hr class="col-3 col-md-2 mb-3">
 
         <?= BootstrapForm::openForm("") ?>
