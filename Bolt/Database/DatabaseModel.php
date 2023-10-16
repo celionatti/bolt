@@ -12,11 +12,12 @@ namespace Bolt\Bolt\Database;
 
 use Bolt\Bolt\BoltException\BoltException;
 use Bolt\Bolt\BoltQueryBuilder\BoltQueryBuilder;
-use AllowDynamicProperties;
+use Bolt\Bolt\Model;
 
-#[AllowDynamicProperties] abstract class DatabaseModel
+abstract class DatabaseModel extends Model
 {
     public string $tableName;
+    abstract public static function tableName(): string;
     protected Database $db;
     protected BoltQueryBuilder $queryBuilder;
 
@@ -28,7 +29,6 @@ use AllowDynamicProperties;
     public $offset             = 0;
     public $errors             = [];
 
-    abstract public static function tableName(): string;
 
     // Initialize and return the query builder
     protected function getQueryBuilder()

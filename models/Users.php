@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 /**
  * ======================================
- * Users Model =================
+ * Users =================
  * ======================================
  */
 
@@ -16,6 +16,6 @@ class Users extends DatabaseModel
 {
     public static function tableName(): string
     {
-        return "users";
+        return 'users';
     }
 }

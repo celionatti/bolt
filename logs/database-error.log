@@ -1,1 +1,2 @@
 [2023-10-12 00:02:12] [ Database Error ] SQLSTATE[23000]: Integrity constraint violation: 1062 Duplicate entry 'celiotilly@mail.com' for key 'email'
+[2023-10-17 01:50:56] [ Database Error ] SQLSTATE[42S22]: Column not found: 1054 Unknown column 'name' in 'where clause'
