@@ -344,14 +344,14 @@ function get_image(?string $path = null, string $type = 'post'): string
     $path = $path ?? '';
 
     if (!empty($path) && file_exists($path)) {
-        return BOLT_ROOT . '/' . $path;
+        return URL_ROOT . '/' . $path;
     }
 
     if (array_key_exists($type, $defaultImageMap)) {
-        return BOLT_ROOT . $defaultImageMap[$type];
+        return URL_ROOT . $defaultImageMap[$type];
     }
 
-    return BOLT_ROOT . $defaultImageMap['post'];
+    return URL_ROOT . $defaultImageMap['post'];
 }
 
 function get_assets_directory($directory): string

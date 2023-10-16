@@ -74,7 +74,7 @@ use Bolt\Bolt\Forms\BootstrapForm;
                 <?= BootstrapForm::inputField("Confirm Password", "confirm_password", "", ['class' => 'form-control', 'type' => 'password'], ['class' => 'form-floating mb-3'], $errors) ?>
             </div>
         </div>
-        <?= BootstrapForm::submitButton("Signup", "btn btn-dark btn-sm p-3 w-50") ?>
+        <?= BootstrapForm::submitButton("Signup", "btn btn-secondary btn-sm p-3 w-50") ?>
 
         <?= BootstrapForm::closeForm() ?>
     </main>

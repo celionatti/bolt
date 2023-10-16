@@ -12,9 +12,9 @@ namespace Bolt\Bolt\Database;
 
 use Bolt\Bolt\BoltException\BoltException;
 use Bolt\Bolt\BoltQueryBuilder\BoltQueryBuilder;
+use Bolt\Bolt\Model;
 
-
-abstract class DatabaseModel
+abstract class DatabaseModel extends Model
 {
     public string $tableName;
     protected Database $db;
