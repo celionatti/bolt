@@ -24,7 +24,7 @@ class BootstrapFlashMessage extends FlashMessage
             $messageAttributes = $message['attributes'];
 
             // Render and display the message with its attributes
-            echo FlashMessage::render($messageContent, $messageType, 'alert-success', $messageAttributes);
+            echo FlashMessage::render($messageContent, $messageType, 'alert-success alert-dismissible fade show mt-3 mx-2 shadow-lg text-uppercase text-center', $messageAttributes);
         }
     }
 }

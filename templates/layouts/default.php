@@ -30,8 +30,8 @@ use Bolt\Bolt\Helpers\FlashMessages\BootstrapFlashMessage;
 </head>
 
 <body>
-    <!-- Your Content goes in here. -->
     <?= BootstrapFlashMessage::alertSuccess(); ?>
+    <!-- Your Content goes in here. -->
     <?php $this->content('content'); ?>
 
     <script src="<?= get_package('jquery/jquery-3.6.3.min.js'); ?>"></script>

@@ -1,5 +1,13 @@
+<?php
+
+use Bolt\Bolt\Helpers\FlashMessages\BootstrapFlashMessage;
+
+
+?>
+
 <!DOCTYPE html>
 <html lang="en" data-bs-theme="auto">
+
 <head>
     <script src="<?= get_script('color-modes.js') ?>"></script>
     <meta charset="UTF-8">
@@ -7,6 +15,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" href="<?= get_image('img/favicon.png', "icon") ?>" />
     <link rel="apple-touch-icon" href="<?= get_image('img/favicon.png', "icon") ?>" />
+    <!-- Apline.js -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <!-- AOS library -->
     <link type="text/css" rel="stylesheet" href="<?= get_package('aos/aos.css'); ?>">
     <!-- Bootstrap library -->
@@ -19,7 +29,9 @@
     <title>Default Page Title</title>
     <?php $this->content('header') ?>
 </head>
+
 <body>
+    <?= BootstrapFlashMessage::alertSuccess(); ?>
     <!-- Your Content goes in here. -->
     <?php $this->content('content'); ?>
 
@@ -31,4 +43,5 @@
     <script src="<?= get_package('swiper/swiper-bundle.min.js'); ?>"></script>
     <?php $this->content('script') ?>
 </body>
+
 </html>

@@ -37,6 +37,40 @@ class {CLASSNAME} extends Controller
     {   
     }
 
+    /**
+     * Sign Up method. Sample
+     *
+     * @param Request $request
+     * @return void
+     */
+    public function signup(Request $request)
+    {
+        $user = new Users();
+
+        if ($request->isPost()) {
+            $data = $request->getBody();
+            $user->allowedInsertParams = [
+                'username',
+                'name',
+                'phone',
+                'email',
+                'acl',
+                'password'
+            ];
+            if ($user->insert($data)) {
+                FlashMessage::setMessage("User Created Successfully", FlashMessage::SUCCESS, ['role' => 'alert', 'style' => 'z-index: 9999;']);
+                redirect("/");
+            }
+        }
+
+        $view = [
+            'errors' => [],
+            'uuid' => generateUuidV4()
+        ];
+
+        $this->view->render("auth/signup", $view);
+    }
+
     public function users()
     {
         // Initialize the BoltApi client with your API key and base URL

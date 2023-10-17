@@ -16,7 +16,12 @@ use Bolt\Bolt\Controller;
 
 class {CLASSNAME} extends Controller
 {
-    public function welcome()
+    /**
+     * Index Page of the Resources.
+     * GET Request
+     * @return void
+     */
+    public function index()
     {
         $data = [
             'title' => 'Bolt Framework',
@@ -28,22 +33,66 @@ class {CLASSNAME} extends Controller
         $this->view->render("{VIEWPATH}", $data);
     }
 
+    /**
+     * Create Page of the Resources.
+     * GET Request
+     * @return void
+     */
     public function create()
     {
         
     }
 
+    /**
+     * Store the Created data- Page of the Resources.
+     * POST Request
+     * @return void
+     */
+    public function store()
+    {
+        
+    }
+
+    /**
+     * Show a single data- Page of the Resources.
+     * GET Request
+     * Usage: www.bolt.com/posts/2
+     * @return void
+     */
     public function show()
     {
 
     }
 
+    /**
+     * Show Editable data of a single data- Page of the Resources.
+     * GET Request
+     * Usage: www.bolt.com/posts/2/edit
+     * @return void
+     */
+    public function edit()
+    {
+
+    }
+
+    /**
+     * Update Editable data of a single data- Page of the Resources.
+     * PUT Request or PATCH
+     * Usage: www.bolt.com/posts/2
+     * @return void
+     */
     public function update()
     {
 
     }
     
-    public function delete()
+    /**
+     * Delete a single data- Page of the Resources.
+     * DELETE Request
+     * Usage: www.bolt.com/posts/2/
+     * @return void
+     */
+    public function destory()
     {
 
     }

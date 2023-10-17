@@ -34,7 +34,7 @@ class AuthController extends Controller
                 'password'
             ];
             if ($user->insert($data)) {
-                FlashMessage::setMessage("User Created Successfully");
+                FlashMessage::setMessage("User Created Successfully", FlashMessage::SUCCESS, ['role' => 'alert', 'style' => 'z-index: 9999;']);
                 redirect("/");
             }
         }
