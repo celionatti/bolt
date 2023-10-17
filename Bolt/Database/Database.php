@@ -191,46 +191,6 @@ class Database
         return false;
     }
 
-    // public function query(string $query, array $data = [], string $data_type = 'object')
-    // {
-    //     $this->error = '';
-    //     $this->has_error = false;
-
-    //     try {
-    //         $stm = $this->connection->prepare($query);
-
-    //         $result = $stm->execute($data);
-    //         $this->affected_rows = $stm->rowCount();
-    //         $this->insert_id = $this->connection->lastInsertId();
-
-    //         if ($result) {
-    //             if ($data_type == 'object') {
-    //                 $rows = $stm->fetchAll(PDO::FETCH_OBJ);
-    //             } elseif ($data_type == 'assoc') {
-    //                 $rows = $stm->fetchAll(PDO::FETCH_ASSOC);
-    //             } else {
-    //                 $rows = $stm->fetchAll(PDO::FETCH_CLASS);
-    //             }
-    //         }
-    //     } catch (PDOException $e) {
-    //         $this->error = $e->getMessage();
-    //         $this->has_error = true;
-    //     }
-
-    //     $arr = [];
-    //     $arr['query'] = $query;
-    //     $arr['data'] = $data;
-    //     $arr['result'] = $rows ?? [];
-    //     $arr['query_id'] = self::$query_id;
-    //     self::$query_id;
-
-    //     if (is_array($arr) && count($arr) > 0) {
-    //         return $arr;
-    //     }
-
-    //     return false;
-    // }
-
     public function query(string $query, array $params = [], string $data_type = 'object')
     {
         $this->error = '';

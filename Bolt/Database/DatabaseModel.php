@@ -29,6 +29,14 @@ abstract class DatabaseModel extends Model
     public $offset             = 0;
     public $errors             = [];
 
+    public $allowedInsertParams = [];
+    public $allowedUpdateParams = [];
+
+    public function __construct()
+    {
+        $this->db = new Database();
+    }
+
 
     // Initialize and return the query builder
     protected function getQueryBuilder()
@@ -77,17 +85,27 @@ abstract class DatabaseModel extends Model
             ->get()[0] ?? null;
     }
 
-    // Create a new record
-    public function create(array $data)
+    public function create(array $data, array $allowedParams = [])
     {
+        if (empty($allowedParams)) {
+            $allowedParams = $this->allowedInsertParams;
+        }
+
+        $filteredData = $this->filterDataByAllowedParams($data, $allowedParams);
+
         return $this->getQueryBuilder()
-            ->insert($data)
+            ->insert($filteredData)
             ->execute();
     }
 
-    // Create a new record
-    public function insert(array $data)
+    public function insert(array $data, array $allowedParams = [])
     {
+        if (empty($allowedParams)) {
+            $allowedParams = $this->allowedInsertParams;
+        }
+
+        $filteredData = $this->filterDataByAllowedParams($data, $allowedParams);
+
         try {
             $this->db->beginTransaction(); // Start a transaction
 
@@ -95,7 +113,7 @@ abstract class DatabaseModel extends Model
             $this->beforeSave();
 
             $result = $this->getQueryBuilder()
-                ->insert($data)
+                ->insert($filteredData)
                 ->execute();
 
             // Optionally, you can check if the insert was successful
@@ -109,20 +127,71 @@ abstract class DatabaseModel extends Model
         } catch (BoltException $e) {
             $this->db->rollbackTransaction(); // Rollback the transaction on exception
             // echo "Error: " . $e->getMessage();
-            //throw $e; // Rethrow the exception for handling at a higher level
+            throw $e; // Rethrow the exception for handling at a higher level
         }
     }
 
-
-
-    // Update a record by primary key
-    public function updateById($id, array $data)
+    protected function filterDataByAllowedParams(array $data, array $allowedParams): array
     {
+        return array_filter($data, function ($key) use ($allowedParams) {
+            return in_array($key, $allowedParams);
+        }, ARRAY_FILTER_USE_KEY);
+    }
+
+    // // Update a record by primary key
+    // public function updateById($id, array $data)
+    // {
+    //     return $this->getQueryBuilder()
+    //         ->update($data)
+    //         ->where([$this->primary_key => $id])
+    //         ->execute();
+    // }
+
+    public function updateById($id, array $data, array $allowedParams = [])
+    {
+        if (empty($allowedParams)) {
+            $allowedParams = $this->allowedUpdateParams;
+        }
+
+        $filteredData = $this->filterDataByAllowedParams($data, $allowedParams);
+
         return $this->getQueryBuilder()
-            ->update($data)
+            ->update($filteredData)
             ->where([$this->primary_key => $id])
             ->execute();
     }
+
+    public function updateBy(array $data, array $conditions, array $allowedParams = [])
+    {
+        if (empty($allowedParams)) {
+            $allowedParams = $this->allowedUpdateParams;
+        }
+
+        $filteredData = $this->filterDataByAllowedParams($data, $allowedParams);
+
+        return $this->getQueryBuilder()
+            ->update($filteredData)
+            ->where($conditions)
+            ->execute();
+    }
+
+    // Delete records based on conditions
+    public function deleteBy(array $conditions)
+    {
+        return $this->getQueryBuilder()
+            ->delete()
+            ->where($conditions)
+            ->execute();
+    }
+
+    // // Update records based on conditions
+    // public function updateBy(array $data, array $conditions)
+    // {
+    //     return $this->getQueryBuilder()
+    //         ->update($data)
+    //         ->where($conditions)
+    //         ->execute();
+    // }
 
     // Delete a record by primary key
     public function deleteById($id)
@@ -224,24 +293,6 @@ abstract class DatabaseModel extends Model
         return $this->getQueryBuilder()
             ->select("SUM($column) as sum")
             ->get()[0]->sum ?? null;
-    }
-
-    // Delete records based on conditions
-    public function deleteBy(array $conditions)
-    {
-        return $this->getQueryBuilder()
-            ->delete()
-            ->where($conditions)
-            ->execute();
-    }
-
-    // Update records based on conditions
-    public function updateBy(array $data, array $conditions)
-    {
-        return $this->getQueryBuilder()
-            ->update($data)
-            ->where($conditions)
-            ->execute();
     }
 
     // Execute a custom SQL query and return the result
