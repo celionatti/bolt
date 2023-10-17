@@ -10,9 +10,10 @@ declare(strict_types=1);
 
 namespace Bolt\Bolt\Database;
 
+use Bolt\Bolt\Model;
+use Bolt\Bolt\Config;
 use Bolt\Bolt\BoltException\BoltException;
 use Bolt\Bolt\BoltQueryBuilder\BoltQueryBuilder;
-use Bolt\Bolt\Model;
 
 abstract class DatabaseModel extends Model
 {
@@ -28,6 +29,7 @@ abstract class DatabaseModel extends Model
     public $limit             = 10;
     public $offset             = 0;
     public $errors             = [];
+    protected bool $validationPassed = true;
 
     public $allowedInsertParams = [];
     public $allowedUpdateParams = [];
@@ -47,6 +49,27 @@ abstract class DatabaseModel extends Model
             $this->queryBuilder = $this->db->queryBuilder($this->tableName);
         }
         return $this->queryBuilder;
+    }
+
+    public function isNew(): bool
+    {
+        return empty($this->{$this->primary_key});
+    }
+
+    public function timeStamps($createdAtField, $updatedAtField = null): void
+    {
+        $timeZone = Config::get('time_zone');
+        date_default_timezone_set($timeZone);
+
+        $now = (new \DateTime("now", new \DateTimeZone($timeZone)))->format('Y-m-d H:i:s');
+
+        if ($updatedAtField !== null) {
+            $this->$updatedAtField = $now;
+        }
+
+        if ($this->isNew()) {
+            $this->$createdAtField = $now;
+        }
     }
 
     // Find all records in the table
@@ -87,47 +110,51 @@ abstract class DatabaseModel extends Model
 
     public function create(array $data, array $allowedParams = [])
     {
-        if (empty($allowedParams)) {
-            $allowedParams = $this->allowedInsertParams;
+        if ($this->validationPassed) {
+            if (empty($allowedParams)) {
+                $allowedParams = $this->allowedInsertParams;
+            }
+
+            $filteredData = $this->filterDataByAllowedParams($data, $allowedParams);
+
+            return $this->getQueryBuilder()
+                ->insert($filteredData)
+                ->execute();
         }
-
-        $filteredData = $this->filterDataByAllowedParams($data, $allowedParams);
-
-        return $this->getQueryBuilder()
-            ->insert($filteredData)
-            ->execute();
     }
 
     public function insert(array $data, array $allowedParams = [])
     {
-        if (empty($allowedParams)) {
-            $allowedParams = $this->allowedInsertParams;
-        }
-
-        $filteredData = $this->filterDataByAllowedParams($data, $allowedParams);
-
-        try {
-            $this->db->beginTransaction(); // Start a transaction
-
-            // Optionally, you can call a custom method before saving
-            $this->beforeSave();
-
-            $result = $this->getQueryBuilder()
-                ->insert($filteredData)
-                ->execute();
-
-            // Optionally, you can check if the insert was successful
-            if ($result) {
-                $this->db->commitTransaction(); // Commit the transaction
-                return $result;
-            } else {
-                $this->db->rollbackTransaction(); // Rollback the transaction on failure
-                return false;
+        if ($this->validationPassed) {
+            if (empty($allowedParams)) {
+                $allowedParams = $this->allowedInsertParams;
             }
-        } catch (BoltException $e) {
-            $this->db->rollbackTransaction(); // Rollback the transaction on exception
-            // echo "Error: " . $e->getMessage();
-            throw $e; // Rethrow the exception for handling at a higher level
+
+            $filteredData = $this->filterDataByAllowedParams($data, $allowedParams);
+
+            try {
+                $this->db->beginTransaction(); // Start a transaction
+
+                // Optionally, you can call a custom method before saving
+                $this->beforeSave();
+
+                $result = $this->getQueryBuilder()
+                    ->insert($filteredData)
+                    ->execute();
+
+                // Optionally, you can check if the insert was successful
+                if ($result) {
+                    $this->db->commitTransaction(); // Commit the transaction
+                    return $result;
+                } else {
+                    $this->db->rollbackTransaction(); // Rollback the transaction on failure
+                    return false;
+                }
+            } catch (BoltException $e) {
+                $this->db->rollbackTransaction(); // Rollback the transaction on exception
+                // echo "Error: " . $e->getMessage();
+                throw $e; // Rethrow the exception for handling at a higher level
+            }
         }
     }
 
@@ -305,5 +332,25 @@ abstract class DatabaseModel extends Model
 
     public function beforeSave(): void
     {
+    }
+
+    public function runValidation($validator): void
+    {
+        $validates = $validator->runValidation();
+        if (!$validates) {
+            $this->validationPassed = false;
+            $this->errors[$validator->field] = $validator->msg;
+        }
+    }
+
+    public function getErrors(): array
+    {
+        return $this->errors;
+    }
+
+    public function setError($name, $value): void
+    {
+        $this->errors[$name] = $value;
+        $this->validationPassed = false;
     }
 }
