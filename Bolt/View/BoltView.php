@@ -14,6 +14,7 @@ namespace Bolt\Bolt\View;
 
 use Exception;
 use Bolt\Bolt\Bolt;
+use Bolt\Bolt\Helpers\FlashMessage;
 use Twig\Environment;
 use Jenssegers\Blade\Blade;
 use Twig\Loader\FilesystemLoader;

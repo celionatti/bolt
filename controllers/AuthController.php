@@ -12,10 +12,10 @@ declare(strict_types=1);
 
 namespace Bolt\controllers;
 
-use Bolt\Bolt\Bolt;
 use Bolt\models\Users;
 use Bolt\Bolt\Controller;
 use Bolt\Bolt\Http\Request;
+use Bolt\Bolt\Helpers\FlashMessages\FlashMessage;
 
 class AuthController extends Controller
 {
@@ -34,7 +34,7 @@ class AuthController extends Controller
                 'password'
             ];
             if ($user->insert($data)) {
-                Bolt::$bolt->session->setFlash("success", "User Created Successfully");
+                FlashMessage::setMessage("User Created Successfully");
                 redirect("/");
             }
         }
