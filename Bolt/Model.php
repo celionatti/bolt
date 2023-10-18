@@ -17,83 +17,102 @@ use DateTime;
 
 class Model
 {
-    // public function loadData($data)
-    // {
-    //     foreach ($data as $key => $value) {
-    //         if (property_exists($this, $key)) {
-    //             $this->{$key} = $value;
-    //         }
-    //     }
-    // }
+    const RULE_REQUIRED = 'required';
+    const RULE_EMAIL = 'email';
+    const RULE_MIN = 'min';
+    const RULE_MAX = 'max';
+    const RULE_MATCH = 'match';
+    const RULE_UNIQUE = 'unique';
 
-    public function loadData($data, $options = [])
+    public array $errors = [];
+
+    public function rules()
     {
-        $defaults = [
-            'validate' => false,
-            'type_cast' => false,
-            'ignore_unknown' => false,
-        ];
+        return [];
+    }
 
-        $options = array_merge($defaults, $options);
-
-        foreach ($data as $key => $value) {
-            if (property_exists($this, $key)) {
-                if ($options['validate']) {
-                    if (!$this->validateData($key, $value)) {
-                        // Handle validation errors (e.g., log, throw exceptions).
-                        continue;
-                    }
+    public function validate()
+    {
+        foreach ($this->rules() as $attribute => $rules) {
+            $value = $this->{$attribute};
+            foreach ($rules as $rule) {
+                $ruleName = $rule;
+                if (!is_string($rule)) {
+                    $ruleName = $rule[0];
                 }
-
-                if ($options['type_cast']) {
-                    $value = $this->typeCastData($key, $value);
+                if ($ruleName === self::RULE_REQUIRED && !$value) {
+                    $this->addErrorByRule($attribute, self::RULE_REQUIRED);
                 }
-
-                $this->{$key} = $value;
-            } elseif (!$options['ignore_unknown']) {
-                // Handle unknown properties (e.g., log, throw exceptions).
+                if ($ruleName === self::RULE_EMAIL && !filter_var($value, FILTER_VALIDATE_EMAIL)) {
+                    $this->addErrorByRule($attribute, self::RULE_EMAIL);
+                }
+                if ($ruleName === self::RULE_MIN && strlen($value) < $rule['min']) {
+                    $this->addErrorByRule($attribute, self::RULE_MIN, ['min' => $rule['min']]);
+                }
+                if ($ruleName === self::RULE_MAX && strlen($value) > $rule['max']) {
+                    $this->addErrorByRule($attribute, self::RULE_MAX);
+                }
+                if ($ruleName === self::RULE_MATCH && $value !== $this->{$rule['match']}) {
+                    $this->addErrorByRule($attribute, self::RULE_MATCH, ['match' => $rule['match']]);
+                }
+                // if ($ruleName === self::RULE_UNIQUE) {
+                //     $className = $rule['class'];
+                //     $uniqueAttr = $rule['attribute'] ?? $attribute;
+                //     $tableName = $className::tableName();
+                //     $db = Bolt::$bolt->database;
+                //     $statement = $db->query("SELECT * FROM $tableName WHERE $uniqueAttr = :$uniqueAttr");
+                //     $statement->bindValue(":$uniqueAttr", $value);
+                //     $statement->execute();
+                //     $record = $statement->fetchObject();
+                //     if ($record) {
+                //         $this->addErrorByRule($attribute, self::RULE_UNIQUE);
+                //     }
+                // }
             }
         }
+        return empty($this->errors);
     }
 
-    private function validateData($key, $value)
+    public function errorMessages()
     {
-        // Implement custom validation logic for each property.
-        switch ($key) {
-            case 'name':
-                return is_string($value) && strlen($value) <= 255;
-            case 'age':
-                return is_int($value) && $value >= 18;
-            case 'email':
-                // Check for unique email address (assuming you have a users table in your database).
-                return filter_var($value, FILTER_VALIDATE_EMAIL) !== false;
-            case 'isSubscribed':
-                return is_bool($value);
-            case 'birthDate':
-                // Assuming 'birthDate' is a date string in a specific format (e.g., 'Y-m-d').
-                return DateTime::createFromFormat('Y-m-d', $value) !== false;
-            case 'password':
-                // Password validation is handled separately.
-                return password_hash($value, PASSWORD_DEFAULT);
-            default:
-                return true;
-        }
+        return [
+            self::RULE_REQUIRED => 'This field is required',
+            self::RULE_EMAIL => 'This field must be valid email address',
+            self::RULE_MIN => 'Min length of this field must be {min}',
+            self::RULE_MAX => 'Max length of this field must be {max}',
+            self::RULE_MATCH => 'This field must be the same as {match}',
+            self::RULE_UNIQUE => 'Record with with this {field} already exists',
+        ];
     }
 
-    private function typeCastData($key, $value)
+    public function errorMessage($rule)
     {
-        // Implement custom type casting logic for each property.
-        switch ($key) {
-            case 'age':
-                return (int)$value;
-            case 'birthDate':
-                // Assuming 'birthDate' is a date string in a specific format (e.g., 'Y-m-d').
-                return DateTime::createFromFormat('Y-m-d', $value);
-            case 'passwordHash':
-                // Hash the password using a secure hashing algorithm like password_hash().
-                return password_hash($value, PASSWORD_DEFAULT);
-            default:
-                return $value;
+        return $this->errorMessages()[$rule];
+    }
+
+    protected function addErrorByRule(string $attribute, string $rule, $params = [])
+    {
+        $params['field'] ??= $attribute;
+        $errorMessage = $this->errorMessage($rule);
+        foreach ($params as $key => $value) {
+            $errorMessage = str_replace("{{$key}}", $value, $errorMessage);
         }
+        $this->errors[$attribute][] = $errorMessage;
+    }
+
+    public function addError(string $attribute, string $message)
+    {
+        $this->errors[$attribute][] = $message;
+    }
+
+    public function hasError($attribute)
+    {
+        return $this->errors[$attribute] ?? false;
+    }
+
+    public function getFirstError($attribute)
+    {
+        $errors = $this->errors[$attribute] ?? [];
+        return $errors[0] ?? '';
     }
 }

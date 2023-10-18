@@ -24,18 +24,20 @@ class AuthController extends Controller
         $user = new Users();
 
         if ($request->isPost()) {
-            $data = $request->getBody();
-            $user->allowedInsertParams = [
+            $user->setAllowedInsertParams([
                 'username',
                 'name',
                 'phone',
                 'email',
                 'acl',
                 'password'
-            ];
-            if ($user->insert($data)) {
-                FlashMessage::setMessage("User Created Successfully", FlashMessage::SUCCESS, ['role' => 'alert', 'style' => 'z-index: 9999;']);
-                redirect("/");
+            ]);
+            $data = $request->getBody();
+            if ($user->validate()) {
+                // if ($user->insert($data)) {
+                //     FlashMessage::setMessage("User Created Successfully", FlashMessage::SUCCESS, ['role' => 'alert', 'style' => 'z-index: 9999;']);
+                //     redirect("/");
+                // }
             }
         }
 

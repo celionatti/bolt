@@ -10,18 +10,35 @@ declare(strict_types=1);
 
 namespace Bolt\models;
 
-use Bolt\Bolt\BoltValidation\RequiredValidation;
+
 use Bolt\Bolt\Database\DatabaseModel;
 
 class Users extends DatabaseModel
 {
+    public string $username = "";
+    public string $name = "";
+    public string $email = "";
+    public string $phone = "";
+    public string $password = "";
+
     public static function tableName(): string
     {
         return 'users';
     }
 
+    public function rules()
+    {
+        return [
+            'username' => [self::RULE_REQUIRED],
+            'name' => [self::RULE_REQUIRED],
+            'email' => [self::RULE_REQUIRED, self::RULE_EMAIL],
+            'password' => [self::RULE_REQUIRED, [self::RULE_MIN, 'min' => 8]],
+            'confirm_password' => [[self::RULE_MATCH, 'match' => 'password']],
+        ];
+    }
+
     public function beforeSave(): void
     {
-        $this->runValidation(new RequiredValidation($this, ['field' => 'surname', 'msg' => "Surname is a required field."]));
+        
     }
 }

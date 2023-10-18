@@ -17,6 +17,7 @@ class RequiredValidation extends BoltValidator
     public function runValidation(): bool
     {
         $value = trim($this->_obj->{$this->field});
-        return $value != '';
+        // return $value != '';
+        return "" !== $value;
     }
 }

@@ -27,18 +27,16 @@ abstract class DatabaseModel extends Model
     public string $primary_key     = 'id';
 
     public $limit             = 10;
-    public $offset             = 0;
-    public $errors             = [];
-    protected bool $validationPassed = true;
+    public $offset            = 0;
+    public array $errors      = [];
 
-    public $allowedInsertParams = [];
-    public $allowedUpdateParams = [];
+    protected $allowedInsertParams = [];
+    protected $allowedUpdateParams = [];
 
     public function __construct()
     {
         $this->db = new Database();
     }
-
 
     // Initialize and return the query builder
     protected function getQueryBuilder()
@@ -49,6 +47,30 @@ abstract class DatabaseModel extends Model
             $this->queryBuilder = $this->db->queryBuilder($this->tableName);
         }
         return $this->queryBuilder;
+    }
+
+    // Define a method to set allowed insert parameters
+    public function setAllowedInsertParams(array $params): void
+    {
+        $this->allowedInsertParams = $params;
+    }
+
+    // Define a method to get allowed insert parameters
+    public function getAllowedInsertParams(): array
+    {
+        return $this->allowedInsertParams;
+    }
+
+    // Define a method to set allowed insert parameters
+    public function setAllowedUpdateParams(array $params): void
+    {
+        $this->allowedUpdateParams = $params;
+    }
+
+    // Define a method to get allowed insert parameters
+    public function getAllowedUpdateParams(): array
+    {
+        return $this->allowedUpdateParams;
     }
 
     public function isNew(): bool
@@ -108,96 +130,83 @@ abstract class DatabaseModel extends Model
             ->get()[0] ?? null;
     }
 
-    public function create(array $data, array $allowedParams = [])
+    public function create(array $data)
     {
-        if ($this->validationPassed) {
-            if (empty($allowedParams)) {
-                $allowedParams = $this->allowedInsertParams;
-            }
+        // Build the data array for insert
+        $insertData = $this->buildInsertData($data);
 
-            $filteredData = $this->filterDataByAllowedParams($data, $allowedParams);
+        return $this->getQueryBuilder()
+            ->insert($insertData)
+            ->execute();
+    }
 
-            return $this->getQueryBuilder()
-                ->insert($filteredData)
+    public function insert(array $data)
+    {
+        // Build the data array for insert
+        $insertData = $this->buildInsertData($data);
+
+        try {
+            // Optionally, you can call a custom method before saving
+            $this->beforeSave();
+
+            $this->db->beginTransaction(); // Start a transaction
+
+            $result = $this->getQueryBuilder()
+                ->insert($insertData)
                 ->execute();
+
+            // Optionally, you can check if the insert was successful
+            if ($result) {
+                $this->db->commitTransaction(); // Commit the transaction
+                return $result;
+            } else {
+                $this->db->rollbackTransaction(); // Rollback the transaction on failure
+                return false;
+            }
+        } catch (BoltException $e) {
+            $this->db->rollbackTransaction(); // Rollback the transaction on exception
+            // echo "Error: " . $e->getMessage();
+            throw $e; // Rethrow the exception for handling at a higher level
         }
     }
 
-    public function insert(array $data, array $allowedParams = [])
+    // Define a method to build the data array for inserts
+    protected function buildInsertData(array $data): array
     {
-        if ($this->validationPassed) {
-            if (empty($allowedParams)) {
-                $allowedParams = $this->allowedInsertParams;
-            }
-
-            $filteredData = $this->filterDataByAllowedParams($data, $allowedParams);
-
-            try {
-                $this->db->beginTransaction(); // Start a transaction
-
-                // Optionally, you can call a custom method before saving
-                $this->beforeSave();
-
-                $result = $this->getQueryBuilder()
-                    ->insert($filteredData)
-                    ->execute();
-
-                // Optionally, you can check if the insert was successful
-                if ($result) {
-                    $this->db->commitTransaction(); // Commit the transaction
-                    return $result;
-                } else {
-                    $this->db->rollbackTransaction(); // Rollback the transaction on failure
-                    return false;
-                }
-            } catch (BoltException $e) {
-                $this->db->rollbackTransaction(); // Rollback the transaction on exception
-                // echo "Error: " . $e->getMessage();
-                throw $e; // Rethrow the exception for handling at a higher level
-            }
-        }
-    }
-
-    protected function filterDataByAllowedParams(array $data, array $allowedParams): array
-    {
-        return array_filter($data, function ($key) use ($allowedParams) {
-            return in_array($key, $allowedParams);
+        // Use the allowed insert parameters to filter the data
+        return array_filter($data, function ($key) {
+            return in_array($key, $this->getAllowedInsertParams());
         }, ARRAY_FILTER_USE_KEY);
     }
 
-    // // Update a record by primary key
-    // public function updateById($id, array $data)
-    // {
-    //     return $this->getQueryBuilder()
-    //         ->update($data)
-    //         ->where([$this->primary_key => $id])
-    //         ->execute();
-    // }
-
-    public function updateById($id, array $data, array $allowedParams = [])
+    // Define a method to build the data array for updates
+    protected function buildUpdateData(array $data): array
     {
-        if (empty($allowedParams)) {
-            $allowedParams = $this->allowedUpdateParams;
-        }
+        // Use the allowed update parameters to filter the data
+        return array_filter($data, function ($key) {
+            return in_array($key, $this->getAllowedUpdateParams());
+        }, ARRAY_FILTER_USE_KEY);
+    }
 
-        $filteredData = $this->filterDataByAllowedParams($data, $allowedParams);
+    // Update a record by primary key
+    public function updateById($id, array $data)
+    {
+        // Build the data array for insert
+        $updateData = $this->buildUpdateData($data);
 
         return $this->getQueryBuilder()
-            ->update($filteredData)
+            ->update($updateData)
             ->where([$this->primary_key => $id])
             ->execute();
     }
 
-    public function updateBy(array $data, array $conditions, array $allowedParams = [])
+    public function updateBy(array $data, array $conditions)
     {
-        if (empty($allowedParams)) {
-            $allowedParams = $this->allowedUpdateParams;
-        }
-
-        $filteredData = $this->filterDataByAllowedParams($data, $allowedParams);
+        // Build the data array for insert
+        $updateData = $this->buildUpdateData($data);
 
         return $this->getQueryBuilder()
-            ->update($filteredData)
+            ->update($updateData)
             ->where($conditions)
             ->execute();
     }
@@ -332,25 +341,5 @@ abstract class DatabaseModel extends Model
 
     public function beforeSave(): void
     {
-    }
-
-    public function runValidation($validator): void
-    {
-        $validates = $validator->runValidation();
-        if (!$validates) {
-            $this->validationPassed = false;
-            $this->errors[$validator->field] = $validator->msg;
-        }
-    }
-
-    public function getErrors(): array
-    {
-        return $this->errors;
-    }
-
-    public function setError($name, $value): void
-    {
-        $this->errors[$name] = $value;
-        $this->validationPassed = false;
     }
 }
