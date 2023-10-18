@@ -54,10 +54,10 @@ use Bolt\Bolt\Forms\BootstrapForm;
         <?= BootstrapForm::openForm("") ?>
         <div class="row">
             <div class="col-md-6 col-sm-12">
-                <?= BootstrapForm::inputField("Username", "username", "", ['class' => 'form-control'], ['class' => 'form-floating mb-3'], $errors) ?>
+                <?= BootstrapForm::inputField("Username", "username", old_value("username"), ['class' => 'form-control'], ['class' => 'form-floating mb-3'], $errors) ?>
             </div>
             <div class="col-md-6 col-sm-12">
-                <?= BootstrapForm::inputField("Email", "email", "", ['class' => 'form-control', 'type' => 'email'], ['class' => 'form-floating mb-3'], $errors) ?>
+                <?= BootstrapForm::inputField("Email", "email", old_value("email"), ['class' => 'form-control', 'type' => 'email'], ['class' => 'form-floating mb-3'], $errors) ?>
             </div>
         </div>
         <div class="row">

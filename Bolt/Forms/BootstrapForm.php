@@ -105,7 +105,7 @@ class BootstrapForm extends Form
             if (array_key_exists('class', $inputAttrs)) {
                 $inputAttrs['class'] .= ' is-invalid';
             } else {
-                $inputAttrs['class'] = 'is-invalid';
+                $inputAttrs['class'] = ' is-valid';
             }
         }
         return $inputAttrs;

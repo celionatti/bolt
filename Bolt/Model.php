@@ -12,8 +12,6 @@ declare(strict_types=1);
 
 namespace Bolt\Bolt;
 
-use DateTime;
-
 
 class Model
 {
@@ -26,48 +24,35 @@ class Model
 
     public array $errors = [];
 
+    public function loadData($data)
+    {
+        foreach ($data as $key => $value) {
+            if (property_exists($this, $key)) {
+                $this->{$key} = $value;
+            }
+        }
+    }
+
     public function rules()
     {
         return [];
     }
 
-    public function validate()
+    public function validate($data)
     {
         foreach ($this->rules() as $attribute => $rules) {
-            $value = $this->{$attribute};
-            foreach ($rules as $rule) {
-                $ruleName = $rule;
-                if (!is_string($rule)) {
-                    $ruleName = $rule[0];
+            if (!empty($data)) {
+                foreach ($rules as $rule) {
+                    $ruleName = $rule;
+                    if (!is_string($rule)) {
+                        $ruleName = $rule[0];
+                    }
+                    var_dump($ruleName);
                 }
-                if ($ruleName === self::RULE_REQUIRED && !$value) {
-                    $this->addErrorByRule($attribute, self::RULE_REQUIRED);
+                foreach ($data as $key => $item) {
+                    $value = $this->{$attribute};
+                    var_dump($key);
                 }
-                if ($ruleName === self::RULE_EMAIL && !filter_var($value, FILTER_VALIDATE_EMAIL)) {
-                    $this->addErrorByRule($attribute, self::RULE_EMAIL);
-                }
-                if ($ruleName === self::RULE_MIN && strlen($value) < $rule['min']) {
-                    $this->addErrorByRule($attribute, self::RULE_MIN, ['min' => $rule['min']]);
-                }
-                if ($ruleName === self::RULE_MAX && strlen($value) > $rule['max']) {
-                    $this->addErrorByRule($attribute, self::RULE_MAX);
-                }
-                if ($ruleName === self::RULE_MATCH && $value !== $this->{$rule['match']}) {
-                    $this->addErrorByRule($attribute, self::RULE_MATCH, ['match' => $rule['match']]);
-                }
-                // if ($ruleName === self::RULE_UNIQUE) {
-                //     $className = $rule['class'];
-                //     $uniqueAttr = $rule['attribute'] ?? $attribute;
-                //     $tableName = $className::tableName();
-                //     $db = Bolt::$bolt->database;
-                //     $statement = $db->query("SELECT * FROM $tableName WHERE $uniqueAttr = :$uniqueAttr");
-                //     $statement->bindValue(":$uniqueAttr", $value);
-                //     $statement->execute();
-                //     $record = $statement->fetchObject();
-                //     if ($record) {
-                //         $this->addErrorByRule($attribute, self::RULE_UNIQUE);
-                //     }
-                // }
             }
         }
         return empty($this->errors);
@@ -97,22 +82,11 @@ class Model
         foreach ($params as $key => $value) {
             $errorMessage = str_replace("{{$key}}", $value, $errorMessage);
         }
-        $this->errors[$attribute][] = $errorMessage;
+        $this->errors[$attribute] = $errorMessage;
     }
 
-    public function addError(string $attribute, string $message)
+    public function getErrors()
     {
-        $this->errors[$attribute][] = $message;
-    }
-
-    public function hasError($attribute)
-    {
-        return $this->errors[$attribute] ?? false;
-    }
-
-    public function getFirstError($attribute)
-    {
-        $errors = $this->errors[$attribute] ?? [];
-        return $errors[0] ?? '';
+        return $this->errors;
     }
 }

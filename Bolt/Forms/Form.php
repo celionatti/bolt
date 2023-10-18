@@ -11,6 +11,7 @@ declare(strict_types=1);
 namespace Bolt\Bolt\Forms;
 
 use Bolt\Bolt\Helpers\Csrf;
+use Bolt\Bolt\Model;
 
 class Form
 {
@@ -136,5 +137,11 @@ class Form
             $html .= " $key='$value'";
         }
         return $html;
+    }
+
+    protected static function getOneError($id, $errors)
+    {
+        $error = $errors[$id] ?? [];
+        return $error[0] ?? '';
     }
 }

@@ -33,7 +33,7 @@ class AuthController extends Controller
                 'password'
             ]);
             $data = $request->getBody();
-            if ($user->validate()) {
+            if ($user->validate($data)) {
                 // if ($user->insert($data)) {
                 //     FlashMessage::setMessage("User Created Successfully", FlashMessage::SUCCESS, ['role' => 'alert', 'style' => 'z-index: 9999;']);
                 //     redirect("/");
@@ -42,7 +42,8 @@ class AuthController extends Controller
         }
 
         $view = [
-            'errors' => [],
+            'errors' => $user->getErrors(),
+            'user' => $user,
             'uuid' => generateUuidV4()
         ];
 
