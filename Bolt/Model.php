@@ -18,6 +18,12 @@ class Model
 {
     public array $errors = [];
 
+    /**
+     * Validate the given data using defined rules.
+     *
+     * @param array $data
+     * @return bool True if data is valid, false otherwise.
+     */
     public function validate($data)
     {
         foreach ($this->rules() as $field => $fieldRules) {
@@ -52,7 +58,12 @@ class Model
         return empty($this->errors);
     }
 
-    public function rules()
+    /**
+     * Define validation rules for each field.
+     *
+     * @return array An array where keys are field names, and values are arrays of rules.
+     */
+    public function rules(): array
     {
         return [];
     }
@@ -75,6 +86,15 @@ class Model
         return true;
     }
 
+    /**
+     * Add an error message for a specific field.
+     *
+     * @param [type] $field
+     * @param [type] $rule
+     * @param array $params
+     * @param [type] $message
+     * @return void
+     */
     private function addError($field, $rule, $params = [], $message = null)
     {
         if ($message === null) {
@@ -83,6 +103,13 @@ class Model
         $this->errors[$field] = $message;
     }
 
+    /**
+     * Create a custom error, with message.
+     *
+     * @param [type] $field
+     * @param [type] $message
+     * @return void
+     */
     public function createError($field, $message)
     {
         $this->errors[$field] = $message;
@@ -207,9 +234,12 @@ class Model
         // Return true if the value passes the validation, or false otherwise.
     }
 
-    // Add more validation rules as needed
-
-    public function getErrors()
+    /**
+     * Get the validation errors.
+     *
+     * @return array An array where keys are field names, and values are arrays of error messages.
+     */
+    public function getErrors():array
     {
         return $this->errors;
     }

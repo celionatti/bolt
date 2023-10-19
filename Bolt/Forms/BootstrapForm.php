@@ -21,7 +21,7 @@ class BootstrapForm extends Form
 
     public static function inputField($label, $id, $value, $inputAttrs = [], $wrapperAttrs = [], $errors = []): string
     {
-        $inputAttrs = self::appendErrors($id, $inputAttrs, $errors);
+        $inputAttrs = self::appendBootErrors($id, $inputAttrs, $errors);
         $wrapperAttrs['class'] = 'form-group ' . ($wrapperAttrs['class'] ?? '');
         $wrapperStr = self::processAttrs($wrapperAttrs);
         $inputAttrs['class'] = 'form-control ' . ($inputAttrs['class'] ?? '');
@@ -36,7 +36,7 @@ class BootstrapForm extends Form
 
     public static function selectField($label, $id, $value, $options, $inputAttrs = [], $wrapperAttrs = [], $errors = []): string
     {
-        $inputAttrs = self::appendErrors($id, $inputAttrs, $errors);
+        $inputAttrs = self::appendBootErrors($id, $inputAttrs, $errors);
         $wrapperAttrs['class'] = 'form-group ' . ($wrapperAttrs['class'] ?? '');
         $wrapperStr = self::processAttrs($wrapperAttrs);
         $inputAttrs['class'] = 'form-control ' . ($inputAttrs['class'] ?? '');
@@ -56,7 +56,7 @@ class BootstrapForm extends Form
 
     public static function checkField($label, $id, $checked = '', $inputAttrs = [], $wrapperAttrs = [], $errors = []): string
     {
-        $inputAttrs = self::appendErrors($id, $inputAttrs, $errors);
+        $inputAttrs = self::appendBootErrors($id, $inputAttrs, $errors);
         $wrapperAttrs['class'] = 'form-check ' . ($wrapperAttrs['class'] ?? '');
         $wrapperStr = self::processAttrs($wrapperAttrs);
         $inputStr = self::processAttrs($inputAttrs);
@@ -71,7 +71,7 @@ class BootstrapForm extends Form
 
     public static function textareaField($label, $id, $value, $inputAttrs = [], $wrapperAttrs = [], $errors = []): string
     {
-        $inputAttrs = self::appendErrors($id, $inputAttrs, $errors);
+        $inputAttrs = self::appendBootErrors($id, $inputAttrs, $errors);
         $wrapperAttrs['class'] = 'form-group ' . ($wrapperAttrs['class'] ?? '');
         $wrapperStr = self::processAttrs($wrapperAttrs);
         $inputAttrs['class'] = 'form-control ' . ($inputAttrs['class'] ?? '');
@@ -86,7 +86,7 @@ class BootstrapForm extends Form
 
     public static function fileField($label, $id, $input = [], $wrapper = [], $errors = []): string
     {
-        $inputAttrs = self::appendErrors($id, $input, $errors);
+        $inputAttrs = self::appendBootErrors($id, $input, $errors);
         $wrapperAttrs['class'] = 'form-group ' . ($wrapperAttrs['class'] ?? '');
         $wrapperStr = self::processAttrs($wrapperAttrs);
         $inputAttrs['class'] = 'form-control-file ' . ($inputAttrs['class'] ?? '');
@@ -99,7 +99,7 @@ class BootstrapForm extends Form
         return $html;
     }
 
-    public static function appendErrors($key, $inputAttrs, $errors)
+    public static function appendBootErrors($key, $inputAttrs, $errors)
     {
         if (array_key_exists($key, $errors)) {
             if (array_key_exists('class', $inputAttrs)) {

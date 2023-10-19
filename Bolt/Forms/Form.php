@@ -62,6 +62,86 @@ class Form
         return $html;
     }
 
+    public static function inputForm($label, $id, $value, $inputAttrs = [], $wrapperAttrs = [], $errors = []): string
+    {
+        $inputAttrs = self::appendErrors($id, $inputAttrs, $errors);
+        $wrapperAttrs['class'] = 'form-group ' . ($wrapperAttrs['class'] ?? '');
+        $wrapperStr = self::processAttrs($wrapperAttrs);
+        $inputAttrs['class'] = 'form-control ' . ($inputAttrs['class'] ?? '');
+        $inputStr = self::processAttrs($inputAttrs);
+        $errorMsg = array_key_exists($id, $errors) ? $errors[$id] : '';
+        $html = "<div {$wrapperStr}>";
+        $html .= "<label for='{$id}' class='form-label'>{$label}</label>";
+        $html .= "<input id='{$id}' name='{$id}' value='{$value}' {$inputStr} placeholder='{$label}' />";
+        $html .= "<div class='message'>{$errorMsg}</div></div>";
+        return $html;
+    }
+
+    public static function selectForm($label, $id, $value, $options, $inputAttrs = [], $wrapperAttrs = [], $errors = []): string
+    {
+        $inputAttrs = self::appendErrors($id, $inputAttrs, $errors);
+        $wrapperAttrs['class'] = 'form-group ' . ($wrapperAttrs['class'] ?? '');
+        $wrapperStr = self::processAttrs($wrapperAttrs);
+        $inputAttrs['class'] = 'form-control ' . ($inputAttrs['class'] ?? '');
+        $inputStr = self::processAttrs($inputAttrs);
+        $errorMsg = array_key_exists($id, $errors) ? $errors[$id] : '';
+        $html = "<div {$wrapperStr}>";
+        $html .= "<label for='{$id}' class='form-label'>{$label}</label>";
+        $html .= "<select id='{$id}' name='{$id}' class='form-select' {$inputStr}>";
+        foreach ($options as $val => $display) {
+            $selected = $val == $value ? ' selected ' : '';
+            $html .= "<option value='{$val}'{$selected}>{$display}</option>";
+        }
+        $html .= "</select>";
+        $html .= "<div class='message'>{$errorMsg}</div></div>";
+        return $html;
+    }
+
+    public static function checkForm($label, $id, $checked = '', $inputAttrs = [], $wrapperAttrs = [], $errors = []): string
+    {
+        $inputAttrs = self::appendErrors($id, $inputAttrs, $errors);
+        $wrapperAttrs['class'] = 'form-check ' . ($wrapperAttrs['class'] ?? '');
+        $wrapperStr = self::processAttrs($wrapperAttrs);
+        $inputStr = self::processAttrs($inputAttrs);
+        $checkedStr = $checked == 'on' ? 'checked' : '';
+        $errorMsg = array_key_exists($id, $errors) ? $errors[$id] : '';
+        $html = "<div {$wrapperStr}>";
+        $html .= "<input type=\"checkbox\" id=\"{$id}\" name=\"{$id}\" {$inputStr} {$checkedStr} class='form-check-input'>";
+        $html .= "<label class='form-check-label' for=\"{$id}\">{$label}</label>";
+        $html .= "<div class='message'>{$errorMsg}</div></div>";
+        return $html;
+    }
+
+    public static function textareaForm($label, $id, $value, $inputAttrs = [], $wrapperAttrs = [], $errors = []): string
+    {
+        $inputAttrs = self::appendErrors($id, $inputAttrs, $errors);
+        $wrapperAttrs['class'] = 'form-group ' . ($wrapperAttrs['class'] ?? '');
+        $wrapperStr = self::processAttrs($wrapperAttrs);
+        $inputAttrs['class'] = 'form-control ' . ($inputAttrs['class'] ?? '');
+        $inputStr = self::processAttrs($inputAttrs);
+        $errorMsg = array_key_exists($id, $errors) ? $errors[$id] : '';
+        $html = "<div {$wrapperStr}>";
+        $html .= "<label for='{$id}' class='form-label'>{$label}</label>";
+        $html .= "<textarea id='{$id}' name='{$id}' {$inputStr} placeholder='{$label}'>{$value}</textarea>";
+        $html .= "<div class='message'>{$errorMsg}</div></div>";
+        return $html;
+    }
+
+    public static function fileForm($label, $id, $input = [], $wrapper = [], $errors = []): string
+    {
+        $inputAttrs = self::appendErrors($id, $input, $errors);
+        $wrapperAttrs['class'] = 'form-group ' . ($wrapperAttrs['class'] ?? '');
+        $wrapperStr = self::processAttrs($wrapperAttrs);
+        $inputAttrs['class'] = 'form-control-file ' . ($inputAttrs['class'] ?? '');
+        $inputStr = self::processAttrs($inputAttrs);
+        $errorMsg = array_key_exists($id, $errors) ? $errors[$id] : '';
+        $html = "<div {$wrapperStr}>";
+        $html .= "<label for=\"{$id}\" class='form-label'>{$label}</label>";
+        $html .= "<input type=\"file\" id=\"{$id}\" name=\"{$id}\" {$inputStr} class='form-control-file'/>";
+        $html .= "<div class=\"message\">{$errorMsg}</div></div>";
+        return $html;
+    }
+
     public static function textarea($name, $label, $value = '', $attrs = [])
     {
         $html = "<label for='$name'>$label</label>";
@@ -137,6 +217,18 @@ class Form
             $html .= " $key='$value'";
         }
         return $html;
+    }
+
+    public static function appendErrors($key, $inputAttrs, $errors)
+    {
+        if (array_key_exists($key, $errors)) {
+            if (array_key_exists('class', $inputAttrs)) {
+                $inputAttrs['class'] .= ' is-invalid';
+            } else {
+                $inputAttrs['class'] = ' is-invalid';
+            }
+        }
+        return $inputAttrs;
     }
 
     protected static function getOneError($id, $errors)

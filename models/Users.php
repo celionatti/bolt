@@ -27,7 +27,7 @@ class Users extends DatabaseModel
         return 'users';
     }
 
-    public function rules()
+    public function rules(): array
     {
         return [
             'username' => [
