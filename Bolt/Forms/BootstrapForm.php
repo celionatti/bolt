@@ -28,7 +28,7 @@ class BootstrapForm extends Form
         $inputStr = self::processAttrs($inputAttrs);
         $errorMsg = array_key_exists($id, $errors) ? $errors[$id] : '';
         $html = "<div {$wrapperStr}>";
-        $html .= "<label for='{$id}'>{$label}</label>";
+        $html .= "<label for='{$id}' class='form-label'>{$label}</label>";
         $html .= "<input id='{$id}' name='{$id}' value='{$value}' {$inputStr} placeholder='{$label}' />";
         $html .= "<div class='invalid-feedback'>{$errorMsg}</div></div>";
         return $html;
@@ -43,8 +43,8 @@ class BootstrapForm extends Form
         $inputStr = self::processAttrs($inputAttrs);
         $errorMsg = array_key_exists($id, $errors) ? $errors[$id] : '';
         $html = "<div {$wrapperStr}>";
-        $html .= "<label for='{$id}'>{$label}</label>";
-        $html .= "<select id='{$id}' name='{$id}' {$inputStr} class='custom-select'>";
+        $html .= "<label for='{$id}' class='form-label'>{$label}</label>";
+        $html .= "<select id='{$id}' name='{$id}' class='form-select' {$inputStr}>";
         foreach ($options as $val => $display) {
             $selected = $val == $value ? ' selected ' : '';
             $html .= "<option value='{$val}'{$selected}>{$display}</option>";
@@ -78,7 +78,7 @@ class BootstrapForm extends Form
         $inputStr = self::processAttrs($inputAttrs);
         $errorMsg = array_key_exists($id, $errors) ? $errors[$id] : '';
         $html = "<div {$wrapperStr}>";
-        $html .= "<label for='{$id}'>{$label}</label>";
+        $html .= "<label for='{$id}' class='form-label'>{$label}</label>";
         $html .= "<textarea id='{$id}' name='{$id}' {$inputStr} placeholder='{$label}'>{$value}</textarea>";
         $html .= "<div class='invalid-feedback'>{$errorMsg}</div></div>";
         return $html;
@@ -93,7 +93,7 @@ class BootstrapForm extends Form
         $inputStr = self::processAttrs($inputAttrs);
         $errorMsg = array_key_exists($id, $errors) ? $errors[$id] : '';
         $html = "<div {$wrapperStr}>";
-        $html .= "<label for=\"{$id}\">{$label}</label>";
+        $html .= "<label for=\"{$id}\" class='form-label'>{$label}</label>";
         $html .= "<input type=\"file\" id=\"{$id}\" name=\"{$id}\" {$inputStr} class='form-control-file'/>";
         $html .= "<div class=\"invalid-feedback\">{$errorMsg}</div></div>";
         return $html;
@@ -105,7 +105,7 @@ class BootstrapForm extends Form
             if (array_key_exists('class', $inputAttrs)) {
                 $inputAttrs['class'] .= ' is-invalid';
             } else {
-                $inputAttrs['class'] = ' is-valid';
+                $inputAttrs['class'] = ' is-invalid';
             }
         }
         return $inputAttrs;

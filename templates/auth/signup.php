@@ -54,26 +54,26 @@ use Bolt\Bolt\Forms\BootstrapForm;
         <?= BootstrapForm::openForm("") ?>
         <div class="row">
             <div class="col-md-6 col-sm-12">
-                <?= BootstrapForm::inputField("Username", "username", old_value("username"), ['class' => 'form-control'], ['class' => 'form-floating mb-3'], $errors) ?>
+                <?= BootstrapForm::inputField("Username", "username", old_value("username"), ['class' => 'form-control'], ['class' => 'mb-3'], $errors) ?>
             </div>
             <div class="col-md-6 col-sm-12">
-                <?= BootstrapForm::inputField("Email", "email", old_value("email"), ['class' => 'form-control', 'type' => 'email'], ['class' => 'form-floating mb-3'], $errors) ?>
-            </div>
-        </div>
-        <div class="row">
-            <div class="col-md-6 col-sm-12">
-                <?= BootstrapForm::inputField("Name", "name", "", ['class' => 'form-control'], ['class' => 'form-floating mb-3'], $errors) ?>
-            </div>
-            <div class="col-md-6 col-sm-12">
-                <?= BootstrapForm::inputField("Phone", "phone", "", ['class' => 'form-control', 'type' => 'tel'], ['class' => 'form-floating mb-3'], $errors) ?>
+                <?= BootstrapForm::inputField("Email", "email", old_value("email"), ['class' => 'form-control', 'type' => 'email'], ['class' => 'mb-3'], $errors) ?>
             </div>
         </div>
         <div class="row">
             <div class="col-md-6 col-sm-12">
-                <?= BootstrapForm::inputField("Password", "password", "", ['class' => 'form-control', 'type' => 'password'], ['class' => 'form-floating mb-3'], $errors) ?>
+                <?= BootstrapForm::inputField("Name", "name", old_value("name"), ['class' => 'form-control'], ['class' => 'mb-3'], $errors) ?>
             </div>
             <div class="col-md-6 col-sm-12">
-                <?= BootstrapForm::inputField("Confirm Password", "confirm_password", "", ['class' => 'form-control', 'type' => 'password'], ['class' => 'form-floating mb-3'], $errors) ?>
+                <?= BootstrapForm::inputField("Phone", "phone", old_value("phone"), ['class' => 'form-control', 'type' => 'tel'], ['class' => 'mb-3'], $errors) ?>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-6 col-sm-12">
+                <?= BootstrapForm::inputField("Password", "password", old_value("password"), ['class' => 'form-control', 'type' => 'passwords'], ['class' => 'mb-3'], $errors) ?>
+            </div>
+            <div class="col-md-6 col-sm-12">
+                <?= BootstrapForm::inputField("Confirm Password", "confirm_password", old_value("confirm_password"), ['class' => 'form-control', 'type' => 'passwords'], ['class' => 'mb-3'], $errors) ?>
             </div>
         </div>
         <?= BootstrapForm::submitButton("Signup", "btn btn-secondary btn-sm p-3 w-50") ?>
