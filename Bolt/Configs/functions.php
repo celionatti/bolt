@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Bolt\Bolt\Bolt;
 use Bolt\Bolt\View\BoltView;
+use Bolt\Bolt\BoltException\BoltException;
 
 function bolt_env($data)
 {
@@ -615,4 +616,37 @@ function typeCastData($key, $value)
         default:
             return $value;
     }
+}
+
+/**
+ * Hash Password with salt.
+ *
+ * @param string $password
+ * @param integer $cost Adjust the cost factor as needed (higher is slower but more secure)
+ * @return void
+ */
+function hashPassword(string $password, $cost = 12):string
+{
+    $salt = bin2hex(random_bytes(16)); // Generate a random salt
+    $hash = password_hash($password . $salt, PASSWORD_BCRYPT, ['cost' => $cost]);
+
+    if ($hash === false) {
+        throw new BoltException('Password hash could not be created.');
+    }
+
+    return $hash;
+}
+
+/**
+ * Verify the Hash Password.
+ *
+ * @param string $password
+ * @param string $hashedPassword
+ * @return boolean
+ */
+function verifyPassword(string $password, string $hashedPassword): bool
+{
+    list($hash, $salt) = explode('$', $hashedPassword, 2);
+
+    return password_verify($password . $salt, $hashedPassword);
 }

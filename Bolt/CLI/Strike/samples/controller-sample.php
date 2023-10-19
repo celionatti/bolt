@@ -18,19 +18,20 @@ class {CLASSNAME} extends Controller
 {
     public function onConstruct(): void
     {
+        // To add middleware, if middleware is for all the controller page, dont all the array. ['users'].
         $this->registerMiddleware(new AuthMiddleware(['users']));    
     }
 
     public function welcome()
     {
-        $data = [
+        $view = [
             'title' => 'Bolt Framework',
             'header' => 'Hello, User! Welcome to Bolt Framework',
             'text' => 'You are most welcome to our world.',
             'items' => ['Item 1', 'Item 2', 'Item 3'],
         ];
 
-        $this->view->render("{VIEWPATH}", $data);
+        $this->view->render("{VIEWPATH}", $view);
     }
 
     public function onConstruct(): void
@@ -48,23 +49,29 @@ class {CLASSNAME} extends Controller
         $user = new Users();
 
         if ($request->isPost()) {
-            $data = $request->getBody();
-            $user->allowedInsertParams = [
+            $user->setAllowedInsertParams([
                 'username',
                 'name',
                 'phone',
                 'email',
                 'acl',
                 'password'
-            ];
-            if ($user->insert($data)) {
-                FlashMessage::setMessage("User Created Successfully", FlashMessage::SUCCESS, ['role' => 'alert', 'style' => 'z-index: 9999;']);
-                redirect("/");
+            ]);
+            $data = $request->getBody();
+            // check for password validation.
+            $user->passwordsMatchValidation($data['password'], $data['confirm_password']);
+            if ($user->validate($data)) {
+                // other method before saving.
+                $data['password'] = hashPassword($data['password']);
+                if ($user->insert($data)) {
+                    FlashMessage::setMessage("User Created Successfully", FlashMessage::SUCCESS, ['role' => 'alert', 'style' => 'z-index: 9999;']);
+                    redirect("/");
+                }
             }
         }
-
         $view = [
-            'errors' => [],
+            'errors' => $user->getErrors(),
+            'user' => $user,
             'uuid' => generateUuidV4()
         ];
 

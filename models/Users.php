@@ -3,9 +3,11 @@
 declare(strict_types=1);
 
 /**
- * ======================================
- * Users =================
- * ======================================
+ * =============================================
+ * ================             ================
+ * Users Model
+ * ================             ================
+ * =============================================
  */
 
 namespace Bolt\models;
@@ -15,13 +17,6 @@ use Bolt\Bolt\Database\DatabaseModel;
 
 class Users extends DatabaseModel
 {
-    public string $username = "";
-    public string $name = "";
-    public string $email = "";
-    public string $phone = "";
-    public string $password = "";
-    public string $confirm_password = "";
-
     public static function tableName(): string
     {
         return 'users';

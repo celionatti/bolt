@@ -211,6 +211,14 @@ class Model
         return $password !== $confirmPassword;
     }
 
+    /**
+     * Comparing Password Validation.
+     *
+     * @param array|string $password
+     * @param array|string $confirmPassword
+     * @param string $msgParam
+     * @return bool
+     */
     public function passwordsMatchValidation($password, $confirmPassword, $msgParam = 'confirm_password')
     {
         if ($password !== $confirmPassword) {

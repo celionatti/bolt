@@ -35,10 +35,12 @@ class AuthController extends Controller
             $data = $request->getBody();
             $user->passwordsMatchValidation($data['password'], $data['confirm_password']);
             if ($user->validate($data)) {
-                // if ($user->insert($data)) {
-                //     FlashMessage::setMessage("User Created Successfully", FlashMessage::SUCCESS, ['role' => 'alert', 'style' => 'z-index: 9999;']);
-                //     redirect("/");
-                // }
+                // other method before saving.
+                $data['password'] = hashPassword($data['password']);
+                if ($user->insert($data)) {
+                    FlashMessage::setMessage("User Created Successfully", FlashMessage::SUCCESS, ['role' => 'alert', 'style' => 'z-index: 9999;']);
+                    redirect("/");
+                }
             }
         }
 
