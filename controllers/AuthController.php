@@ -24,7 +24,7 @@ class AuthController extends Controller
         $user = new Users();
 
         if ($request->isPost()) {
-            $user->setAllowedInsertParams([
+            $user->fillable([
                 'username',
                 'name',
                 'phone',

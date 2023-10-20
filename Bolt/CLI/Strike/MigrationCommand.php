@@ -58,6 +58,8 @@ class MigrationCommand implements CommandInterface
             $this->rollback($action, $filename);
         } elseif ($action === "refresh") {
             $this->refresh($action, $filename);
+        } elseif ($action === "create") {
+            $this->create($action, $filename);
         } else {
             $this->message("Unknown Command - You can check help or docs, to see the lists of command and method of calling.", true, true, 'warning');
         }
@@ -191,6 +193,60 @@ class MigrationCommand implements CommandInterface
     {
         $this->rollback($action, $filename);
         $this->migrate($action, $filename);
+    }
+
+    private function create($action, $filename)
+    {
+        // Check if the model directory already exists
+        $migrationDir = $this->basePath . DIRECTORY_SEPARATOR . "migrations" . DIRECTORY_SEPARATOR;
+
+        if (!is_dir($migrationDir)) {
+            // Create the model directory
+            mkdir($migrationDir, 0755, true);
+        }
+
+        // Check if the directory was created successfully
+        if (!is_dir($migrationDir)) {
+            $this->message("Error: Unable to create the migration directory.", true, true, "error");
+        }
+
+        /**
+         * Check if Migration file already exists.
+         */
+        $migrationFile = $migrationDir . date("Y-m-d_His_") . $filename . '.php';
+        if (file_exists($migrationFile)) {
+            $mg = ucfirst($filename);
+            $this->message("Migration File {$mg} already exists.", true, true, "warning");
+        }
+
+        // Create the migration file
+        if (!touch($migrationFile)) {
+            $this->message("Error: Unable to create the migration file.", true, true, "error");
+        }
+
+        /**
+         * Customize the content of migration class here.
+         * From the sample class.
+         */
+        $sample_file = __DIR__ . "/samples/migration-sample.php";
+
+        if (!file_exists($sample_file))
+            $this->message("Error: Migration Sample file not found in: " . $sample_file, true, true, "error");
+
+        $class_name = "BM_" . pathinfo($migrationFile, PATHINFO_FILENAME);
+        $class_name = str_replace("-", "_", $class_name);
+
+        $table_name = strtolower($class_name);
+
+        $content = file_get_contents($sample_file);
+        $content = str_replace("{TABLENAME}", $table_name, $content);
+        $content = str_replace("{CLASSNAME}", $class_name, $content);
+
+        // file_put_contents($migrationFile, $content);
+        if (file_put_contents($migrationFile, $content) === false) {
+            $this->message("Error: Unable to write content to the migration file.", true, true, "error");
+        }
+        $this->message("Migration file created successfully, FileName: '$migrationFile'!");
     }
 
     public function message(string $message, bool $die = false, bool $timestamp = true, string $level = 'info'): void

@@ -30,8 +30,8 @@ abstract class DatabaseModel extends Model
     public $offset            = 0;
     public array $errors      = [];
 
-    protected $allowedInsertParams = [];
-    protected $allowedUpdateParams = [];
+    protected $fillable_data = [];
+    protected $updatable_data = [];
 
     public function __construct()
     {
@@ -49,28 +49,46 @@ abstract class DatabaseModel extends Model
         return $this->queryBuilder;
     }
 
-    // Define a method to set allowed insert parameters
-    public function setAllowedInsertParams(array $params): void
+    /**
+     * Define a method to set allowed insert parameters
+     *
+     * @param array $fillables
+     * @return void
+     */
+    public function fillable(array $fillables): void
     {
-        $this->allowedInsertParams = $params;
+        $this->fillable_data = $fillables;
     }
 
-    // Define a method to get allowed insert parameters
-    public function getAllowedInsertParams(): array
+    /**
+     * Define a method to get allowed insert parameters
+     *
+     * @return array Array of the fillables data.
+     */
+    public function getFillable(): array
     {
-        return $this->allowedInsertParams;
+        return $this->fillable_data;
     }
 
-    // Define a method to set allowed insert parameters
-    public function setAllowedUpdateParams(array $params): void
+    /**
+     * Define a method to set allowed updated parameters
+     *
+     * @param array $updatable
+     * @return void
+     */
+    public function updatable(array $updatable): void
     {
-        $this->allowedUpdateParams = $params;
+        $this->updatable_data = $updatable;
     }
 
-    // Define a method to get allowed insert parameters
-    public function getAllowedUpdateParams(): array
+    /**
+     * Define a method to get allowed updated parameters
+     *
+     * @return array
+     */
+    public function getUpdatable(): array
     {
-        return $this->allowedUpdateParams;
+        return $this->updatable_data;
     }
 
     public function isNew(): bool
@@ -133,7 +151,7 @@ abstract class DatabaseModel extends Model
     public function create(array $data)
     {
         // Build the data array for insert
-        $insertData = $this->buildInsertData($data);
+        $insertData = $this->buildFillableData($data);
 
         return $this->getQueryBuilder()
             ->insert($insertData)
@@ -143,7 +161,7 @@ abstract class DatabaseModel extends Model
     public function insert(array $data)
     {
         // Build the data array for insert
-        $insertData = $this->buildInsertData($data);
+        $insertData = $this->buildFillableData($data);
 
         try {
             // Optionally, you can call a custom method before saving
@@ -170,29 +188,11 @@ abstract class DatabaseModel extends Model
         }
     }
 
-    // Define a method to build the data array for inserts
-    protected function buildInsertData(array $data): array
-    {
-        // Use the allowed insert parameters to filter the data
-        return array_filter($data, function ($key) {
-            return in_array($key, $this->getAllowedInsertParams());
-        }, ARRAY_FILTER_USE_KEY);
-    }
-
-    // Define a method to build the data array for updates
-    protected function buildUpdateData(array $data): array
-    {
-        // Use the allowed update parameters to filter the data
-        return array_filter($data, function ($key) {
-            return in_array($key, $this->getAllowedUpdateParams());
-        }, ARRAY_FILTER_USE_KEY);
-    }
-
     // Update a record by primary key
     public function updateById($id, array $data)
     {
         // Build the data array for insert
-        $updateData = $this->buildUpdateData($data);
+        $updateData = $this->buildUpdatableData($data);
 
         return $this->getQueryBuilder()
             ->update($updateData)
@@ -203,19 +203,10 @@ abstract class DatabaseModel extends Model
     public function updateBy(array $data, array $conditions)
     {
         // Build the data array for insert
-        $updateData = $this->buildUpdateData($data);
+        $updateData = $this->buildUpdatableData($data);
 
         return $this->getQueryBuilder()
             ->update($updateData)
-            ->where($conditions)
-            ->execute();
-    }
-
-    // Delete records based on conditions
-    public function deleteBy(array $conditions)
-    {
-        return $this->getQueryBuilder()
-            ->delete()
             ->where($conditions)
             ->execute();
     }
@@ -228,6 +219,33 @@ abstract class DatabaseModel extends Model
     //         ->where($conditions)
     //         ->execute();
     // }
+
+    // Define a method to build the data array for inserts
+    protected function buildFillableData(array $data): array
+    {
+        // Use the allowed insert parameters to filter the data
+        return array_filter($data, function ($key) {
+            return in_array($key, $this->getFillable());
+        }, ARRAY_FILTER_USE_KEY);
+    }
+
+    // Define a method to build the data array for updates
+    protected function buildUpdatableData(array $data): array
+    {
+        // Use the allowed update parameters to filter the data
+        return array_filter($data, function ($key) {
+            return in_array($key, $this->getUpdatable());
+        }, ARRAY_FILTER_USE_KEY);
+    }
+
+    // Delete records based on conditions
+    public function deleteBy(array $conditions)
+    {
+        return $this->getQueryBuilder()
+            ->delete()
+            ->where($conditions)
+            ->execute();
+    }
 
     // Delete a record by primary key
     public function deleteById($id)

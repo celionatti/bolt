@@ -19,22 +19,41 @@ class BoltMigration extends Database
     private $indexes = [];
     public $dataType = "mysql";
 
+    /**
+     * Create a new table with the specified name.
+     *
+     * @param string $tableName The name of the table to create.
+     * @return $this
+     */
     public function createTable($tableName)
     {
         $this->table = $tableName;
         return $this;
     }
 
-    public function id()
+    /**
+     * Define an 'id' column with optional BIGINT as Type default is INT.
+     *
+     * @param boolean $bigint
+     * @return $this
+     */
+    public function id($bigint = false)
     {
         $this->columns[] = [
             'name' => 'id',
-            'type' => 'INT',
+            'type' => $bigint ? 'INT' : 'BIGINT',
             'constraints' => 'AUTO_INCREMENT PRIMARY KEY',
         ];
         return $this;
     }
 
+    /**
+     * Define a VARCHAR column with the specified name and optional length.
+     *
+     * @param string $columnName The name of the VARCHAR column.
+     * @param integer $length (Optional) The length of the VARCHAR column (default: 255).
+     * @return $this
+     */
     public function varchar($columnName, $length = 255)
     {
         if ($this->dataType === 'mysql') {
@@ -55,6 +74,12 @@ class BoltMigration extends Database
         return $this;
     }
 
+    /**
+     * Define an INT column with the specified name.
+     *
+     * @param string $columnName The name of the INT column.
+     * @return $this
+     */
     public function int($columnName)
     {
         if ($this->dataType === 'mysql') {
@@ -75,6 +100,12 @@ class BoltMigration extends Database
         return $this;
     }
 
+    /**
+     * Define a BIGINT column with the specified name.
+     *
+     * @param string $columnName The name of the BIGINT column.
+     * @return $this
+     */
     public function bigint($columnName)
     {
         if ($this->dataType === 'mysql') {
@@ -95,6 +126,12 @@ class BoltMigration extends Database
         return $this;
     }
 
+    /**
+     * Define a TINYINT column with the specified name.
+     *
+     * @param string $columnName The name of the TINYINT column.
+     * @return $this
+     */
     public function tinyint($columnName)
     {
         if ($this->dataType === 'mysql') {
@@ -115,6 +152,11 @@ class BoltMigration extends Database
         return $this;
     }
 
+    /**
+     * Add AUTO_INCREMENT constraint to the last added column (for MySQL).
+     *
+     * @return $this
+     */
     public function autoIncrement()
     {
         if ($this->dataType === 'mysql') {
@@ -130,6 +172,12 @@ class BoltMigration extends Database
         return $this;
     }
 
+    /**
+     * Define a TEXT column with the specified name.
+     *
+     * @param string $columnName The name of the TEXT column.
+     * @return $this
+     */
     public function text($columnName)
     {
         if ($this->dataType === 'mysql') {
@@ -150,6 +198,12 @@ class BoltMigration extends Database
         return $this;
     }
 
+    /**
+     * Define a DATE column with the specified name.
+     *
+     * @param string $columnName The name of the DATE column.
+     * @return $this
+     */
     public function date($columnName)
     {
         if ($this->dataType === 'mysql') {
@@ -170,6 +224,13 @@ class BoltMigration extends Database
         return $this;
     }
 
+    /**
+     * Define an ENUM column with the specified name and possible values.
+     *
+     * @param string $columnName The name of the ENUM column.
+     * @param array $enumValues An array of possible ENUM values.
+     * @return $this
+     */
     public function enum($columnName, array $enumValues)
     {
         $enumValues = array_map([$this, 'quoteValue'], $enumValues);
@@ -194,6 +255,11 @@ class BoltMigration extends Database
         return $this;
     }
 
+    /**
+     * Add PRIMARY KEY constraint to the last added column.
+     *
+     * @return $this
+     */
     public function primaryKey()
     {
         // Add primary key constraint to the last added column
@@ -203,7 +269,12 @@ class BoltMigration extends Database
         return $this;
     }
 
-
+    /**
+     * Add a UNIQUE constraint to the last added column.
+     *
+     * @param string $columnName The name of the column to make unique.
+     * @return $this
+     */
     public function uniqueKey($columnName)
     {
         // Add a unique constraint to the last added column
@@ -217,6 +288,12 @@ class BoltMigration extends Database
         return $this;
     }
 
+    /**
+     * Set a default value for the last added column.
+     *
+     * @param mixed $value The default value to set.
+     * @return $this
+     */
     public function defaultValue($value)
     {
         // Set a default value for the last added column
@@ -230,6 +307,11 @@ class BoltMigration extends Database
         return $this;
     }
 
+    /**
+     * Make the last added column nullable.
+     *
+     * @return $this
+     */
     public function nullable()
     {
         // Make the last added column nullable
@@ -243,7 +325,31 @@ class BoltMigration extends Database
         return $this;
     }
 
+    public function timestamp($columnName, $useCurrent = false)
+    {
+        if ($this->dataType === 'mysql') {
+            $this->columns[] = [
+                'name' => $columnName,
+                'type' => $useCurrent ? 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP' : 'TIMESTAMP',
+            ];
+        } elseif ($this->dataType === 'pgsql') {
+            $this->columns[] = [
+                'name' => $columnName,
+                'type' => $useCurrent ? 'TIMESTAMPTZ DEFAULT NOW()' : 'TIMESTAMPTZ',
+            ];
+        } else {
+            $this->consoleLog("Unsupported database type: {$this->dataType}", true, true, 'error');
+            return $this;
+        }
 
+        return $this;
+    }
+
+    /**
+     * Add 'created_at' and 'updated_at' TIMESTAMP columns.
+     *
+     * @return $this
+     */
     public function timestamps()
     {
         if ($this->dataType === 'mysql') {
@@ -274,6 +380,14 @@ class BoltMigration extends Database
         return $this;
     }
 
+    /**
+     * Define an index on a column with an optional name and uniqueness.
+     *
+     * @param string $columnName The name of the indexed column.
+     * @param string $indexName The name of the indexed column.
+     * @param boolean $unique (Optional) Set to true to create a unique index, false for non-unique (default: false).
+     * @return $this
+     */
     public function index($columnName, $indexName = null, $unique = false)
     {
         if ($indexName === null) {
@@ -290,13 +404,46 @@ class BoltMigration extends Database
         return $this;
     }
 
+    /**
+     * Define a foreign key relationship on the specified column.
+     *
+     * @param string $columnName The name of the column with the foreign key.
+     * @param string $referencedTable The name of the referenced table.
+     * @param string $referencedColumn (Optional) The name of the referenced column (default: 'id').
+     * @param string $onDelete (Optional) The ON DELETE action (default: 'CASCADE').
+     * @param string $onUpdate (Optional) The ON UPDATE action (default: 'CASCADE').
+     * @return $this
+     */
+    // public function foreignKey($columnName, $referencedTable, $referencedColumn = 'id', $onDelete = 'CASCADE', $onUpdate = 'CASCADE')
+    // {
+    //     $constraintName = "{$this->table}_{$columnName}_fk";
+
+    //     $this->columns[] = [
+    //         'name' => $columnName,
+    //         'type' => 'INT',
+    //     ];
+
+    //     $this->indexes[] = [
+    //         'name' => $constraintName,
+    //         'type' => 'FOREIGN KEY',
+    //         'column' => $columnName,
+    //         'references' => $referencedTable,
+    //         'refColumn' => $referencedColumn,
+    //         'onDelete' => $onDelete,
+    //         'onUpdate' => $onUpdate,
+    //     ];
+    //     var_dump($this->indexes);
+    //     die;
+    //     return $this;
+    // }
+
     public function foreignKey($columnName, $referencedTable, $referencedColumn = 'id', $onDelete = 'CASCADE', $onUpdate = 'CASCADE')
     {
         $constraintName = "{$this->table}_{$columnName}_fk";
 
         $this->columns[] = [
             'name' => $columnName,
-            'type' => 'INT',
+            'type' => 'INT', // Adjust the data type if necessary
         ];
 
         $this->indexes[] = [
@@ -308,9 +455,21 @@ class BoltMigration extends Database
             'onDelete' => $onDelete,
             'onUpdate' => $onUpdate,
         ];
+
+        // Execute the SQL query to add the foreign key constraint
+        $sql = "ALTER TABLE {$this->table} ADD CONSTRAINT {$constraintName} FOREIGN KEY ({$columnName}) REFERENCES {$referencedTable} ({$referencedColumn}) ON DELETE {$onDelete} ON UPDATE {$onUpdate}";
+        $this->query($sql); // Assuming you have a query method for executing SQL
+
         return $this;
     }
 
+
+
+    /**
+     * Drop the specified table if it exists.
+     *
+     * @param string $tableName The name of the table to drop.
+     */
     public function dropTable($tableName)
     {
         $sql = "DROP TABLE IF EXISTS {$tableName}";
@@ -321,6 +480,12 @@ class BoltMigration extends Database
         }
     }
 
+    /**
+     * Rename a table from the old name to the new name.
+     *
+     * @param string $oldTableName The current name of the table.
+     * @param string $newTableName The desired new name for the table.
+     */
     public function renameTable($oldTableName, $newTableName)
     {
         if ($this->dataType === 'mysql') {
@@ -339,6 +504,13 @@ class BoltMigration extends Database
         }
     }
 
+    /**
+     * Add a new column to the table.
+     *
+     * @param string $columnName The name of the new column.
+     * @param string $type The data type of the new column.
+     * @param string $after (Optional) The name of a column to place the new column after (default: null).
+     */
     public function addColumn($columnName, $type, $after = null)
     {
         if ($this->dataType === 'mysql') {
@@ -361,6 +533,12 @@ class BoltMigration extends Database
         }
     }
 
+    /**
+     * Modify the data type of an existing column.
+     *
+     * @param string $columnName The name of the column to modify.
+     * @param string $newType The new data type for the column.
+     */
     public function modifyColumn($columnName, $newType)
     {
         if ($this->dataType === 'mysql') {
@@ -379,6 +557,12 @@ class BoltMigration extends Database
         }
     }
 
+
+    /**
+     * Drop an existing column from the table.
+     *
+     * @param string $columnName The name of the column to drop.
+     */
     public function dropColumn($columnName)
     {
         if ($this->dataType === 'mysql') {
@@ -397,6 +581,12 @@ class BoltMigration extends Database
         }
     }
 
+    /**
+     * Create a database view with the specified name and SQL query.
+     *
+     * @param string $viewName The name of the view.
+     * @param string $sqlQuery The SQL query that defines the view.
+     */
     public function createView($viewName, $sqlQuery)
     {
         if ($this->dataType === 'mysql') {
@@ -415,6 +605,9 @@ class BoltMigration extends Database
         }
     }
 
+    /**
+     * Generate and execute SQL code to create the table with defined columns and indexes.
+     */
     public function build()
     {
         $sql = "CREATE TABLE IF NOT EXISTS {$this->table} (";
@@ -452,6 +645,14 @@ class BoltMigration extends Database
         }
     }
 
+    /**
+     * Log a message to the console with optional timestamp and color-coding.
+     *
+     * @param string $message The message to log.
+     * @param bool $die (Optional) Set to true to terminate the script after logging (default: false).
+     * @param bool $timestamp (Optional) Set to true to include a timestamp in the log (default: true).
+     * @param string $level (Optional) The message level: 'info', 'warning', or 'error' (default: 'info').
+     */
     public function consoleLog(string $message, bool $die = false, bool $timestamp = true, string $level = 'info'): void
     {
         $output = '';

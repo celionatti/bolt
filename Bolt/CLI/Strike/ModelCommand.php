@@ -139,7 +139,7 @@ class ModelCommand implements CommandInterface
         }
 
         /**
-         * Customize the content of model class here.
+         * Customize the content of migration class here.
          * From the sample class.
          */
         $sample_file = __DIR__ . "/samples/migration-sample.php";

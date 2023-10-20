@@ -158,7 +158,7 @@ class BoltCLI
     {
         $this->output("Available commands:");
         foreach ($this->commands as $name => $command) {
-            $this->output("*** "."$name: {$command['description']}");
+            $this->output("*** " . "$name: {$command['description']}");
         }
     }
 
@@ -167,12 +167,6 @@ class BoltCLI
         if ($verbosityLevel <= $this->verbosity) {
             $this->message($message, false, false);
         }
-    }
-
-    protected function dd($data)
-    {
-        var_dump($data);
-        die;
     }
 
     public function message(string $message, bool $die = false, bool $timestamp = true, string $level = 'info'): void

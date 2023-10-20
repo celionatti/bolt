@@ -70,10 +70,10 @@ use Bolt\Bolt\Forms\BootstrapForm;
         </div>
         <div class="row">
             <div class="col-md-6 col-sm-12">
-                <?= BootstrapForm::inputField("Password", "password", old_value("password"), ['class' => 'form-control', 'type' => 'passwords'], ['class' => 'mb-3'], $errors) ?>
+                <?= BootstrapForm::inputField("Password", "password", old_value("password"), ['class' => 'form-control', 'type' => 'password'], ['class' => 'mb-3'], $errors) ?>
             </div>
             <div class="col-md-6 col-sm-12">
-                <?= BootstrapForm::inputField("Confirm Password", "confirm_password", old_value("confirm_password"), ['class' => 'form-control', 'type' => 'passwords'], ['class' => 'mb-3'], $errors) ?>
+                <?= BootstrapForm::inputField("Confirm Password", "confirm_password", old_value("confirm_password"), ['class' => 'form-control', 'type' => 'password'], ['class' => 'mb-3'], $errors) ?>
             </div>
         </div>
         <?= BootstrapForm::submitButton("Signup", "btn btn-secondary btn-sm p-3 w-50") ?>
