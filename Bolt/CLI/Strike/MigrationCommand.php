@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 /**
  * ====================================
- * Strike - View commands =============
+ * Strike - Migration commands ========
  * ====================================
  */
 

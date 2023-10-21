@@ -191,6 +191,11 @@ class Database
         return false;
     }
 
+    public function prepare($query)
+    {
+        return $this->connection->prepare($query);
+    }
+
     public function query(string $query, array $params = [], string $data_type = 'object')
     {
         $this->error = '';
