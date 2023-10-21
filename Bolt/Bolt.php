@@ -76,6 +76,7 @@ class Bolt
         return [
             require __DIR__ . "/Configs/load.php",
             require __DIR__ . "/Configs/functions.php",
+            require __DIR__ . "/Configs/utilities.php",
             require __DIR__ . "/Configs/global-variables.php",
             require dirname(__DIR__) . "/configs/load.php"
         ];

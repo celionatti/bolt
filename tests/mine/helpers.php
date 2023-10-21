@@ -14,6 +14,7 @@ function generateLink($attributes)
 }
 
 
+
 /**
  * Usage.
  */
@@ -28,3 +29,5 @@ function generateLink($attributes)
 
 // $link = generateLink($linkAttributes);
 // echo $link . 'Home</a>';
+
+?>

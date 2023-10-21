@@ -15,84 +15,7 @@
 
 <!-- For Adding CSS Styles -->
 <?php $this->start('header') ?>
-<style>
-    .bd-placeholder-img {
-        font-size: 1.125rem;
-        text-anchor: middle;
-        -webkit-user-select: none;
-        -moz-user-select: none;
-        user-select: none;
-    }
 
-    @media (min-width: 768px) {
-        .bd-placeholder-img-lg {
-            font-size: 3.5rem;
-        }
-    }
-
-    .b-example-divider {
-        width: 100%;
-        height: 3rem;
-        background-color: rgba(0, 0, 0, .1);
-        border: solid rgba(0, 0, 0, .15);
-        border-width: 1px 0;
-        box-shadow: inset 0 .5em 1.5em rgba(0, 0, 0, .1), inset 0 .125em .5em rgba(0, 0, 0, .15);
-    }
-
-    .b-example-vr {
-        flex-shrink: 0;
-        width: 1.5rem;
-        height: 100vh;
-    }
-
-    .bi {
-        vertical-align: -.125em;
-        fill: currentColor;
-    }
-
-    .nav-scroller {
-        position: relative;
-        z-index: 2;
-        height: 2.75rem;
-        overflow-y: hidden;
-    }
-
-    .nav-scroller .nav {
-        display: flex;
-        flex-wrap: nowrap;
-        padding-bottom: 1rem;
-        margin-top: -1px;
-        overflow-x: auto;
-        text-align: center;
-        white-space: nowrap;
-        -webkit-overflow-scrolling: touch;
-    }
-
-    .btn-bd-primary {
-        --bd-violet-bg: #712cf9;
-        --bd-violet-rgb: 112.520718, 44.062154, 249.437846;
-
-        --bs-btn-font-weight: 600;
-        --bs-btn-color: var(--bs-white);
-        --bs-btn-bg: var(--bd-violet-bg);
-        --bs-btn-border-color: var(--bd-violet-bg);
-        --bs-btn-hover-color: var(--bs-white);
-        --bs-btn-hover-bg: #6528e0;
-        --bs-btn-hover-border-color: #6528e0;
-        --bs-btn-focus-shadow-rgb: var(--bd-violet-rgb);
-        --bs-btn-active-color: var(--bs-btn-hover-color);
-        --bs-btn-active-bg: #5a23c8;
-        --bs-btn-active-border-color: #5a23c8;
-    }
-
-    .bd-mode-toggle {
-        z-index: 1500;
-    }
-
-    .bd-mode-toggle .dropdown-menu .active .bi {
-        display: block !important;
-    }
-</style>
 <?php $this->end() ?>
 
 <!-- The Main content is Render here. -->
@@ -114,7 +37,7 @@
 </svg>
 
 <div class="dropdown position-fixed bottom-0 end-0 mb-3 me-3 bd-mode-toggle">
-    <button class="btn btn-bd-primary py-2 dropdown-toggle d-flex align-items-center" id="bd-theme" type="button" aria-expanded="false" data-bs-toggle="dropdown" aria-label="Toggle theme (auto)">
+    <button class="btn btn-bd-primary py-2 dropdown-toggle d-flex align-items-center rounded-pill" id="bd-theme" type="button" aria-expanded="false" data-bs-toggle="dropdown" aria-label="Toggle theme (auto)">
         <svg class="bi my-1 theme-icon-active" width="1em" height="1em">
             <use href="#circle-half"></use>
         </svg>
@@ -157,51 +80,49 @@
     </ul>
 </div>
 
+<!-- Content start here -->
+<nav class="navbar navbar-expand-lg bg-body-tertiary rounded" aria-label="Thirteenth navbar example">
+    <div class="container-fluid">
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarsExample11" aria-controls="navbarsExample11" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
 
-<div class="col-lg-8 mx-auto p-4 py-md-5">
-    <header class="d-flex align-items-center pb-3 mb-5 border-bottom">
-        <a href="/" class="d-flex align-items-center text-body-emphasis text-decoration-none">
-            <svg class="bi me-2" width="40" height="32">
-                <use xlink:href="#bolt" />
-            </svg>
-            <span class="fs-4">Bolt Framework</span>
-        </a>
-    </header>
-
-    <main>
-
-        <h2 class="text-body-emphasis border-bottom border-primary border-3 p-2 mb-3"><?= $title ?></h2>
-
-        <div class="row g-3">
-            <?php if ($response) : ?>
-                <?php foreach ($response as $data) : ?>
-                    <div class="col-md-6">
-                        <div class="card text-bg-danger">
-                            <div class="card-header">
-                                <h3 class="text-body-emphasis"><?= $data['title'] ?></h3>
-                            </div>
-                            <div class="card-body">
-                                <p><?= $data['body'] ?></p>
-                            </div>
-                            <div class="card-footer">
-                                <p>ID: <?= $data['id'] ?></p>
-                                <p>User ID: <?= $data['userId'] ?></p>
-                            </div>
-                        </div>
-                    </div>
-                <?php endforeach; ?>
-            <?php endif; ?>
+        <div class="collapse navbar-collapse d-lg-flex" id="navbarsExample11">
+            <a class="navbar-brand col-lg-3 me-0" href="#">Bolt Framework</a>
+            <ul class="navbar-nav col-lg-6 justify-content-lg-center">
+                <li class="nav-item">
+                    <?= bolt_link("#", "nav-link active", "Home", ['aria-current' => 'page']) ?>
+                </li>
+                <li class="nav-item">
+                    <?= bolt_link("#", "nav-link disabled", "Docs", ['aria-disabled' => 'true']) ?>
+                </li>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown" aria-expanded="false">Dropdown</a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="#">Action</a></li>
+                        <li><a class="dropdown-item" href="#">Another action</a></li>
+                        <li><a class="dropdown-item" href="#">Something else here</a></li>
+                    </ul>
+                </li>
+            </ul>
+            <div class="d-lg-flex col-lg-3 justify-content-lg-end">
+                <button class="btn btn-primary rounded-pill">AU</button>
+            </div>
         </div>
+    </div>
+</nav>
 
-        <hr class="col-3 col-md-2 mb-3">
-
-        <p>
-            <?= $title ?>
-        </p>
-    </main>
-    <footer class="pt-5 my-5 text-body-secondary border-top">
-        Created by the Celio Natti &middot; &copy; 2023
-    </footer>
+<div>
+    <div class="bg-body-tertiaryp-5 rounded">
+        <div class="col-sm-8 mx-auto">
+            <h1>Bolt Framework</h1>
+            <p>This example is a quick exercise to illustrate how the navbar and its contents work. Some navbars extend the width of the viewport, others are confined within a <code>.container</code>. For positioning of navbars, checkout the <a href="../examples/navbar-static/">top</a> and <a href="../examples/navbar-fixed/">fixed top</a> examples.</p>
+            <p>At the smallest breakpoint, the collapse plugin is used to hide the links and show a menu button to toggle the collapsed content.</p>
+            <p>
+                <a class="btn btn-primary" href="../components/navbar/" role="button">View navbar docs &raquo;</a>
+            </p>
+        </div>
+    </div>
 </div>
 <?php $this->end() ?>
 
