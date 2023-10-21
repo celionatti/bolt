@@ -47,7 +47,12 @@ class AuthController extends Controller
         $view = [
             'errors' => $user->getErrors(),
             'user' => $user,
-            'uuid' => generateUuidV4()
+            'genderOpts' => [
+                '' => '--- Please Select ---',
+                'male' => 'Male',
+                'female' => 'Female',
+                'others' => 'Others'
+            ]
         ];
 
         $this->view->render("auth/signup", $view);

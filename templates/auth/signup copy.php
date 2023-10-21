@@ -45,30 +45,36 @@ use Bolt\Bolt\Forms\BootstrapForm;
 
     <main>
         <h1 class="text-body-emphasis">Bolt Account Registration</h1>
+        <p class="fs-5 col-md-8">Bolt Framework is a modern, open-source web application framework designed to empower developers to build robust and scalable web applications with ease. It offers a comprehensive suite of tools and features, making it a versatile choice for both beginners and experienced developers.</p>
+
+        <p>User UUID: <?= $uuid ?></p>
 
         <hr class="col-3 col-md-2 mb-3">
 
-        <?= BootstrapForm::openForm("", 'POST', null, ['class' => 'row g-3']) ?>
-        <div class="col-md-4 col-sm-12">
-            <?= BootstrapForm::inputField("Surname", "surname", old_value("surname"), ['class' => 'form-control'], ['class' => 'mb-3'], $errors) ?>
+        <?= BootstrapForm::openForm("") ?>
+        <div class="row">
+            <div class="col-md-6 col-sm-12">
+                <?= BootstrapForm::inputField("Username", "username", old_value("username"), ['class' => 'form-control'], ['class' => 'mb-3'], $errors) ?>
+            </div>
+            <div class="col-md-6 col-sm-12">
+                <?= BootstrapForm::inputField("Email", "email", old_value("email"), ['class' => 'form-control', 'type' => 'email'], ['class' => 'mb-3'], $errors) ?>
+            </div>
         </div>
-        <div class="col-md-5 col-sm-12">
-            <?= BootstrapForm::inputField("Othername", "othername", old_value("othername"), ['class' => 'form-control'], ['class' => 'mb-3'], $errors) ?>
+        <div class="row">
+            <div class="col-md-6 col-sm-12">
+                <?= BootstrapForm::inputField("Name", "name", old_value("name"), ['class' => 'form-control'], ['class' => 'mb-3'], $errors) ?>
+            </div>
+            <div class="col-md-6 col-sm-12">
+                <?= BootstrapForm::inputField("Phone", "phone", old_value("phone"), ['class' => 'form-control', 'type' => 'tel'], ['class' => 'mb-3'], $errors) ?>
+            </div>
         </div>
-        <div class="col-md-3 col-sm-12">
-            <?= BootstrapForm::selectField("Gender", "gender", old_select("gender", "gender"), $genderOpts, [], ['class' => 'mb-3'], $errors) ?>
-        </div>
-        <div class="col-md-7 col-sm-12">
-            <?= BootstrapForm::inputField("Email", "email", old_value("email"), ['class' => 'form-control', 'type' => 'email'], ['class' => 'mb-3'], $errors) ?>
-        </div>
-        <div class="col-md-5 col-sm-12">
-            <?= BootstrapForm::inputField("Phone", "phone", old_value("phone"), ['class' => 'form-control', 'type' => 'tel'], ['class' => 'mb-3'], $errors) ?>
-        </div>
-        <div class="col-md-6 col-sm-12">
-            <?= BootstrapForm::inputField("Password", "password", old_value("password"), ['class' => 'form-control', 'type' => 'password'], ['class' => 'mb-3'], $errors) ?>
-        </div>
-        <div class="col-md-6 col-sm-12">
-            <?= BootstrapForm::inputField("Confirm Password", "confirm_password", old_value("confirm_password"), ['class' => 'form-control', 'type' => 'password'], ['class' => 'mb-3'], $errors) ?>
+        <div class="row">
+            <div class="col-md-6 col-sm-12">
+                <?= BootstrapForm::inputField("Password", "password", old_value("password"), ['class' => 'form-control', 'type' => 'password'], ['class' => 'mb-3'], $errors) ?>
+            </div>
+            <div class="col-md-6 col-sm-12">
+                <?= BootstrapForm::inputField("Confirm Password", "confirm_password", old_value("confirm_password"), ['class' => 'form-control', 'type' => 'password'], ['class' => 'mb-3'], $errors) ?>
+            </div>
         </div>
         <?= BootstrapForm::submitButton("Signup", "btn btn-secondary btn-sm p-3 w-50") ?>
 
