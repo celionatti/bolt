@@ -17,6 +17,7 @@ class BoltMigration extends Database
     private $table;
     private $columns = [];
     private $indexes = [];
+    private $foreignKeys = [];
     public $dataType = "mysql";
 
     /**
@@ -414,39 +415,12 @@ class BoltMigration extends Database
      * @param string $onUpdate (Optional) The ON UPDATE action (default: 'CASCADE').
      * @return $this
      */
-    // public function foreignKey($columnName, $referencedTable, $referencedColumn = 'id', $onDelete = 'CASCADE', $onUpdate = 'CASCADE')
-    // {
-    //     $constraintName = "{$this->table}_{$columnName}_fk";
-
-    //     $this->columns[] = [
-    //         'name' => $columnName,
-    //         'type' => 'INT',
-    //     ];
-
-    //     $this->indexes[] = [
-    //         'name' => $constraintName,
-    //         'type' => 'FOREIGN KEY',
-    //         'column' => $columnName,
-    //         'references' => $referencedTable,
-    //         'refColumn' => $referencedColumn,
-    //         'onDelete' => $onDelete,
-    //         'onUpdate' => $onUpdate,
-    //     ];
-    //     var_dump($this->indexes);
-    //     die;
-    //     return $this;
-    // }
-
     public function foreignKey($columnName, $referencedTable, $referencedColumn = 'id', $onDelete = 'CASCADE', $onUpdate = 'CASCADE')
     {
         $constraintName = "{$this->table}_{$columnName}_fk";
 
-        $this->columns[] = [
-            'name' => $columnName,
-            'type' => 'INT', // Adjust the data type if necessary
-        ];
-
-        $this->indexes[] = [
+        // Store foreign key definitions
+        $this->foreignKeys[] = [
             'name' => $constraintName,
             'type' => 'FOREIGN KEY',
             'column' => $columnName,
@@ -456,14 +430,72 @@ class BoltMigration extends Database
             'onUpdate' => $onUpdate,
         ];
 
-        // Execute the SQL query to add the foreign key constraint
-        $sql = "ALTER TABLE {$this->table} ADD CONSTRAINT {$constraintName} FOREIGN KEY ({$columnName}) REFERENCES {$referencedTable} ({$referencedColumn}) ON DELETE {$onDelete} ON UPDATE {$onUpdate}";
-        $this->query($sql); // Assuming you have a query method for executing SQL
-
         return $this;
     }
 
+    private function addForeignKeys()
+    {
+        foreach ($this->foreignKeys as $key) {
+            // Create foreign key constraints
+            $sql = "ALTER TABLE {$this->table} ADD CONSTRAINT {$key['name']} FOREIGN KEY ({$key['column']}) " .
+                "REFERENCES {$key['references']} ({$key['refColumn']}) ON DELETE {$key['onDelete']} ON UPDATE {$key['onUpdate']}";
+            $this->executeSql($sql);
+        }
+    }
 
+    /**
+     * Execute an SQL query and return the statement.
+     *
+     * @param string $sql The SQL query to execute.
+     * @param array $params (Optional) An array of parameters for prepared statements.
+     * @return \PDOStatement|bool The PDO statement or false if there's an error.
+     */
+    private function executeSql($sql, $params = [])
+    {
+        // Replace 'yourQueryExecutionMethod' with the actual method you use in your application
+        $statement = $this->query($sql, $params);
+
+        if ($statement === false) {
+            $this->error = $this->getError(); // Adjust this to get the last error from your database
+        }
+
+        return $statement;
+    }
+
+    /**
+     * Drop foreign key constraints from the table.
+     *
+     * @param string $tableName The name of the table from which to drop foreign key constraints.
+     */
+    public function dropForeignKey($tableName)
+    {
+        $sql = "SELECT
+                table_name,
+                constraint_name
+            FROM
+                information_schema.key_column_usage
+            WHERE
+                referenced_table_name = :table_name";
+
+        $params = [':table_name' => $tableName];
+
+        $foreignKeys = $this->query($sql, $params);
+
+        if ($foreignKeys === false) {
+            $this->consoleLog("Error fetching foreign key constraints: {$this->error}", true, true, 'error');
+            return;
+        }
+
+        foreach ($foreignKeys as $foreignKey) {
+            $constraintName = $foreignKey['constraint_name'];
+            $sql = "ALTER TABLE {$tableName} DROP FOREIGN KEY {$constraintName}";
+            if ($this->query($sql)) {
+                $this->consoleLog("Foreign key constraint '{$constraintName}' dropped from table '{$tableName}'");
+            } else {
+                $this->consoleLog("Error dropping foreign key constraint: {$this->error}", true, true, 'error');
+            }
+        }
+    }
 
     /**
      * Drop the specified table if it exists.
@@ -607,8 +639,11 @@ class BoltMigration extends Database
 
     /**
      * Generate and execute SQL code to create the table with defined columns and indexes.
+     *
+     * @param boolean $addForeignKeys Create the table with foreign key constraints
+     * @return void
      */
-    public function build()
+    public function build($addForeignKeys = false)
     {
         $sql = "CREATE TABLE IF NOT EXISTS {$this->table} (";
 
@@ -640,6 +675,11 @@ class BoltMigration extends Database
         // Execute the SQL query on the database
         if ($this->query($sql)) {
             $this->consoleLog("Table '{$this->table}' created successfully");
+
+            // Add foreign keys if specified
+            if ($addForeignKeys) {
+                $this->addForeignKeys();
+            }
         } else {
             $this->consoleLog("Error creating table: {$this->error}", true, true, 'error');
         }

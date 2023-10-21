@@ -25,14 +25,14 @@ class BM_2023_10_20_163103_login_attempts extends BoltMigration
     {
         $this->createTable("login_attempts")
             ->id()->primaryKey()
-            ->varchar("user_id", 255)->nullable()
+            ->varchar("user_id", 255)->nullable()->foreignKey("user_id", "users", "user_id")
             ->varchar("user_attempted")
             ->varchar("ip_address")->nullable()
             ->varchar("user_agent")->nullable()
             ->timestamp("timestamp")
             ->enum("success", ['true', 'false'])->defaultValue("false")
             ->varchar("failure_reason")->nullable()
-            ->build();
+            ->build(true);
     }
 
     /**
@@ -42,6 +42,6 @@ class BM_2023_10_20_163103_login_attempts extends BoltMigration
      */
     public function down()
     {
-        $this->dropTable("users");
+        $this->dropTable("login_attempts");
     }
 }

@@ -239,8 +239,10 @@ class Database
         return $resultData;
     }
 
-
-
+    public function getError()
+    {
+        return $this->error;
+    }
 
     public function table_exists(string|array $tables): bool
     {
