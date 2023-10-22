@@ -12,6 +12,7 @@ declare(strict_types=1);
 
 namespace Bolt\controllers;
 
+use Bolt\Bolt\Authentication\BoltAuthentication;
 use Bolt\models\Users;
 use Bolt\Bolt\Controller;
 use Bolt\Bolt\Http\Request;
@@ -25,14 +26,16 @@ class AuthController extends Controller
 
         if ($request->isPost()) {
             $user->fillable([
-                'username',
-                'name',
+                'user_id',
+                'surname',
+                'othername',
                 'phone',
                 'email',
-                'acl',
+                'role',
                 'password'
             ]);
             $data = $request->getBody();
+            $data['user_id'] = generateUuidV4();
             $user->passwordsMatchValidation($data['password'], $data['confirm_password']);
             if ($user->validate($data)) {
                 // other method before saving.
@@ -60,6 +63,8 @@ class AuthController extends Controller
 
     public function login()
     {
+        $auth = new BoltAuthentication();
+        $auth->login("amisuusman@gmail.com", "Password23");
         $this->view->render("auth/login");
     }
 }

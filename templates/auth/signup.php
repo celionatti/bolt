@@ -56,7 +56,7 @@ use Bolt\Bolt\Forms\BootstrapForm;
             <?= BootstrapForm::inputField("Othername", "othername", old_value("othername"), ['class' => 'form-control'], ['class' => 'mb-3'], $errors) ?>
         </div>
         <div class="col-md-3 col-sm-12">
-            <?= BootstrapForm::selectField("Gender", "gender", old_select("gender", "gender"), $genderOpts, [], ['class' => 'mb-3'], $errors) ?>
+            <?= BootstrapForm::selectField("Gender", "gender", old_select("gender", ""), $genderOpts, [], ['class' => 'mb-3'], $errors) ?>
         </div>
         <div class="col-md-7 col-sm-12">
             <?= BootstrapForm::inputField("Email", "email", old_value("email"), ['class' => 'form-control', 'type' => 'email'], ['class' => 'mb-3'], $errors) ?>
