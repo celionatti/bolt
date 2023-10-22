@@ -2,14 +2,6 @@
 
 declare(strict_types=1);
 
-/**
- * =====================================================
- * =====================        ========================
- * Rate Limiter
- * =====================        ========================
- * =====================================================
- */
-
 namespace Bolt\Bolt\Authentication;
 
 use PDO;
@@ -17,7 +9,7 @@ use PDO;
 class RateLimiter
 {
     protected $db;
-    private $attemptsLimit = 5; // Maximum login attempts allowed
+    private $attemptsLimit = 5;
 
     public function __construct(PDO $db)
     {

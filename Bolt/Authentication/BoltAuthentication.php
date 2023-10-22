@@ -37,34 +37,59 @@ class BoltAuthentication extends DatabaseModel
         return "users";
     }
 
+    private function isAccountBlocked($email)
+    {
+        // Implement your actual account blocking logic here.
+        // Check if the 'blocked' field is set to indicate a blocked account in your user database.
+
+        $isBlocked = $this->checkUserBlockedStatus($email);
+
+        return $isBlocked;
+    }
+
+    private function checkUserBlockedStatus($email)
+    {
+        // Implement your actual database query to check the 'blocked' status of the account.
+
+        $result = $this->executeRawQuery("SELECT is_blocked FROM users WHERE email = :email", [':email' => $email]);
+
+        // Check if the 'blocked' field exists and is set to 1 (blocked).
+        if ($result[0] && isset($result[0]->is_blocked) && $result[0]->is_blocked == 1) {
+            return true;
+        }
+
+        return false;
+    }
+
     public function login($email, $password)
     {
-        // Check if the login attempts exceed the limit.
-        if ($this->rateLimiter->exceedsLimit($email)) {
-            // Handle rate limiting exceeded, e.g., display an error message.
-            return false;
+        // Check if the account is blocked. You can implement this logic in your user table.
+        $isAccountBlocked = $this->isAccountBlocked($email);
+
+        if ($isAccountBlocked) {
+            dd("Account is blocked. Please contact support.");
         }
 
-        $user = $this->findByEmail($email);
+        // $user = $this->findByEmail($email);
 
         // Verify the password using a secure hashing algorithm like bcrypt
-        if ($user && password_verify($password, $user->password)) {
-            $this->_current_user = $user;
+        // if ($user && password_verify($password, $user->password)) {
+        //     $this->_current_user = $user;
 
-            dd($this->_current_user);
+        //     dd($this->_current_user);
 
-            // Reset the login attempts for this user
-            $this->rateLimiter->resetAttempts($this->_current_user->email);
+        //     // Reset the login attempts for this user
+        //     // $this->rateLimiter->resetAttempts($this->_current_user->email);
 
-            // Set session variables for the authenticated user
-            $this->session->set('user_id', $user['id']);
-            $this->session->set('username', $user['username']);
+        //     // Set session variables for the authenticated user
+        //     // $this->session->set('user_id', $user['id']);
+        //     // $this->session->set('username', $user['username']);
 
-            return true;
-        } else {
-            // Increase the login attempts count
-            $this->rateLimiter->incrementAttempts($email);
-        }
+        //     // return true;
+        // } else {
+        //     // Increase the login attempts count
+        //     $this->rateLimiter->incrementAttempts($email);
+        // }
 
         return false;
     }

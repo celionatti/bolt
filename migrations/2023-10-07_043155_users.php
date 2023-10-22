@@ -36,8 +36,8 @@ class BM_2023_10_07_043155_users extends BoltMigration
             ->enum("role", ['user', 'admin', 'editor'])->defaultValue("user")
             ->varchar("token", 300)->nullable()
             ->timestamp("token_expiration")->nullable()
-            ->enum("is_verified", ['true', 'false'])->defaultValue("false")
-            ->enum("is_blocked", ['true', 'false'])->defaultValue("false")
+            ->tinyint("is_verified")->defaultValue(0)
+            ->tinyint("is_blocked")->defaultValue(0)
             ->timestamps()
             ->build();
     }

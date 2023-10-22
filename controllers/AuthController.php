@@ -39,7 +39,7 @@ class AuthController extends Controller
             $user->passwordsMatchValidation($data['password'], $data['confirm_password']);
             if ($user->validate($data)) {
                 // other method before saving.
-                $data['password'] = hashPassword($data['password']);
+                $data['password'] = password_hash($data['password'], PASSWORD_DEFAULT);
                 if ($user->insert($data)) {
                     FlashMessage::setMessage("User Created Successfully", FlashMessage::SUCCESS, ['role' => 'alert', 'style' => 'z-index: 9999;']);
                     redirect("/");
@@ -64,7 +64,7 @@ class AuthController extends Controller
     public function login()
     {
         $auth = new BoltAuthentication();
-        $auth->login("amisuusman@gmail.com", "Password23");
+        $auth->login("amisuusman@gmail.com", "Password2");
         $this->view->render("auth/login");
     }
 }
