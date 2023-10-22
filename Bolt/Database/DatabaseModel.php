@@ -307,16 +307,6 @@ abstract class DatabaseModel extends Model
             ->get()[0]->count;
     }
 
-    // Find the first record matching the given conditions
-    public function findOneBy(array $conditions)
-    {
-        return $this->getQueryBuilder()
-            ->select()
-            ->where($conditions)
-            ->limit(1)
-            ->get()[0] ?? null;
-    }
-
     // Find the maximum value of a specific column
     public function max($column)
     {

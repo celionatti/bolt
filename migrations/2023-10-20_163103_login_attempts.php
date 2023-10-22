@@ -25,7 +25,7 @@ class BM_2023_10_20_163103_login_attempts extends BoltMigration
     {
         $this->createTable("login_attempts")
             ->id()->primaryKey()
-            ->varchar("user_attempted")->nullable()->foreignKey("user_attempted", "users", "email")
+            ->varchar("user_attempted")->nullable()->foreignKey("user_attempted", "users", "email")->uniqueKey("user_attempted")
             ->int("attempts")
             ->varchar("ip_address")->nullable()
             ->varchar("user_agent")->nullable()

@@ -2,35 +2,26 @@
 
 declare(strict_types=1);
 
-/**
- * =====================================================
- * =====================        ========================
- * Bolt Authentication
- * =====================        ========================
- * =====================================================
- */
-
 namespace Bolt\Bolt\Authentication;
 
 use Bolt\Bolt\Cookie;
 use Bolt\Bolt\Session;
 use Bolt\models\UserSessions;
-use Bolt\Bolt\Database\Database;
-use Bolt\Bolt\Database\DatabaseModel;
 use Bolt\Bolt\Helpers\FlashMessages\FlashMessage;
+use Bolt\Bolt\Database\DatabaseModel;
+use PDO;
 
-class BoltAuthentication extends DatabaseModel
+class Refactor extends DatabaseModel
 {
     private ?object $_currentUser = null;
     private Session $session;
-    private RateLimiter $rateLimiter; // Inject the RateLimiter here
+    private RateLimiter $rateLimiter;
 
-    public function __construct()
+    public function __construct(PDO $db)
     {
-        parent::__construct();
-        $database = new Database();
+        parent::__construct($db);
         $this->session = new Session();
-        $this->rateLimiter = new RateLimiter($database->getConnection());
+        $this->rateLimiter = new RateLimiter($db);
     }
 
     public static function tableName(): string
@@ -43,25 +34,22 @@ class BoltAuthentication extends DatabaseModel
         $isAccountBlocked = $this->isAccountBlocked($email);
 
         if ($isAccountBlocked) {
-            // Display a message indicating that the account is blocked.
             FlashMessage::setMessage("Account is blocked. Please contact support.", FlashMessage::WARNING, ['role' => 'alert', 'style' => 'z-index: 9999;']);
-        } else {
-            // If the account is not blocked, proceed with authentication.
-            if ($this->authenticate($email, $password)) {
-                $this->resetLoginAttempts($email);
-                if ($rememberMe) {
-                    $this->generateAndStoreRememberMeToken($this->_currentUser->user_id);
-                }
-                $this->setAuthenticatedUser($this->_currentUser->user_id);
-            } else {
-                $this->incrementLoginAttempts($email);
-                FlashMessage::setMessage("Login failed. Please try again.", FlashMessage::WARNING, ['role' => 'alert', 'style' => 'z-index: 9999;']);
+        }
+
+        if ($this->authenticate($email, $password)) {
+            $this->resetLoginAttempts($email);
+            if ($rememberMe) {
+                $this->generateAndStoreRememberMeToken($this->_currentUser->user_id);
             }
+            $this->setAuthenticatedUser($this->_currentUser->user_id);
+        } else {
+            $this->incrementLoginAttempts($email);
+            FlashMessage::setMessage("Login failed. Please try again.", FlashMessage::WARNING, ['role' => 'alert', 'style' => 'z-index: 9999;']);
         }
 
         return false;
     }
-
 
     private function isAccountBlocked($email)
     {
@@ -135,7 +123,7 @@ class BoltAuthentication extends DatabaseModel
     {
         // Store the token in the user_sessions table with an expiration timestamp.
         $expiration = time() + 30 * 24 * 60 * 60;
-        UserSessions::createrecord(['user_id' => $userId, 'token_hash' => $token, 'expiration' => $expiration]);
+        UserSessions::create(['user_id' => $userId, 'token_hash' => $token, 'expiration' => $expiration]);
         Cookie::set("remember_me_auth_token", $token, $expiration);
     }
 

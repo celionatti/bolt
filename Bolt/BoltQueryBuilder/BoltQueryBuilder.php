@@ -44,7 +44,8 @@ class BoltQueryBuilder
      */
     public function select($columns = '*')
     {
-        if ($this->currentStep !== 'initial') {
+        $this->currentStep = "initial";
+        if ($this->currentStep !== 'initial' && $this->currentStep !== 'raw') {
             throw new \Exception('Invalid method order. SELECT should come first.');
         }
 
@@ -88,7 +89,7 @@ class BoltQueryBuilder
             throw new \InvalidArgumentException('Invalid argument for UPDATE method. Data array must not be empty.');
         }
         
-        if ($this->currentStep !== 'initial' && $this->currentStep !== 'where') {
+        if ($this->currentStep !== 'initial' && $this->currentStep !== 'where' && $this->currentStep !== 'select' && $this->currentStep !== 'raw') {
             throw new \Exception('Invalid method order. UPDATE should come before other query building methods.');
         }
 
@@ -110,7 +111,7 @@ class BoltQueryBuilder
 
     public function delete()
     {
-        if ($this->currentStep !== 'initial' && $this->currentStep !== 'where' && $this->currentStep !== 'select' && $this->currentStep !== 'limit') {
+        if ($this->currentStep !== 'initial' && $this->currentStep !== 'where' && $this->currentStep !== 'select' && $this->currentStep !== 'limit' && $this->currentStep !== 'raw') {
             throw new \Exception('Invalid method order. DELETE should come before other query building methods.');
         }
 
@@ -122,7 +123,7 @@ class BoltQueryBuilder
 
     public function where(array $conditions)
     {
-        if ($this->currentStep !== 'update' && $this->currentStep !== 'select' && $this->currentStep !== 'where' && $this->currentStep !== 'delete' && $this->currentStep !== 'count' && $this->currentStep !== 'join') {
+        if ($this->currentStep !== 'update' && $this->currentStep !== 'select' && $this->currentStep !== 'where' && $this->currentStep !== 'delete' && $this->currentStep !== 'count' && $this->currentStep !== 'join' && $this->currentStep !== 'raw') {
             throw new \Exception('Invalid method order. WHERE should come after SELECT, UPDATE, DELETE or a previous WHERE.');
         }
 
@@ -149,7 +150,7 @@ class BoltQueryBuilder
 
     public function orderBy($column, $direction = 'ASC')
     {
-        if ($this->currentStep !== 'select' && $this->currentStep !== 'where') {
+        if ($this->currentStep !== 'select' && $this->currentStep !== 'where' && $this->currentStep !== 'raw') {
             throw new \Exception('Invalid method order. ORDER BY should come after SELECT, WHERE, or a previous ORDER BY.');
         }
 
@@ -165,7 +166,7 @@ class BoltQueryBuilder
 
     public function groupBy($column)
     {
-        if ($this->currentStep !== 'select' && $this->currentStep !== 'where' && $this->currentStep !== 'order') {
+        if ($this->currentStep !== 'select' && $this->currentStep !== 'where' && $this->currentStep !== 'order' && $this->currentStep !== 'raw') {
             throw new \Exception('Invalid method order. GROUP BY should come after SELECT, WHERE, ORDER BY, or a previous GROUP BY.');
         }
 
@@ -181,7 +182,7 @@ class BoltQueryBuilder
 
     public function limit($limit)
     {
-        if ($this->currentStep !== 'select' && $this->currentStep !== 'where' && $this->currentStep !== 'order' && $this->currentStep !== 'group') {
+        if ($this->currentStep !== 'select' && $this->currentStep !== 'where' && $this->currentStep !== 'order' && $this->currentStep !== 'group' && $this->currentStep !== 'raw') {
             throw new \Exception('Invalid method order. LIMIT should come after SELECT, WHERE, ORDER BY, GROUP BY, or a previous LIMIT.');
         }
 
@@ -195,11 +196,9 @@ class BoltQueryBuilder
         return $this;
     }
 
-    // ...
-
     public function offset($offset)
     {
-        if ($this->currentStep !== 'select' && $this->currentStep !== 'where' && $this->currentStep !== 'order' && $this->currentStep !== 'group' && $this->currentStep !== 'limit') {
+        if ($this->currentStep !== 'select' && $this->currentStep !== 'where' && $this->currentStep !== 'order' && $this->currentStep !== 'group' && $this->currentStep !== 'limit' && $this->currentStep !== 'raw') {
             throw new \Exception('Invalid method order. OFFSET should come after SELECT, WHERE, ORDER BY, GROUP BY, LIMIT, or a previous OFFSET.');
         }
 
@@ -264,7 +263,7 @@ class BoltQueryBuilder
 
     public function join($table, $onClause, $type = 'INNER')
     {
-        if ($this->currentStep !== 'initial' && $this->currentStep !== 'select' && $this->currentStep !== 'count') {
+        if ($this->currentStep !== 'initial' && $this->currentStep !== 'select' && $this->currentStep !== 'count' && $this->currentStep !== 'raw') {
             throw new \Exception('Invalid method order. JOIN should come after SELECT, WHERE, ORDER BY, GROUP BY, or a previous JOIN.');
         }
 
@@ -305,7 +304,7 @@ class BoltQueryBuilder
 
     public function count()
     {
-        if ($this->currentStep !== 'initial' && $this->currentStep !== 'select') {
+        if ($this->currentStep !== 'initial' && $this->currentStep !== 'select' && $this->currentStep !== 'raw') {
             throw new \Exception('Invalid method order. COUNT should come before other query building methods.');
         }
 
@@ -368,7 +367,7 @@ class BoltQueryBuilder
 
     public function rawQuery(string $sql, array $bindValues = [])
     {
-        if ($this->currentStep !== 'initial') {
+        if ($this->currentStep !== 'initial' && $this->currentStep !== 'raw') {
             throw new \Exception('Invalid method order. Raw query should come before other query building methods.');
         }
 
