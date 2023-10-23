@@ -16,6 +16,8 @@ class LayoutCommand implements CommandInterface
 {
     public $basePath;
 
+    private const ACTION_CREATE = 'create';
+
     public function __construct()
     {
         // Get the current file's directory
@@ -38,14 +40,26 @@ class LayoutCommand implements CommandInterface
     public function execute(array $args)
     {
         // Check if the required arguments are provided
-        if (count($args["args"]) < 1) {
-            $this->message("Strike Usage: layout <layoutName> - For creating layouts. The layoutName is compulsory, while others are Optional.", true, true, "warning");
+        if (count($args["args"]) < 2) {
+            $this->message("Strike Usage: layout <action> <filename> - For creating layouts. The layoutName or filename is compulsory, while others are Optional.", true, true, "warning");
         }
 
-        $layoutName = $args["args"][0];
+        $action = $args["args"][0];
+        $filename = $args["args"][1];
 
-        // Create the layout and file
-        $this->createLayout($layoutName);
+        $this->callAction($action, $filename);
+    }
+
+    private function callAction($action, $filename)
+    {
+        // Check for the action type.
+        switch ($action) {
+            case self::ACTION_CREATE:
+                $this->createLayout($filename);
+                break;
+            default:
+                $this->message("Unknown Command - You can check help or docs to see the list of commands and methods of calling.", true, true, 'warning');
+        }
     }
 
     private function createLayout($layoutName)

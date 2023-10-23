@@ -18,6 +18,8 @@ class ControllerCommand implements CommandInterface
 {
     public $basePath;
 
+    private const ACTION_CREATE = 'create';
+
     public function __construct()
     {
         // Get the current file's directory
@@ -40,15 +42,27 @@ class ControllerCommand implements CommandInterface
     public function execute(array $args)
     {
         // Check if the required arguments are provided
-        if (count($args["args"]) < 1) {
-            $this->message("Strike Usage: controller <ControllerName>", true, true, 'warning');
+        if (count($args["args"]) < 2) {
+            $this->message("Strike Usage: controller <action> <controllername> <folders: --Optional (--c)>", true, true, 'warning');
         }
 
-        $controllerName = $args["args"][0];
-        $crudMethod = $args["options"]["f"] ?? null;
+        $action = $args["args"][0];
+        $filename = $args["args"][1];
+        $crudMethod = $args["options"]["c"] ?? null;
 
-        // Create the controller folder and file
-        $this->createController($controllerName, $crudMethod);
+        $this->callAction($action, $filename, $crudMethod);
+    }
+
+    private function callAction($action, $filename, $crudMethod)
+    {
+        // Check for the action type.
+        switch ($action) {
+            case self::ACTION_CREATE:
+                $this->createController($filename, $crudMethod);
+                break;
+            default:
+                $this->message("Unknown Command - You can check help or docs to see the list of commands and methods of calling.", true, true, 'warning');
+        }
     }
 
     private function createController($controllerName, $allowCrud = null)
@@ -81,7 +95,7 @@ class ControllerCommand implements CommandInterface
          * Customize the content of controller class here.
          * From the sample class.
          */
-        if($allowCrud) {
+        if ($allowCrud) {
             $sample_file = __DIR__ . "/samples/controller-with-crud-sample.php";
         } else {
             $sample_file = __DIR__ . "/samples/controller-sample.php";

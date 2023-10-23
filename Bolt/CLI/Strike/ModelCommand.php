@@ -22,6 +22,8 @@ class ModelCommand implements CommandInterface
 {
     public $basePath;
 
+    private const ACTION_CREATE = 'create';
+
     public function __construct()
     {
         // Get the current file's directory
@@ -44,17 +46,30 @@ class ModelCommand implements CommandInterface
     public function execute(array $args)
     {
         // Check if the required arguments are provided
-        if (count($args["args"]) < 1) {
-            $this->message("Strike Usage: model <ModelName>", true, true, "warning");
+        if (count($args["args"]) < 2) {
+            $this->message("Strike Usage: model <action> <modelname> <options: --Optional>", true, true, "warning");
         }
 
-        $modelName = $args["args"][0];
-
-        // Create the model folder and file
-        $this->createModel($modelName);
+        $action = $args["args"][0];
+        $filename = $args["args"][1];
 
         if (isset($args["options"]["m"])) {
-            $this->createMigration($modelName);
+            $this->createMigration($action);
+        }
+
+        // Create the view folder's and file
+        $this->callAction($action, $filename);
+    }
+
+    private function callAction($action, $filename = null)
+    {
+        // Check for the action type.
+        switch ($action) {
+            case self::ACTION_CREATE:
+                $this->createModel($filename);
+                break;
+            default:
+                $this->message("Unknown Command - You can check help or docs to see the list of commands and methods of calling.", true, true, 'warning');
         }
     }
 
