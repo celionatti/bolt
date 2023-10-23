@@ -136,7 +136,7 @@ class AuthenticationCommand implements CommandInterface
     private function createModel()
     {
         $modelsData = [
-            'user' => __DIR__ . "/samples/authentication/user-model-sample.php",
+            'users' => __DIR__ . "/samples/authentication/user-model-sample.php",
             'userSessions' => __DIR__ . "/samples/authentication/user-session-model-sample.php",
         ];
         // Check if the model directory already exists

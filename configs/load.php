@@ -43,3 +43,15 @@ if (!defined('DB_DRIVERS')) {
 if (!defined('DB_HOST')) {
     define('DB_HOST', "127.0.0.1");
 }
+
+if (!defined('MAILER_EMAIL')) {
+    define('MAILER_EMAIL', "amisuusman@gmail.com");
+}
+
+if (!defined('MAILER_PASSWORD')) {
+    define('MAILER_PASSWORD', "xmko hgep pwoe lyf");
+}
+
+if (!defined('MAILER_HOST')) {
+    define('MAILER_HOST', "smtp.gmail.com");
+}

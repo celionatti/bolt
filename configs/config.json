@@ -10,5 +10,6 @@
     },
     "app_name": "My Application",
     "mailer_email": "amisuusman@gmail.com",
-    "mailer_password": "xmko hgep pwoe lyf"
+    "mailer_password": "xmko hgep pwoe lyf",
+    "mailer_host": "smtp.gmail.com"
 }

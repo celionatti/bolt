@@ -33,10 +33,10 @@ class BoltMailer
         try {
             // Server settings
             $this->mailer->isSMTP();
-            $this->mailer->Host = Config::get("mailer_host") ?? 'smtp.gmail.com';
+            $this->mailer->Host = MAILER_HOST ?? 'smtp.gmail.com';
             $this->mailer->SMTPAuth = true;
-            $this->mailer->Username = Config::get("mailer_email") ?? "mailer_email";
-            $this->mailer->Password = Config::get("mailer_password") ?? "mailer_password";
+            $this->mailer->Username = MAILER_EMAIL ?? "mailer_email";
+            $this->mailer->Password = MAILER_PASSWORD ?? "mailer_password";
             $this->mailer->SMTPSecure = 'tls';
             $this->mailer->Port = 587;
 
