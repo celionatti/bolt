@@ -82,7 +82,7 @@ class BoltAuthentication extends DatabaseModel
             if ($rememberMe) {
                 $this->generateAndStoreRememberMeToken($this->_currentUser->user_id);
             }
-            if($this->sendEmailAfterLogin()) {
+            if($this->sendEmailAfterLogin($email)) {
                 $this->setAuthenticatedUser($this->_currentUser->user_id);
                 redirect("/");
             }
@@ -115,9 +115,9 @@ class BoltAuthentication extends DatabaseModel
         return false;
     }
 
-    public function sendEmailAfterLogin()
+    public function sendEmailAfterLogin($email)
     {
-        $emailRecipient = $this->_currentUser->email;
+        $emailRecipient = $email;
         $emailSubject = 'Login Successful';
         $emailHtmlMessage = 'You have successfully logged in to our website.';
         $emailTextMessage = 'You have successfully logged in to our website.';
