@@ -78,7 +78,7 @@ class AuthController extends Controller
             $user->setIsInsertionScenario(false); // Set insertion scenario flag
             if ($user->validate($data)) {
                 $auth = new BoltAuthentication();
-                $auth->login($data['email'], $data['password']);
+                $auth->loginWithEmail($data['email'], $data['password']);
             }
         }
         $view = [

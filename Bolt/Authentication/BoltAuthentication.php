@@ -18,12 +18,14 @@ use Bolt\models\UserSessions;
 use Bolt\Bolt\Database\Database;
 use Bolt\Bolt\Database\DatabaseModel;
 use Bolt\Bolt\Helpers\FlashMessages\FlashMessage;
+use Bolt\Bolt\Mailer\BoltMailer;
 
 class BoltAuthentication extends DatabaseModel
 {
     private ?object $_currentUser = null;
     private Session $session;
     private RateLimiter $rateLimiter; // Inject the RateLimiter here
+    private BoltMailer $mailer;
 
     public function __construct()
     {
@@ -31,6 +33,7 @@ class BoltAuthentication extends DatabaseModel
         $database = new Database();
         $this->session = new Session();
         $this->rateLimiter = new RateLimiter($database->getConnection());
+        $this->mailer = new BoltMailer();
     }
 
     public static function tableName(): string
@@ -65,6 +68,35 @@ class BoltAuthentication extends DatabaseModel
         return $isValidCredentials;
     }
 
+    public function loginWithEmail($email, $password, $rememberMe = false)
+    {
+        $isAccountBlocked = $this->isAccountBlocked($email);
+        $isValidCredentials = $this->authenticate($email, $password);
+        $isValidEmail = $this->getUserValidEmail($email);
+
+        if ($isAccountBlocked) {
+            // Display a message indicating that the account is blocked.
+            FlashMessage::setMessage("Account is blocked. Please contact support.", FlashMessage::WARNING, ['role' => 'alert', 'style' => 'z-index: 9999;']);
+        } elseif ($isValidCredentials) {
+            $this->resetLoginAttempts($email);
+            if ($rememberMe) {
+                $this->generateAndStoreRememberMeToken($this->_currentUser->user_id);
+            }
+            if($this->sendEmailAfterLogin()) {
+                $this->setAuthenticatedUser($this->_currentUser->user_id);
+                redirect("/");
+            }
+        } else {
+            if ($isValidEmail) {
+                $this->incrementLoginAttempts($email);
+            }
+            // Invalid password. Update login attempts.
+            FlashMessage::setMessage("Invalid email or password. Please try again.", FlashMessage::DANGER, ['role' => 'alert', 'style' => 'z-index: 9999;']);
+        }
+
+        return $isValidCredentials;
+    }
+
 
     private function isAccountBlocked($email)
     {
@@ -82,6 +114,17 @@ class BoltAuthentication extends DatabaseModel
 
         return false;
     }
+
+    public function sendEmailAfterLogin()
+    {
+        $emailRecipient = $this->_currentUser->email;
+        $emailSubject = 'Login Successful';
+        $emailHtmlMessage = 'You have successfully logged in to our website.';
+        $emailTextMessage = 'You have successfully logged in to our website.';
+
+        return $this->mailer->sendEmail([$emailRecipient], $emailSubject, $emailHtmlMessage, $emailTextMessage, 'no_reply@bolt.com', 'Bolt Framework');
+    }
+
 
     private function getUserValidEmail($email)
     {

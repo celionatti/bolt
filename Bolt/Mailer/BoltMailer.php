@@ -12,6 +12,8 @@ declare(strict_types=1);
 
 namespace Bolt\Bolt\Mailer;
 
+use Bolt\Bolt\Config;
+use Bolt\Bolt\Helpers\Logger;
 use PHPMailer\PHPMailer\Exception;
 use PHPMailer\PHPMailer\PHPMailer;
 
@@ -20,10 +22,10 @@ class BoltMailer
     private $mailer;
     private $logPath;
 
-    public function __construct($logPath = '/path/to/email_log.txt')
+    public function __construct()
     {
         $this->mailer = new PHPMailer(true);
-        $this->logPath = $logPath;
+        $this->logPath = new Logger("mailer.log");
     }
 
     public function sendEmail($recipients, $subject, $htmlMessage, $textMessage, $fromEmail, $fromName, $headers = [], $attachments = [], $inlineImages = [])
@@ -31,10 +33,10 @@ class BoltMailer
         try {
             // Server settings
             $this->mailer->isSMTP();
-            $this->mailer->Host = 'smtp.example.com';
+            $this->mailer->Host = Config::get("mailer_host") ?? 'smtp.gmail.com';
             $this->mailer->SMTPAuth = true;
-            $this->mailer->Username = 'your_smtp_username';
-            $this->mailer->Password = 'your_smtp_password';
+            $this->mailer->Username = Config::get("mailer_email") ?? "mailer_email";
+            $this->mailer->Password = Config::get("mailer_password") ?? "mailer_password";
             $this->mailer->SMTPSecure = 'tls';
             $this->mailer->Port = 587;
 
@@ -98,7 +100,7 @@ class BoltMailer
         $logEntry .= "Message:" . PHP_EOL . $message . PHP_EOL;
         $logEntry .= str_repeat('-', 40) . PHP_EOL;
 
-        file_put_contents($this->logPath, $logEntry, FILE_APPEND);
+        $this->logPath->info($logEntry);
     }
 
     private function logEmailFailure($recipients, $subject, $message, $error)
@@ -109,6 +111,6 @@ class BoltMailer
         $logEntry .= "Message:" . PHP_EOL . $message . PHP_EOL;
         $logEntry .= str_repeat('-', 40) . PHP_EOL;
 
-        file_put_contents($this->logPath, $logEntry, FILE_APPEND);
+        $this->logPath->info($logEntry);
     }
 }

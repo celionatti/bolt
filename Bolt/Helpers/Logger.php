@@ -20,7 +20,7 @@ class Logger
 
     public function __construct($logFilePath)
     {
-        $this->logFilePath = $logFilePath;
+        $this->logFilePath = get_root_dir() . DIRECTORY_SEPARATOR . "logs" . DIRECTORY_SEPARATOR . $logFilePath;
         $this->rotateLogFiles();
     }
 
@@ -95,16 +95,16 @@ class Logger
 
     public function error($message)
     {
-        $this->log("[ERROR] $message");
+        $this->log("[ERROR] $message", "ERROR");
     }
 
     public function info($message)
     {
-        $this->log("[INFO] $message");
+        $this->log("[INFO] $message", "INFO");
     }
 
     public function warning($message)
     {
-        $this->log("[WARNING] $message");
+        $this->log("[WARNING] $message", "WARNING");
     }
 }

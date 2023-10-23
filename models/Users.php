@@ -15,7 +15,7 @@ namespace Bolt\models;
 
 use Bolt\Bolt\Database\DatabaseModel;
 
-class User extends DatabaseModel
+class Users extends DatabaseModel
 {
     private $isInsertion = false; // Default to the login scenario
 
