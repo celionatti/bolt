@@ -18,11 +18,12 @@ class FlashMessage
     const ERROR = 'error';
     const INFO = 'info';
     const WARNING = 'warning';
+    const DANGER = 'danger';
 
     public static function setMessage($message, $type = self::SUCCESS, $attributes = [])
     {
         // Validate the message type
-        $validTypes = [self::SUCCESS, self::ERROR, self::INFO, self::WARNING];
+        $validTypes = [self::SUCCESS, self::ERROR, self::INFO, self::WARNING, self::DANGER];
         if (!in_array($type, $validTypes)) {
             throw new \InvalidArgumentException('Invalid message type');
         }
@@ -48,7 +49,7 @@ class FlashMessage
         // Useful for cases where you want to display messages directly
 
         // Validate the message type
-        $validTypes = [self::SUCCESS, self::ERROR, self::INFO, self::WARNING];
+        $validTypes = [self::SUCCESS, self::ERROR, self::INFO, self::WARNING, self::DANGER];
         if (!in_array($type, $validTypes)) {
             throw new \InvalidArgumentException('Invalid message type');
         }

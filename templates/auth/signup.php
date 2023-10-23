@@ -34,7 +34,7 @@ use Bolt\Bolt\Forms\BootstrapForm;
 </svg>
 
 <div class="col-lg-8 mx-auto p-4 py-md-5">
-    <header class="d-flex align-items-center pb-3 mb-5 border-bottom">
+    <header class="d-flex align-items-center pb-3 mb-3 border-bottom">
         <a href="/" class="d-flex align-items-center text-body-emphasis text-decoration-none">
             <svg class="bi me-2" width="40" height="32">
                 <use xlink:href="#bolt" />
@@ -46,7 +46,7 @@ use Bolt\Bolt\Forms\BootstrapForm;
     <main>
         <h1 class="text-body-emphasis">Bolt Account Registration</h1>
 
-        <hr class="col-3 col-md-2 mb-3">
+        <hr class="col-3 col-md-2 mb-2">
 
         <?= BootstrapForm::openForm("", 'POST', null, ['class' => 'row g-3']) ?>
         <div class="col-md-4 col-sm-12">
@@ -56,7 +56,7 @@ use Bolt\Bolt\Forms\BootstrapForm;
             <?= BootstrapForm::inputField("Othername", "othername", old_value("othername"), ['class' => 'form-control'], ['class' => 'mb-3'], $errors) ?>
         </div>
         <div class="col-md-3 col-sm-12">
-            <?= BootstrapForm::selectField("Gender", "gender", old_select("gender", ""), $genderOpts, [], ['class' => 'mb-3'], $errors) ?>
+            <?= BootstrapForm::selectField("Gender", "gender", old_select("gender", ""), $genderOpts, ['class' => 'form-control'], ['class' => 'mb-3'], $errors) ?>
         </div>
         <div class="col-md-7 col-sm-12">
             <?= BootstrapForm::inputField("Email", "email", old_value("email"), ['class' => 'form-control', 'type' => 'email'], ['class' => 'mb-3'], $errors) ?>
@@ -70,6 +70,10 @@ use Bolt\Bolt\Forms\BootstrapForm;
         <div class="col-md-6 col-sm-12">
             <?= BootstrapForm::inputField("Confirm Password", "confirm_password", old_value("confirm_password"), ['class' => 'form-control', 'type' => 'password'], ['class' => 'mb-3'], $errors) ?>
         </div>
+        <p class="m-0">
+            Already have an Account?
+            <a href="/login" class="link">Login</a>
+        </p>
         <?= BootstrapForm::submitButton("Signup", "btn btn-secondary btn-sm p-3 w-50") ?>
 
         <?= BootstrapForm::closeForm() ?>

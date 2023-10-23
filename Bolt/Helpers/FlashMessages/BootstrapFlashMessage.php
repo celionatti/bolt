@@ -14,7 +14,7 @@ namespace Bolt\Bolt\Helpers\FlashMessages;
 
 class BootstrapFlashMessage extends FlashMessage
 {
-    public static function alertSuccess()
+    public static function alert()
     {
         $message = self::getAndClearMessage();
 
@@ -24,7 +24,7 @@ class BootstrapFlashMessage extends FlashMessage
             $messageAttributes = $message['attributes'];
 
             // Render and display the message with its attributes
-            echo FlashMessage::render($messageContent, $messageType, 'alert-success alert-dismissible fade show mt-3 mx-2 shadow-lg text-uppercase text-center', $messageAttributes);
+            echo FlashMessage::render($messageContent, $messageType, "alert-{$messageType} alert-dismissible fade show mt-3 mx-2 shadow-lg text-uppercase text-center", $messageAttributes);
         }
     }
 }

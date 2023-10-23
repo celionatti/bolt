@@ -17,14 +17,26 @@ use Bolt\Bolt\Database\DatabaseModel;
 
 class Users extends DatabaseModel
 {
+    private $isInsertion = false; // Default to the login scenario
+
     public static function tableName(): string
     {
         return 'users';
     }
 
+    public function setIsInsertionScenario($isInsertion)
+    {
+        $this->isInsertion = $isInsertion;
+    }
+
+    public function isInsertionScenario(): bool
+    {
+        return $this->isInsertion;
+    }
     public function rules(): array
     {
-        return [
+        // Validation rules for user insertion (registration)
+        $insertionRules = [
             'surname' => [
                 ['rule' => 'required', 'message' => 'Surname is required.'],
                 ['rule' => 'maxLength', 'params' => [15], 'message' => 'Surname is a minimum of 20 characters.'],
@@ -54,6 +66,20 @@ class Users extends DatabaseModel
                 ['rule' => 'required', 'message' => 'Confirm Password is Required.'],
             ],
         ];
+
+        // Validation rules for user login
+        $loginRules = [
+            'email' => [
+                ['rule' => 'required', 'message' => 'Email is required.'],
+                ['rule' => 'email', 'message' => 'Email must be valid email address.'],
+            ],
+            'password' => [
+                ['rule' => 'required', 'message' => 'Password is Required.'],
+            ]
+        ];
+
+        // Define the rules based on the scenario (insertion or login)
+        return $this->isInsertionScenario() ? $insertionRules : $loginRules;
     }
 
     public function beforeSave(): void

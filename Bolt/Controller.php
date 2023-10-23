@@ -19,6 +19,7 @@ class Controller
 {
     public BoltView $view;
     public string $action = '';
+    protected $currentUser;
 
     /**
      * @var \Bolt\Bolt\Middleware\Middleware[]
@@ -30,6 +31,12 @@ class Controller
         $this->onConstruct();
         $this->view = new BoltView('', false, false);
         $this->view->setLayout("default");
+    }
+
+    public function setCurrentUser($user)
+    {
+        // Allow the developer to set the current user
+        $this->currentUser = $user;
     }
 
     public function registerMiddleware(Middleware $middleware)

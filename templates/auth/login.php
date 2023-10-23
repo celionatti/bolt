@@ -11,152 +11,17 @@
  * can be edited, base on what they are called in the layout view
  */
 
+use Bolt\Bolt\Forms\BootstrapForm;
+
 ?>
 
 <!-- For Adding CSS Styles -->
 <?php $this->start('header') ?>
-<style>
-    .bd-placeholder-img {
-        font-size: 1.125rem;
-        text-anchor: middle;
-        -webkit-user-select: none;
-        -moz-user-select: none;
-        user-select: none;
-    }
 
-    @media (min-width: 768px) {
-        .bd-placeholder-img-lg {
-            font-size: 3.5rem;
-        }
-    }
-
-    .b-example-divider {
-        width: 100%;
-        height: 3rem;
-        background-color: rgba(0, 0, 0, .1);
-        border: solid rgba(0, 0, 0, .15);
-        border-width: 1px 0;
-        box-shadow: inset 0 .5em 1.5em rgba(0, 0, 0, .1), inset 0 .125em .5em rgba(0, 0, 0, .15);
-    }
-
-    .b-example-vr {
-        flex-shrink: 0;
-        width: 1.5rem;
-        height: 100vh;
-    }
-
-    .bi {
-        vertical-align: -.125em;
-        fill: currentColor;
-    }
-
-    .nav-scroller {
-        position: relative;
-        z-index: 2;
-        height: 2.75rem;
-        overflow-y: hidden;
-    }
-
-    .nav-scroller .nav {
-        display: flex;
-        flex-wrap: nowrap;
-        padding-bottom: 1rem;
-        margin-top: -1px;
-        overflow-x: auto;
-        text-align: center;
-        white-space: nowrap;
-        -webkit-overflow-scrolling: touch;
-    }
-
-    .btn-bd-primary {
-        --bd-violet-bg: #712cf9;
-        --bd-violet-rgb: 112.520718, 44.062154, 249.437846;
-
-        --bs-btn-font-weight: 600;
-        --bs-btn-color: var(--bs-white);
-        --bs-btn-bg: var(--bd-violet-bg);
-        --bs-btn-border-color: var(--bd-violet-bg);
-        --bs-btn-hover-color: var(--bs-white);
-        --bs-btn-hover-bg: #6528e0;
-        --bs-btn-hover-border-color: #6528e0;
-        --bs-btn-focus-shadow-rgb: var(--bd-violet-rgb);
-        --bs-btn-active-color: var(--bs-btn-hover-color);
-        --bs-btn-active-bg: #5a23c8;
-        --bs-btn-active-border-color: #5a23c8;
-    }
-
-    .bd-mode-toggle {
-        z-index: 1500;
-    }
-
-    .bd-mode-toggle .dropdown-menu .active .bi {
-        display: block !important;
-    }
-</style>
 <?php $this->end() ?>
 
 <!-- The Main content is Render here. -->
 <?php $this->start('content') ?>
-<svg xmlns="http://www.w3.org/2000/svg" class="d-none">
-    <symbol id="check2" viewBox="0 0 16 16">
-        <path d="M13.854 3.646a.5.5 0 0 1 0 .708l-7 7a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L6.5 10.293l6.646-6.647a.5.5 0 0 1 .708 0z" />
-    </symbol>
-    <symbol id="circle-half" viewBox="0 0 16 16">
-        <path d="M8 15A7 7 0 1 0 8 1v14zm0 1A8 8 0 1 1 8 0a8 8 0 0 1 0 16z" />
-    </symbol>
-    <symbol id="moon-stars-fill" viewBox="0 0 16 16">
-        <path d="M6 .278a.768.768 0 0 1 .08.858 7.208 7.208 0 0 0-.878 3.46c0 4.021 3.278 7.277 7.318 7.277.527 0 1.04-.055 1.533-.16a.787.787 0 0 1 .81.316.733.733 0 0 1-.031.893A8.349 8.349 0 0 1 8.344 16C3.734 16 0 12.286 0 7.71 0 4.266 2.114 1.312 5.124.06A.752.752 0 0 1 6 .278z" />
-        <path d="M10.794 3.148a.217.217 0 0 1 .412 0l.387 1.162c.173.518.579.924 1.097 1.097l1.162.387a.217.217 0 0 1 0 .412l-1.162.387a1.734 1.734 0 0 0-1.097 1.097l-.387 1.162a.217.217 0 0 1-.412 0l-.387-1.162A1.734 1.734 0 0 0 9.31 6.593l-1.162-.387a.217.217 0 0 1 0-.412l1.162-.387a1.734 1.734 0 0 0 1.097-1.097l.387-1.162zM13.863.099a.145.145 0 0 1 .274 0l.258.774c.115.346.386.617.732.732l.774.258a.145.145 0 0 1 0 .274l-.774.258a1.156 1.156 0 0 0-.732.732l-.258.774a.145.145 0 0 1-.274 0l-.258-.774a1.156 1.156 0 0 0-.732-.732l-.774-.258a.145.145 0 0 1 0-.274l.774-.258c.346-.115.617-.386.732-.732L13.863.1z" />
-    </symbol>
-    <symbol id="sun-fill" viewBox="0 0 16 16">
-        <path d="M8 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM8 0a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-1 0v-2A.5.5 0 0 1 8 0zm0 13a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-1 0v-2A.5.5 0 0 1 8 13zm8-5a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1 0-1h2a.5.5 0 0 1 .5.5zM3 8a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1 0-1h2A.5.5 0 0 1 3 8zm10.657-5.657a.5.5 0 0 1 0 .707l-1.414 1.415a.5.5 0 1 1-.707-.708l1.414-1.414a.5.5 0 0 1 .707 0zm-9.193 9.193a.5.5 0 0 1 0 .707L3.05 13.657a.5.5 0 0 1-.707-.707l1.414-1.414a.5.5 0 0 1 .707 0zm9.193 2.121a.5.5 0 0 1-.707 0l-1.414-1.414a.5.5 0 0 1 .707-.707l1.414 1.414a.5.5 0 0 1 0 .707zM4.464 4.465a.5.5 0 0 1-.707 0L2.343 3.05a.5.5 0 1 1 .707-.707l1.414 1.414a.5.5 0 0 1 0 .708z" />
-    </symbol>
-</svg>
-
-<div class="dropdown position-fixed bottom-0 end-0 mb-3 me-3 bd-mode-toggle">
-    <button class="btn btn-bd-primary py-2 dropdown-toggle d-flex align-items-center" id="bd-theme" type="button" aria-expanded="false" data-bs-toggle="dropdown" aria-label="Toggle theme (auto)">
-        <svg class="bi my-1 theme-icon-active" width="1em" height="1em">
-            <use href="#circle-half"></use>
-        </svg>
-        <span class="visually-hidden" id="bd-theme-text">Toggle theme</span>
-    </button>
-    <ul class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="bd-theme-text">
-        <li>
-            <button type="button" class="dropdown-item d-flex align-items-center" data-bs-theme-value="light" aria-pressed="false">
-                <svg class="bi me-2 opacity-50 theme-icon" width="1em" height="1em">
-                    <use href="#sun-fill"></use>
-                </svg>
-                Light
-                <svg class="bi ms-auto d-none" width="1em" height="1em">
-                    <use href="#check2"></use>
-                </svg>
-            </button>
-        </li>
-        <li>
-            <button type="button" class="dropdown-item d-flex align-items-center" data-bs-theme-value="dark" aria-pressed="false">
-                <svg class="bi me-2 opacity-50 theme-icon" width="1em" height="1em">
-                    <use href="#moon-stars-fill"></use>
-                </svg>
-                Dark
-                <svg class="bi ms-auto d-none" width="1em" height="1em">
-                    <use href="#check2"></use>
-                </svg>
-            </button>
-        </li>
-        <li>
-            <button type="button" class="dropdown-item d-flex align-items-center active" data-bs-theme-value="auto" aria-pressed="true">
-                <svg class="bi me-2 opacity-50 theme-icon" width="1em" height="1em">
-                    <use href="#circle-half"></use>
-                </svg>
-                Auto
-                <svg class="bi ms-auto d-none" width="1em" height="1em">
-                    <use href="#check2"></use>
-                </svg>
-            </button>
-        </li>
-    </ul>
-</div>
-
 
 <svg xmlns="http://www.w3.org/2000/svg" class="d-none">
     <symbol id="arrow-right-circle" viewBox="0 0 16 16">
@@ -169,7 +34,7 @@
 </svg>
 
 <div class="col-lg-8 mx-auto p-4 py-md-5">
-    <header class="d-flex align-items-center pb-3 mb-5 border-bottom">
+    <header class="d-flex align-items-center pb-3 mb-3 border-bottom">
         <a href="/" class="d-flex align-items-center text-body-emphasis text-decoration-none">
             <svg class="bi me-2" width="40" height="32">
                 <use xlink:href="#bolt" />
@@ -179,76 +44,24 @@
     </header>
 
     <main>
-        <h1 class="text-body-emphasis">Get started with Bolt</h1>
-        <p class="fs-5 col-md-8">Bolt Framework is a modern, open-source web application framework designed to empower developers to build robust and scalable web applications with ease. It offers a comprehensive suite of tools and features, making it a versatile choice for both beginners and experienced developers.</p>
+        <h1 class="text-body-emphasis">Bolt Account Login Access</h1>
 
-        <div class="mb-4">
-            <a href="https://github.com/celionatti/bolt?search=1" target="_blank" class="btn btn-primary btn-lg px-4">Download Bolt</a>
+        <hr class="col-3 col-md-2 mb-2">
+
+        <?= BootstrapForm::openForm("", 'POST', null, ['class' => 'row g-3']) ?>
+        <div class="col-md-12 col-sm-12">
+            <?= BootstrapForm::inputField("Email", "email", old_value("email"), ['class' => 'form-control', 'type' => 'email'], ['class' => 'mb-3'], $errors) ?>
         </div>
-
-        <hr class="col-3 col-md-2 mb-3">
-
-        <h2 class="text-body-emphasis border-bottom border-primary border-3 p-2 mb-3">Key Features</h2>
-
-        <div class="row g-3">
-            <div class="col-md-6">
-                <h3 class="text-body-emphasis">Modular Architecture</h3>
-                <p>Bolt's modular architecture allows developers to organize their code into reusable components, enhancing code maintainability and scalability.</p>
-            </div>
-
-
-            <div class="col-md-6">
-                <h3 class="text-body-emphasis">Flexible Routing</h3>
-                <p>Easily define and manage application routes, enabling the creation of RESTful APIs and complex web applications.</p>
-            </div>
-
-            <div class="col-md-6">
-                <h3 class="text-body-emphasis">Database Agnostic</h3>
-                <p>Bolt supports multiple database systems, including MySQL, PostgreSQL, and SQLite, offering flexibility in data storage.</p>
-            </div>
-
-            <div class="col-md-6">
-                <h3 class="text-body-emphasis">Middleware Support</h3>
-                <p>Implement custom middleware to handle authentication, authorization, and other request/response processing tasks.</p>
-            </div>
-
-            <div class="col-md-6">
-                <h3 class="text-body-emphasis">Twig and Blade Templating</h3>
-                <p>Choose between Twig and Blade or default php template engines for flexible and expressive views.</p>
-            </div>
-
-            <div class="col-md-6">
-                <h3 class="text-body-emphasis">Session and Authentication</h3>
-                <p>Built-in session management and authentication support for building secure applications.</p>
-            </div>
-
-            <div class="col-md-6">
-                <h3 class="text-body-emphasis">Localization and Internationalization</h3>
-                <p>Easily handle multiple languages and regions, making your app accessible to a global audience.</p>
-            </div>
-
-            <div class="col-md-6">
-                <h3 class="text-body-emphasis">Caching and Performance</h3>
-                <p>Improve application performance with caching mechanisms and optimization tools.</p>
-            </div>
-
-            <div class="col-md-6">
-                <h3 class="text-body-emphasis">CLI Support</h3>
-                <p>Utilize the command-line interface for tasks like database migrations, seeding, and more.</p>
-            </div>
-
-            <div class="col-md-6">
-                <h3 class="text-body-emphasis">Error Handling</h3>
-                <p>Bolt provides robust error handling and debugging tools to streamline development and troubleshooting.</p>
-            </div>
-
+        <div class="col-md-12 col-sm-12">
+            <?= BootstrapForm::inputField("Password", "password", old_value("password"), ['class' => 'form-control', 'type' => 'password'], ['class' => 'mb-3'], $errors) ?>
         </div>
-
-        <p>
-            Whether you're creating a simple blog or a complex enterprise application, Bolt Framework offers the tools and structure to accelerate your development process while maintaining code quality and security.
-
-            Discover the potential of Bolt Framework and start building powerful web applications today.
+        <p class="m-0">
+            Don't have an Account?
+            <a href="/signup" class="link">Create New Account</a>
         </p>
+        <?= BootstrapForm::submitButton("Login", "btn btn-secondary btn-sm p-3 w-50") ?>
+
+        <?= BootstrapForm::closeForm() ?>
     </main>
     <footer class="pt-5 my-5 text-body-secondary border-top">
         Created by the Celio Natti &middot; &copy; 2023

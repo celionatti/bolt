@@ -41,25 +41,28 @@ class BoltAuthentication extends DatabaseModel
     public function login($email, $password, $rememberMe = false)
     {
         $isAccountBlocked = $this->isAccountBlocked($email);
+        $isValidCredentials = $this->authenticate($email, $password);
+        $isValidEmail = $this->getUserValidEmail($email);
 
         if ($isAccountBlocked) {
             // Display a message indicating that the account is blocked.
             FlashMessage::setMessage("Account is blocked. Please contact support.", FlashMessage::WARNING, ['role' => 'alert', 'style' => 'z-index: 9999;']);
-        } else {
-            // If the account is not blocked, proceed with authentication.
-            if ($this->authenticate($email, $password)) {
-                $this->resetLoginAttempts($email);
-                if ($rememberMe) {
-                    $this->generateAndStoreRememberMeToken($this->_currentUser->user_id);
-                }
-                $this->setAuthenticatedUser($this->_currentUser->user_id);
-            } else {
-                $this->incrementLoginAttempts($email);
-                FlashMessage::setMessage("Login failed. Please try again.", FlashMessage::WARNING, ['role' => 'alert', 'style' => 'z-index: 9999;']);
+        } elseif ($isValidCredentials) {
+            $this->resetLoginAttempts($email);
+            if ($rememberMe) {
+                $this->generateAndStoreRememberMeToken($this->_currentUser->user_id);
             }
+            $this->setAuthenticatedUser($this->_currentUser->user_id);
+            redirect("/");
+        } else {
+            if ($isValidEmail) {
+                $this->incrementLoginAttempts($email);
+            }
+            // Invalid password. Update login attempts.
+            FlashMessage::setMessage("Invalid email or password. Please try again.", FlashMessage::DANGER, ['role' => 'alert', 'style' => 'z-index: 9999;']);
         }
 
-        return false;
+        return $isValidCredentials;
     }
 
 
@@ -78,6 +81,11 @@ class BoltAuthentication extends DatabaseModel
         }
 
         return false;
+    }
+
+    private function getUserValidEmail($email)
+    {
+        return $this->findOne(['email' => $email], ['email']);
     }
 
     private function getUserBlockedStatus($email)
@@ -155,6 +163,12 @@ class BoltAuthentication extends DatabaseModel
         }
 
         return $this->_currentUser;
+    }
+
+    public static function currentUser()
+    {
+        $instance = new self();
+        return $instance->getCurrentUser();
     }
 
     private function fromCookie()

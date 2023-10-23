@@ -20,6 +20,13 @@ use Bolt\Bolt\Helpers\FlashMessages\FlashMessage;
 
 class AuthController extends Controller
 {
+    public function onConstruct(): void
+    {
+        if($this->currentUser = BoltAuthentication::currentUser()) {
+            redirect("/");
+        }
+    }
+
     public function signup(Request $request)
     {
         $user = new Users();
@@ -36,6 +43,7 @@ class AuthController extends Controller
             ]);
             $data = $request->getBody();
             $data['user_id'] = generateUuidV4();
+            $user->setIsInsertionScenario(true); // Set insertion scenario flag
             $user->passwordsMatchValidation($data['password'], $data['confirm_password']);
             if ($user->validate($data)) {
                 // other method before saving.
@@ -61,10 +69,23 @@ class AuthController extends Controller
         $this->view->render("auth/signup", $view);
     }
 
-    public function login()
+    public function login(Request $request)
     {
-        $auth = new BoltAuthentication();
-        $auth->login("amisuusman@gmail.com", "Password2");
-        $this->view->render("auth/login");
+        $user = new Users();
+
+        if ($request->isPost()) {
+            $data = $request->getBody();
+            $user->setIsInsertionScenario(false); // Set insertion scenario flag
+            if ($user->validate($data)) {
+                $auth = new BoltAuthentication();
+                $auth->login($data['email'], $data['password']);
+            }
+        }
+        $view = [
+            'errors' => $user->getErrors(),
+            'user' => $user,
+        ];
+
+        $this->view->render("auth/login", $view);
     }
 }
