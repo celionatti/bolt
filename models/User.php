@@ -5,7 +5,7 @@ declare(strict_types=1);
 /**
  * =============================================
  * ================             ================
- * Users Model
+ * User Model
  * ================             ================
  * =============================================
  */
@@ -15,13 +15,13 @@ namespace Bolt\models;
 
 use Bolt\Bolt\Database\DatabaseModel;
 
-class Users extends DatabaseModel
+class User extends DatabaseModel
 {
     private $isInsertion = false; // Default to the login scenario
 
     public static function tableName(): string
     {
-        return 'users';
+        return 'user';
     }
 
     public function setIsInsertionScenario($isInsertion)

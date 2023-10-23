@@ -5,7 +5,7 @@ declare(strict_types=1);
 /**
  * ======================================
  * ===============       ================
- * BM_2023_10_22_213132_user_sessions Migration 
+ * BM_2023_10_23_134718_user_sessions Migration 
  * ===============       ================
  * ======================================
  */
@@ -14,7 +14,7 @@ namespace Bolt\migrations;
 
 use Bolt\Bolt\Migration\BoltMigration;
 
-class BM_2023_10_22_213132_user_sessions extends BoltMigration
+class BM_2023_10_23_134718_user_sessions extends BoltMigration
 {
     /**
      * The Up method is to create table.

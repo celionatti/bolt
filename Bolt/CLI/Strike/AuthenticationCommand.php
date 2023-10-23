@@ -45,7 +45,7 @@ class AuthenticationCommand implements CommandInterface
     public function execute(array $args)
     {
         // Check if the required arguments are provided
-        if (count($args["args"]) < 2) {
+        if (count($args["args"]) < 1) {
             $this->message("Strike Usage: authentication <action>", true, true, "warning");
         }
 
@@ -60,78 +60,28 @@ class AuthenticationCommand implements CommandInterface
         // Check for the action type.
         switch ($action) {
             case self::ACTION_CREATE:
-                $this->createModel();
                 $this->createMigrations();
+                $this->createModel();
                 $this->createView();
+                $this->createController();
                 break;
             default:
                 $this->message("Unknown Command - You can check help or docs to see the list of commands and methods of calling.", true, true, 'warning');
         }
     }
 
-    private function createModel()
-    {
-        // Check if the model directory already exists
-        $modelDir = $this->basePath . DIRECTORY_SEPARATOR . "models" . DIRECTORY_SEPARATOR;
-
-        if (!is_dir($modelDir)) {
-            // Create the model directory
-            if (!mkdir($modelDir, 0755, true)) {
-                $this->message("Error: Unable to create the model directory.", true, true, "error");
-            }
-        }
-
-        /**
-         * Check if Model file already exists.
-         */
-        $modelFile = $modelDir . ucfirst($modelName) . '.php';
-        if (file_exists($modelFile)) {
-            $m = ucfirst($modelName);
-            $this->message("Model File {$m} already exists.", true, true, "warning");
-        }
-
-        /**
-         * Create the model file, if not existing.
-         */
-        touch($modelFile);
-
-        /**
-         * Customize the content of model class here.
-         * From the sample class.
-         */
-        $sample_file = __DIR__ . "/samples/model-sample.php";
-
-        if (!file_exists($sample_file))
-            $this->message("Error: Model Sample file not found in: " . $sample_file, true, true, "error");
-
-
-        $class_name = $this->rename_camel_case($modelName);
-
-        $table_name = strtolower($class_name);
-
-        $content = file_get_contents($sample_file);
-        $content = str_replace("{TABLENAME}", $table_name, $content);
-        $content = str_replace("{CLASSNAME}", $class_name, $content);
-
-        if (file_put_contents($modelFile, $content) === false) {
-            $this->message("Error: Unable to create the model file.", true, true, "error");
-        }
-
-        $this->message("Model file created successfully, FileName: '$modelName'!");
-    }
-
-    private function createView()
-    {
-
-    }
-
     private function createMigrations()
     {
+        $migrationsData = [
+            'users' => __DIR__ . "/samples/authentication/user-migration-sample.php",
+            'login_attempts' => __DIR__ . "/samples/authentication/login-attempts-migration-sample.php",
+            'user_sessions' => __DIR__ . "/samples/authentication/user-sessions-migration-sample.php",
+        ];
         // Check if the model directory already exists
         $migrationDir = $this->basePath . DIRECTORY_SEPARATOR . "migrations" . DIRECTORY_SEPARATOR;
 
         if (!is_dir($migrationDir)) {
-            // Create the model directory
+            // Create the migration directory
             mkdir($migrationDir, 0755, true);
         }
 
@@ -140,43 +90,217 @@ class AuthenticationCommand implements CommandInterface
             $this->message("Error: Unable to create the migration directory.", true, true, "error");
         }
 
-        /**
-         * Check if Migration file already exists.
-         */
-        $migrationFile = $migrationDir . date("Y-m-d_His_") . $modelName . '.php';
-        if (file_exists($migrationFile)) {
-            $mg = ucfirst($modelName);
-            $this->message("Migration File {$mg} already exists.", true, true, "warning");
+        foreach ($migrationsData as $migrationName => $sampleFile) {
+            /**
+             * Check if Migration file already exists.
+             */
+            $migrationFile = $migrationDir . date("Y_m_d_His_") . $migrationName . '.php';
+            if (file_exists($migrationFile)) {
+                $mg = ucfirst($migrationName);
+                $this->message("Migration File {$mg} already exists.", false, true, "warning");
+                continue; // Skip creating this migration file
+            }
+
+            // Create the migration file
+            if (!touch($migrationFile)) {
+                $this->message("Error: Unable to create the migration file for {$migrationName}.", true, true, "error");
+                continue;
+            }
+
+            /**
+             * Customize the content of migration class here.
+             * Use the sample file for this specific model.
+             */
+            if (!file_exists($sampleFile)) {
+                $this->message("Error: Sample file not found for {$migrationName} in: " . $sampleFile, true, true, "error");
+                continue;
+            }
+
+            $class_name = "BM_" . pathinfo($migrationFile, PATHINFO_FILENAME);
+            $class_name = str_replace("-", "_", $class_name);
+
+            $table_name = strtolower($class_name);
+
+            $content = file_get_contents($sampleFile);
+            $content = str_replace("{TABLENAME}", $table_name, $content);
+            $content = str_replace("{CLASSNAME}", $class_name, $content);
+
+            if (file_put_contents($migrationFile, $content) === false) {
+                $this->message("Error: Unable to write content to the migration file for {$migrationName}.", true, true, "error");
+            } else {
+                $this->message("Migration file created successfully for {$migrationName}, FileName: '$migrationFile'!");
+            }
+        }
+    }
+
+    private function createModel()
+    {
+        $modelsData = [
+            'user' => __DIR__ . "/samples/authentication/user-model-sample.php",
+            'userSessions' => __DIR__ . "/samples/authentication/user-session-model-sample.php",
+        ];
+        // Check if the model directory already exists
+        $modelDir = $this->basePath . DIRECTORY_SEPARATOR . "models" . DIRECTORY_SEPARATOR;
+
+        if (!is_dir($modelDir)) {
+            // Create the model directory
+            mkdir($modelDir, 0755, true);
         }
 
-        // Create the migration file
-        if (!touch($migrationFile)) {
-            $this->message("Error: Unable to create the migration file.", true, true, "error");
+        // Check if the directory was created successfully
+        if (!is_dir($modelDir)) {
+            $this->message("Error: Unable to create the model directory.", true, true, "error");
         }
 
-        /**
-         * Customize the content of migration class here.
-         * From the sample class.
-         */
-        $sample_file = __DIR__ . "/samples/migration-sample.php";
+        foreach ($modelsData as $modelName => $sampleFile) {
+            /**
+             * Check if Migration file already exists.
+             */
+            $modelFile = $modelDir . ucfirst($modelName) . '.php';
+            if (file_exists($modelFile)) {
+                $m = ucfirst($modelName);
+                $this->message("Model File {$m} already exists.", false, true, "warning");
+                continue; // Skip creating this migration file
+            }
 
-        if (!file_exists($sample_file))
-            $this->message("Error: Migration Sample file not found in: " . $sample_file, true, true, "error");
+            // Create the migration file
+            if (!touch($modelFile)) {
+                $this->message("Error: Unable to create the model file for {$modelName}.", true, true, "error");
+                continue;
+            }
 
-        $class_name = "BM_" . pathinfo($migrationFile, PATHINFO_FILENAME);
-        $class_name = str_replace("-", "_", $class_name);
+            /**
+             * Customize the content of migration class here.
+             * Use the sample file for this specific model.
+             */
+            if (!file_exists($sampleFile)) {
+                $this->message("Error: Sample file not found for {$modelName} in: " . $sampleFile, true, true, "error");
+                continue;
+            }
 
-        $table_name = strtolower($class_name);
+            $class_name = $this->rename_camel_case($modelName);
 
-        $content = file_get_contents($sample_file);
-        $content = str_replace("{TABLENAME}", $table_name, $content);
-        $content = str_replace("{CLASSNAME}", $class_name, $content);
+            $table_name = strtolower($class_name);
 
-        // file_put_contents($migrationFile, $content);
-        if (file_put_contents($migrationFile, $content) === false) {
-            $this->message("Error: Unable to write content to the migration file.", true, true, "error");
+            $content = file_get_contents($sampleFile);
+            $content = str_replace("{TABLENAME}", $table_name, $content);
+            $content = str_replace("{CLASSNAME}", $class_name, $content);
+
+            if (file_put_contents($modelFile, $content) === false) {
+                $this->message("Error: Unable to write content to the model file for {$modelName}.", true, true, "error");
+            } else {
+                $this->message("Model file created successfully for {$modelName}, FileName: '$modelFile'!");
+            }
         }
-        $this->message("Migration file created successfully, FileName: '$migrationFile'!");
+    }
+
+    private function createView()
+    {
+        $viewsData = [
+            'signup' => __DIR__ . "/samples/authentication/signup-view-sample.php",
+            'login' => __DIR__ . "/samples/authentication/login-view-sample.php",
+        ];
+        // Check if the model directory already exists
+        $viewDir = $this->basePath . DIRECTORY_SEPARATOR . "templates" . DIRECTORY_SEPARATOR . "auth" . DIRECTORY_SEPARATOR;
+
+        if (!is_dir($viewDir)) {
+            // Create the model directory
+            mkdir($viewDir, 0755, true);
+        }
+
+        // Check if the directory was created successfully
+        if (!is_dir($viewDir)) {
+            $this->message("Error: Unable to create the templates directory.", true, true, "error");
+        }
+
+        foreach ($viewsData as $viewName => $sampleFile) {
+            /**
+             * Check if View file already exists.
+             */
+            $viewFile = $viewDir . $viewName . '.php';
+            if (file_exists($viewFile)) {
+                $m = ucfirst($viewName);
+                $this->message("View File {$m} already exists.", false, true, "warning");
+                continue; // Skip creating this view file
+            }
+
+            // Create the view file
+            if (!touch($viewFile)) {
+                $this->message("Error: Unable to create the model file for {$viewName}.", true, true, "error");
+                continue;
+            }
+
+            /**
+             * Customize the content of view class here.
+             * Use the sample file for this specific model.
+             */
+            if (!file_exists($sampleFile)) {
+                $this->message("Error: Sample file not found for {$viewName} in: " . $sampleFile, true, true, "error");
+                continue;
+            }
+
+            $content = file_get_contents($sampleFile);
+
+            if (file_put_contents($viewFile, $content) === false) {
+                $this->message("Error: Unable to write content to the model file for {$viewName}.", true, true, "error");
+            } else {
+                $this->message("View file created successfully for {$viewName}, FileName: '$viewFile'!");
+            }
+        }
+    }
+
+    private function createController()
+    {
+        $controllersData = [
+            'authController' => __DIR__ . "/samples/authentication/auth-controller-sample.php",
+        ];
+        // Check if the controllers directory already exists
+        $controllerDir = $this->basePath . DIRECTORY_SEPARATOR . "controllers" . DIRECTORY_SEPARATOR;
+
+        if (!is_dir($controllerDir)) {
+            // Create the controllers directory
+            mkdir($controllerDir, 0755, true);
+        }
+
+        // Check if the directory was created successfully
+        if (!is_dir($controllerDir)) {
+            $this->message("Error: Unable to create the controllers directory.", true, true, "error");
+        }
+
+        foreach ($controllersData as $controllerName => $sampleFile) {
+            /**
+             * Check if Controller file already exists.
+             */
+            $controllerFile = $controllerDir . ucfirst($controllerName) . '.php';
+            if (file_exists($controllerFile)) {
+                $m = ucfirst($controllerName);
+                $this->message("Controller File {$m} already exists.", false, true, "warning");
+                continue; // Skip creating this controller file
+            }
+
+            // Create the controller file
+            if (!touch($controllerFile)) {
+                $this->message("Error: Unable to create the controller file for {$controllerName}.", true, true, "error");
+                continue;
+            }
+
+            /**
+             * Customize the content of controller class here.
+             * Use the sample file for this specific model.
+             */
+            if (!file_exists($sampleFile)) {
+                $this->message("Error: Sample file not found for {$controllerName} in: " . $sampleFile, true, true, "error");
+                continue;
+            }
+
+            $content = file_get_contents($sampleFile);
+
+            if (file_put_contents($controllerFile, $content) === false) {
+                $this->message("Error: Unable to write content to the controller file for {$controllerName}.", true, true, "error");
+            } else {
+                $this->message("Controller file created successfully for {$controllerName}, FileName: '$controllerFile'!");
+            }
+        }
     }
 
     public function message(string $message, bool $die = false, bool $timestamp = true, string $level = 'info'): void

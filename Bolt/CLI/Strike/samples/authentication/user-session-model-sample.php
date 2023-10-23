@@ -5,7 +5,7 @@ declare(strict_types=1);
 /**
  * ======================================
  * ===============        ===============
- * ===== UserSessions Model
+ * ===== {CLASSNAME} Model
  * ===============        ===============
  * ======================================
  */
@@ -14,7 +14,7 @@ namespace Bolt\models;
 
 use Bolt\Bolt\Database\DatabaseModel;
 
-class UserSessions extends DatabaseModel
+class {CLASSNAME} extends DatabaseModel
 {
     public static function tableName():string
     {

@@ -7,6 +7,7 @@ require __DIR__ . '/vendor/autoload.php';
 require __DIR__ . '/configs/load.php';
 
 use Bolt\Bolt\CLI\BoltCLI;
+use Bolt\Bolt\CLI\Strike\AuthenticationCommand;
 use Bolt\Bolt\CLI\Strike\ControllerCommand;
 use Bolt\Bolt\CLI\Strike\GenerateCommand;
 use Bolt\Bolt\CLI\Strike\GreetCommand;
@@ -31,12 +32,14 @@ $strike->registerCommand('serve', 'Serve Bolt Framework with the PHP web server,
 $strike->registerCommand('layout', 'Create new Layout file', new LayoutCommand);
 $strike->registerCommand('generate', 'Generate Command is for , commands like app key,', new GenerateCommand);
 $strike->registerCommand('seeder', 'Create a seeder file, generate, drop', new SeederCommand);
+$strike->registerCommand('authentication', 'Create an authentication Resources. For the users Model, User Sessions, Migrations - users, login_attempts, and user_sessions. Also auth controller, view - login and signup page.', new AuthenticationCommand);
 
 
 
 // Register an alias
 $strike->registerAlias('add', 'calculate');
 $strike->registerAlias('seed', 'seeder');
+$strike->registerAlias('auth', 'authentication');
 
 // Set interactive mode
 $strike->setInteractiveMode(true);
