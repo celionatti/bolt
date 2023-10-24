@@ -13,8 +13,10 @@ declare(strict_types=1);
 namespace Bolt\controllers;
 
 use Bolt\Bolt\Authentication\BoltAuthentication;
+use Bolt\Bolt\Bolt;
 use Bolt\models\Users;
 use Bolt\Bolt\Controller;
+use Bolt\Bolt\Helpers\Csrf;
 use Bolt\Bolt\Http\Request;
 use Bolt\Bolt\Helpers\FlashMessages\FlashMessage;
 
@@ -22,7 +24,7 @@ class AuthController extends Controller
 {
     public function onConstruct(): void
     {
-        if($this->currentUser = BoltAuthentication::currentUser()) {
+        if ($this->currentUser = BoltAuthentication::currentUser()) {
             redirect("/");
         }
     }
@@ -69,23 +71,50 @@ class AuthController extends Controller
         $this->view->render("auth/signup", $view);
     }
 
+    public function login_view()
+    {
+        $view = [
+            'errors' => Bolt::$bolt->session->getFormMessage(),
+            'user' => $this->retrieveUserSessionData(),
+        ];
+
+        // Remove the user data from the session after it has been retrieved
+        Bolt::$bolt->session->unsetArray(['user_data']);
+
+        $this->view->render("auth/login", $view);
+    }
+
     public function login(Request $request)
     {
         $user = new Users();
+        $csrf = new Csrf();
 
         if ($request->isPost()) {
             $data = $request->getBody();
+            if(!$csrf->validateToken($data["_csrf_token"])) {
+                bolt_die("CSRF Token Expires");
+                return;
+            }
+
             $user->setIsInsertionScenario(false); // Set insertion scenario flag
             if ($user->validate($data)) {
                 $auth = new BoltAuthentication();
-                $auth->loginWithEmail($data['email'], $data['password']);
+                $auth->login($data['email'], $data['password']);
+            } else {
+                $this->storeUserSessionData($data);
             }
         }
-        $view = [
-            'errors' => $user->getErrors(),
-            'user' => $user,
-        ];
+        Bolt::$bolt->session->setFormMessage($user->getErrors());
+        redirect("/login");
+    }
 
-        $this->view->render("auth/login", $view);
+    protected function retrieveUserSessionData()
+    {
+        return Bolt::$bolt->session->get('user_data', []);
+    }
+
+    protected function storeUserSessionData(array $data)
+    {
+        Bolt::$bolt->session->set('user_data', $data);
     }
 }

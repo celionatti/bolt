@@ -13,8 +13,9 @@ namespace Bolt\Bolt;
 class Session
 {
 
-    protected $flashKey = '__flash_messages';
-    protected $expirationKey = '__session_expiration';
+    protected const FLASH_KEY = '__flash_messages';
+    protected const FORM_FLASH_KEY = '__form_messages';
+    protected const EXPIRATION_KEY = '__session_expiration';
 
     public function __construct()
     {
@@ -51,29 +52,41 @@ class Session
 
     public function setFlash(string $key, $value): void
     {
-        $flashMessages = $this->get($this->flashKey, []);
+        $flashMessages = $this->get(self::FLASH_KEY, []);
         $flashMessages[$key] = $value;
-        $this->set($this->flashKey, $flashMessages);
+        $this->set(self::FLASH_KEY, $flashMessages);
     }
 
-    public function getFlash(string $key, $default = null)
+    public function getFlash(string $key, $default = false)
     {
-        $flashMessages = $this->get($this->flashKey, []);
+        $flashMessages = $this->get(self::FLASH_KEY, []);
         $value = $flashMessages[$key] ?? $default;
         unset($flashMessages[$key]);
-        $this->set($this->flashKey, $flashMessages);
+        $this->set(self::FLASH_KEY, $flashMessages);
         return $value;
+    }
+
+    public function setFormMessage($value): void
+    {
+        $this->set(self::FORM_FLASH_KEY, $value) ?? null;
+    }
+
+    public function getFormMessage()
+    {
+        $value = $this->get(self::FORM_FLASH_KEY);
+        $this->remove(self::FORM_FLASH_KEY);
+        return $value ?? [];
     }
 
     public function setExpiration(int $minutes): void
     {
         $expirationTime = time() + ($minutes * 60);
-        $this->set($this->expirationKey, $expirationTime);
+        $this->set(self::EXPIRATION_KEY, $expirationTime);
     }
 
     public function getExpiration(): ?int
     {
-        return $this->get($this->expirationKey);
+        return $this->get(self::EXPIRATION_KEY);
     }
 
     protected function checkExpiration(): void
@@ -103,18 +116,18 @@ class Session
 
     public function hasFlash(string $key): bool
     {
-        $flashMessages = $this->get($this->flashKey, []);
+        $flashMessages = $this->get(self::FLASH_KEY, []);
         return isset($flashMessages[$key]);
     }
 
     public function clearAllFlashes(): void
     {
-        $this->set($this->flashKey, []);
+        $this->set(self::FLASH_KEY, []);
     }
 
     public function getFlashes(): array
     {
-        return $this->get($this->flashKey, []);
+        return $this->get(self::FLASH_KEY, []);
     }
 
     public function setArray(array $data): void

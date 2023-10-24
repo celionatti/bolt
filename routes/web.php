@@ -22,7 +22,7 @@ use Bolt\controllers\SiteController;
 
 $bolt->router->get("/", [SiteController::class, "welcome"]);
 $bolt->router->get("/send", [SiteController::class, "send"]);
-$bolt->router->get("/login", [AuthController::class, "login"]);
+$bolt->router->get("/login", [AuthController::class, "login_view"]);
 $bolt->router->post("/login", [AuthController::class, "login"]);
 $bolt->router->get("/signup", [AuthController::class, "signup"]);
 $bolt->router->post("/signup", [AuthController::class, "signup"]);

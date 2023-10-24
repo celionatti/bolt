@@ -12,37 +12,41 @@ namespace Bolt\Bolt\Forms;
 
 use Bolt\Bolt\Helpers\Csrf;
 
-class Form
+class Form_copy
 {
-    public static function openForm($action, $method = 'POST', $enctype = null, $attrs = []): string
+    public static function openForm($action, $method = 'POST', $enctype = null, $attrs = [])
     {
         $enctypeAttribute = $enctype ? ' enctype="' . $enctype . '"' : '';
-        $html = "<form action='" . htmlspecialchars($action) . "' method='$method'$enctypeAttribute";
+        $html = "<form action='" . htmlspecialchars($action) . "' method='$method' $enctypeAttribute";
+
+        // Add any additional attributes
         $html .= self::processAttrs($attrs);
-        $html .= '>';
+
+        $html .= ">";
 
         return $html;
     }
 
-    public static function closeForm(): string
+    public static function closeForm()
     {
         return '</form>';
     }
 
-    public static function csrfField(): string
+    public static function csrfField()
     {
         $csrf = new Csrf();
+
         $token = $csrf->getToken() ?? "";
 
         return "<input type='hidden' name='_csrf_token' value='{$token}'>";
     }
 
-    public static function method($method): string
+    public static function method($method)
     {
         return "<input type='hidden' value='{$method}' name='_method' />";
     }
 
-    public static function hidden($name, $value, $attrs = []): string
+    public static function hidden($name, $value, $attrs = [])
     {
         $html = "<input type='hidden' value='{$value}' id='{$name}' name='{$name}'";
 
@@ -213,7 +217,7 @@ class Form
         return $html;
     }
 
-    protected static function processAttrs(array $attrs): string
+    protected static function processAttrs($attrs)
     {
         $html = "";
         foreach ($attrs as $key => $value) {
@@ -222,15 +226,19 @@ class Form
         return $html;
     }
 
-    protected static function appendErrors(string $key, array $inputAttrs, array $errors): array
+    public static function appendErrors($key, $inputAttrs, $errors)
     {
         if (array_key_exists($key, $errors)) {
-            $inputAttrs['class'] = ($inputAttrs['class'] ?? '') . ' is-invalid';
+            if (array_key_exists('class', $inputAttrs)) {
+                $inputAttrs['class'] .= ' is-invalid';
+            } else {
+                $inputAttrs['class'] = ' is-invalid';
+            }
         }
         return $inputAttrs;
     }
 
-    protected static function getOneError(string $id, array $errors): string
+    protected static function getOneError($id, $errors)
     {
         $error = $errors[$id] ?? [];
         return $error[0] ?? '';

@@ -29,7 +29,7 @@ class FlashMessage
         }
 
         // Store the message, type, and attributes in the session
-        $_SESSION['flash_message'] = [
+        $_SESSION['__flash_message'] = [
             'message' => $message,
             'type' => $type,
             'attributes' => $attributes,
@@ -38,8 +38,8 @@ class FlashMessage
 
     public static function getAndClearMessage()
     {
-        $message = $_SESSION['flash_message'] ?? null;
-        unset($_SESSION['flash_message']); // Remove the message from the session
+        $message = $_SESSION['__flash_message'] ?? null;
+        unset($_SESSION['__flash_message']); // Remove the message from the session
         return $message;
     }
 

@@ -13,6 +13,7 @@ declare(strict_types=1);
 namespace Bolt\controllers;
 
 use Bolt\Bolt\Authentication\BoltAuthentication;
+use Bolt\Bolt\Bolt;
 use Bolt\models\Users;
 use Bolt\Bolt\Controller;
 use Bolt\Bolt\Http\Request;
@@ -22,7 +23,7 @@ class AuthController extends Controller
 {
     public function onConstruct(): void
     {
-        if($this->currentUser = BoltAuthentication::currentUser()) {
+        if ($this->currentUser = BoltAuthentication::currentUser()) {
             redirect("/");
         }
     }
@@ -69,6 +70,16 @@ class AuthController extends Controller
         $this->view->render("auth/signup", $view);
     }
 
+    public function login_view(Request $request)
+    {
+        $view = [
+            'errors' => Bolt::$bolt->session->getFormMessage(),
+            'user' => $this->retrieveUserSessionData(),
+        ];
+
+        $this->view->render("auth/login", $view);
+    }
+
     public function login(Request $request)
     {
         $user = new Users();
@@ -79,13 +90,21 @@ class AuthController extends Controller
             if ($user->validate($data)) {
                 $auth = new BoltAuthentication();
                 $auth->login($data['email'], $data['password']);
+            } else {
+                $this->storeUserSessionData($data);
             }
         }
-        $view = [
-            'errors' => $user->getErrors(),
-            'user' => $user,
-        ];
+        Bolt::$bolt->session->setFormMessage($user->getErrors());
+        redirect("/login");
+    }
 
-        $this->view->render("auth/login", $view);
+    protected function retrieveUserSessionData()
+    {
+        return Bolt::$bolt->session->get('user_data', []);
+    }
+
+    protected function storeUserSessionData(array $data)
+    {
+        Bolt::$bolt->session->set('user_data', $data);
     }
 }

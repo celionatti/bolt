@@ -270,7 +270,8 @@ function old_value(string $key, $default = '', string $type = 'post', string $da
     $sources = [
         'post' => $_POST,
         'get' => $_GET,
-        // Add more sources as needed (e.g., 'session', 'cookie', etc.)
+        'session' => $_SESSION,
+        // Add more sources as needed (e.g., 'cookie', 'custom_source', etc.)
     ];
 
     // Validate the input source
@@ -299,6 +300,7 @@ function old_value(string $key, $default = '', string $type = 'post', string $da
             return (string)$value;
     }
 }
+
 
 function old_select(string $key, string $value, $default = '', string $type = 'post', bool $strict = true): string
 {
@@ -625,7 +627,7 @@ function typeCastData($key, $value)
  * @param integer $cost Adjust the cost factor as needed (higher is slower but more secure)
  * @return void
  */
-function hashPassword(string $password, $cost = 12):string
+function hashPassword(string $password, $cost = 12): string
 {
     $salt = bin2hex(random_bytes(16)); // Generate a random salt
     $hash = password_hash($password . $salt, PASSWORD_BCRYPT, ['cost' => $cost]);

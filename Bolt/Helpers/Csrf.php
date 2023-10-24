@@ -13,7 +13,7 @@ namespace Bolt\Bolt\Helpers;
 class Csrf
 {
     protected $token = "";
-    protected $tokenName = '_csrf_token';
+    public $tokenName = '_csrf_token';
     protected $tokenLifetime = 3600; // Token lifetime in seconds (default: 1 hour, 3600 seconds)
 
     public function __construct()
@@ -68,12 +68,14 @@ class Csrf
 
         // Validate the submitted token based on the request method
         if ($requestMethod === 'POST' || $requestMethod === 'PUT' || $requestMethod === 'DELETE') {
+            // Change self::$token to $this->token
             return hash_equals($this->token, $submittedToken);
         }
 
         // GET and other request methods are considered safe and don't require token validation
         return true;
     }
+
 
     public function regenerateToken()
     {

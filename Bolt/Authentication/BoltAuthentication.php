@@ -68,36 +68,6 @@ class BoltAuthentication extends DatabaseModel
         return $isValidCredentials;
     }
 
-    public function loginWithEmail($email, $password, $rememberMe = false)
-    {
-        $isAccountBlocked = $this->isAccountBlocked($email);
-        $isValidCredentials = $this->authenticate($email, $password);
-        $isValidEmail = $this->getUserValidEmail($email);
-
-        if ($isAccountBlocked) {
-            // Display a message indicating that the account is blocked.
-            FlashMessage::setMessage("Account is blocked. Please contact support.", FlashMessage::WARNING, ['role' => 'alert', 'style' => 'z-index: 9999;']);
-        } elseif ($isValidCredentials) {
-            $this->resetLoginAttempts($email);
-            if ($rememberMe) {
-                $this->generateAndStoreRememberMeToken($this->_currentUser->user_id);
-            }
-            if ($this->sendEmailAfterLogin($email)) {
-                $this->setAuthenticatedUser($this->_currentUser->user_id);
-                redirect("/");
-            }
-        } else {
-            if ($isValidEmail) {
-                $this->incrementLoginAttempts($email);
-            }
-            // Invalid password. Update login attempts.
-            FlashMessage::setMessage("Invalid email or password. Please try again.", FlashMessage::DANGER, ['role' => 'alert', 'style' => 'z-index: 9999;']);
-        }
-
-        return $isValidCredentials;
-    }
-
-
     private function isAccountBlocked($email)
     {
         $isBlocked = $this->checkUserBlockedStatus($email);
