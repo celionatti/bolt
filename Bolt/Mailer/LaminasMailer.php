@@ -36,20 +36,35 @@ class LaminasMailer
         ];
     }
 
-    public function sendEmail($from, $to, $subject, $body)
+    public function sendEmail($from, $to, $subject, $body, $isHtml = true, $images = [])
     {
         $transport = new SmtpTransport(new SmtpOptions($this->smtpConfig));
 
         $message = new Message();
         $message->addFrom($from)
             ->addTo($to)
-            ->setSubject($subject)
-            ->setBody($body);
+            ->setSubject($subject);
+
+        if ($isHtml) {
+            $message->setBody($body, 'text/html');
+        } else {
+            $message->setBody($body);
+        }
+
+        // Embed images in the email body
+        foreach ($images as $cid => $imagePath) {
+            $attachment = new Laminas\Mime\Part(fopen($imagePath, 'r'));
+            $attachment->type = mime_content_type($imagePath);
+            $attachment->disposition = Laminas\Mime\Mime::DISPOSITION_INLINE;
+            $attachment->encoding = Laminas\Mime\Mime::ENCODING_BASE64;
+            $attachment->id = $cid;
+            $message->addPart($attachment);
+        }
 
         try {
             $transport->send($message);
             return true; // Email sent successfully
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             // Handle any exceptions here, e.g., log errors
             return false; // Email sending failed
         }
