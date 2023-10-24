@@ -12,58 +12,46 @@ declare(strict_types=1);
 
 namespace Bolt\Bolt\Mailer;
 
-use Bolt\Bolt\Config;
-use Bolt\Bolt\Helpers\FlashMessages\BootstrapFlashMessage;
-use Bolt\Bolt\Helpers\FlashMessages\FlashMessage;
-use PHPMailer\PHPMailer\Exception;
-use PHPMailer\PHPMailer\PHPMailer;
-use PHPMailer\PHPMailer\SMTP;
 
 class Mailer
 {
-    private $mailer;
+    private $to;
+    private $subject;
+    private $message;
+    private $headers;
 
     public function __construct()
     {
-        $this->mailer = new PHPMailer(true);
+        ini_set("SMTP", "smtp.gmail.com");
+        ini_set("smtp_port", 587);
+        $this->headers = "MIME-Version: 1.0" . "\r\n";
+        $this->headers .= "Content-type:text/html;charset=UTF-8" . "\r\n";
     }
 
-    public function sendEmail($to, $subject, $message, $fromEmail, $fromName)
+    public function setTo($to)
     {
-        try {
-            // Server settings
-            $this->mailer->SMTPDebug = 2;
-            $this->mailer->isSMTP();
-            $this->mailer->Host = Config::get("mailer_host") ?? 'smtp.gmail.com';
-            $this->mailer->SMTPAuth = true;
-            $this->mailer->Username = Config::get("mailer_email") ?? "mailer_email";
-            $this->mailer->Password = Config::get("mailer_password") ?? "mailer_password";
-            $this->mailer->SMTPSecure = 'tls';
-            $this->mailer->Port = 587;
+        $this->to = $to;
+    }
 
-            // Sender info
-            $this->mailer->setFrom($fromEmail, $fromName);
+    public function setSubject($subject)
+    {
+        $this->subject = $subject;
+    }
 
-            // Recipient
-            $this->mailer->addAddress($to);
+    public function setMessage($message)
+    {
+        $this->message = $message;
+    }
 
-            // Content
-            $this->mailer->isHTML(true);
-            $this->mailer->Subject = $subject;
-            $this->mailer->Body = $message;
-
-            if($this->mailer->send()) {
-                BootstrapFlashMessage::setMessage("MAIL SENT");
-                dd("Sent mail");
-                return true;
-            }
-            // Send the email
-            // $this->mailer->send();
-
-
-        } catch (Exception $e) {
-            dd("error mail");
-            return "Message could not be sent. Mailer Error: " . $this->mailer->ErrorInfo;
+    public function send()
+    {
+        if (empty($this->to) || empty($this->subject) || empty($this->message)) {
+            return false; // In a real application, you should handle this case more gracefully.
         }
+
+        $headers = $this->headers . "From: amisuusman@gmail.com\r\n";
+
+        $success = mail($this->to, $this->subject, $this->message, $headers);
+        return $success;
     }
 }
