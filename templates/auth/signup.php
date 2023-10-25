@@ -49,26 +49,27 @@ use Bolt\Bolt\Forms\BootstrapForm;
         <hr class="col-3 col-md-2 mb-2">
 
         <?= BootstrapForm::openForm("", 'POST', null, ['class' => 'row g-3']) ?>
+        <?= BootstrapForm::csrfField() ?>
         <div class="col-md-4 col-sm-12">
-            <?= BootstrapForm::inputField("Surname", "surname", old_value("surname"), ['class' => 'form-control'], ['class' => 'mb-3'], $errors) ?>
+            <?= BootstrapForm::inputField("Surname", "surname", old_value("surname", $user["surname"] ?? ''), ['class' => 'form-control'], ['class' => 'mb-3'], $errors) ?>
         </div>
         <div class="col-md-5 col-sm-12">
-            <?= BootstrapForm::inputField("Othername", "othername", old_value("othername"), ['class' => 'form-control'], ['class' => 'mb-3'], $errors) ?>
+            <?= BootstrapForm::inputField("Othername", "othername", old_value("othername", $user["othername"] ?? ''), ['class' => 'form-control'], ['class' => 'mb-3'], $errors) ?>
         </div>
         <div class="col-md-3 col-sm-12">
-            <?= BootstrapForm::selectField("Gender", "gender", old_select("gender", ""), $genderOpts, ['class' => 'form-control'], ['class' => 'mb-3'], $errors) ?>
+            <?= BootstrapForm::selectField("Gender", "gender", old_select("gender", $user["gender"] ?? ''), $genderOpts, ['class' => 'form-control'], ['class' => 'mb-3'], $errors) ?>
         </div>
         <div class="col-md-7 col-sm-12">
-            <?= BootstrapForm::inputField("Email", "email", old_value("email"), ['class' => 'form-control', 'type' => 'email'], ['class' => 'mb-3'], $errors) ?>
+            <?= BootstrapForm::inputField("Email", "email", old_value("email", $user["email"] ?? ''), ['class' => 'form-control', 'type' => 'email'], ['class' => 'mb-3'], $errors) ?>
         </div>
         <div class="col-md-5 col-sm-12">
-            <?= BootstrapForm::inputField("Phone", "phone", old_value("phone"), ['class' => 'form-control', 'type' => 'tel'], ['class' => 'mb-3'], $errors) ?>
+            <?= BootstrapForm::inputField("Phone", "phone", old_value("phone", $user["email"] ?? ''), ['class' => 'form-control', 'type' => 'tel'], ['class' => 'mb-3'], $errors) ?>
         </div>
         <div class="col-md-6 col-sm-12">
-            <?= BootstrapForm::inputField("Password", "password", old_value("password"), ['class' => 'form-control', 'type' => 'password'], ['class' => 'mb-3'], $errors) ?>
+            <?= BootstrapForm::inputField("Password", "password", old_value("password", $user["password"] ?? ''), ['class' => 'form-control', 'type' => 'password'], ['class' => 'mb-3'], $errors) ?>
         </div>
         <div class="col-md-6 col-sm-12">
-            <?= BootstrapForm::inputField("Confirm Password", "confirm_password", old_value("confirm_password"), ['class' => 'form-control', 'type' => 'password'], ['class' => 'mb-3'], $errors) ?>
+            <?= BootstrapForm::inputField("Confirm Password", "confirm_password", old_value("confirm_password", $user["confirm_password"] ?? ''), ['class' => 'form-control', 'type' => 'password'], ['class' => 'mb-3'], $errors) ?>
         </div>
         <p class="m-0">
             Already have an Account?

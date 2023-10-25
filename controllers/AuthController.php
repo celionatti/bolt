@@ -29,9 +29,29 @@ class AuthController extends Controller
         }
     }
 
+    public function signup_view(Request $request)
+    {
+        $view = [
+            'errors' => Bolt::$bolt->session->getFormMessage(),
+            'user' => $this->retrieveUserSessionData(),
+            'genderOpts' => [
+                '' => '--- Please Select ---',
+                'male' => 'Male',
+                'female' => 'Female',
+                'others' => 'Others'
+            ]
+        ];
+
+        // Remove the user data from the session after it has been retrieved
+        Bolt::$bolt->session->unsetArray(['user_data']);
+
+        $this->view->render("auth/signup", $view);
+    }
+
     public function signup(Request $request)
     {
         $user = new Users();
+        $csrf = new Csrf();
 
         if ($request->isPost()) {
             $user->fillable([
@@ -44,6 +64,10 @@ class AuthController extends Controller
                 'password'
             ]);
             $data = $request->getBody();
+            if (!$csrf->validateToken($data["_csrf_token"])) {
+                bolt_die("CSRF Token Expires");
+                return;
+            }
             $data['user_id'] = generateUuidV4();
             $user->setIsInsertionScenario(true); // Set insertion scenario flag
             $user->passwordsMatchValidation($data['password'], $data['confirm_password']);
@@ -54,21 +78,12 @@ class AuthController extends Controller
                     FlashMessage::setMessage("User Created Successfully", FlashMessage::SUCCESS, ['role' => 'alert', 'style' => 'z-index: 9999;']);
                     redirect("/");
                 }
+            } else {
+                $this->storeUserSessionData($data);
             }
         }
-
-        $view = [
-            'errors' => $user->getErrors(),
-            'user' => $user,
-            'genderOpts' => [
-                '' => '--- Please Select ---',
-                'male' => 'Male',
-                'female' => 'Female',
-                'others' => 'Others'
-            ]
-        ];
-
-        $this->view->render("auth/signup", $view);
+        Bolt::$bolt->session->setFormMessage($user->getErrors());
+        redirect("/signup");
     }
 
     public function login_view()
@@ -91,7 +106,7 @@ class AuthController extends Controller
 
         if ($request->isPost()) {
             $data = $request->getBody();
-            if(!$csrf->validateToken($data["_csrf_token"])) {
+            if (!$csrf->validateToken($data["_csrf_token"])) {
                 bolt_die("CSRF Token Expires");
                 return;
             }

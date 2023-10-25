@@ -54,7 +54,7 @@ use Bolt\Bolt\Forms\BootstrapForm;
             <?= BootstrapForm::inputField("Email", "email", old_value("email", $user["email"] ?? '', 'get'), ['class' => 'form-control', 'type' => 'email'], ['class' => 'mb-3'], $errors) ?>
         </div>
         <div class="col-md-12 col-sm-12">
-            <?= BootstrapForm::inputField("Password", "password", old_value("password"), ['class' => 'form-control', 'type' => 'password'], ['class' => 'mb-3'], $errors) ?>
+            <?= BootstrapForm::inputField("Password", "password", old_value("password", $user["password"] ?? ''), ['class' => 'form-control', 'type' => 'password'], ['class' => 'mb-3'], $errors) ?>
         </div>
         <p class="m-0">
             Don't have an Account?

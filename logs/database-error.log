@@ -8,3 +8,4 @@
 [2023-10-18 02:23:04] [ Database Error ] SQLSTATE[23000]: Integrity constraint violation: 1062 Duplicate entry '' for key 'email'
 [2023-10-18 02:34:54] [ Database Error ] SQLSTATE[23000]: Integrity constraint violation: 1062 Duplicate entry '' for key 'email'
 [2023-10-18 02:38:20] [ Database Error ] SQLSTATE[23000]: Integrity constraint violation: 1062 Duplicate entry '' for key 'email'
+[2023-10-25 00:21:25] [ Database Error ] SQLSTATE[42S02]: Base table or view not found: 1146 Table 'bolt.user' doesn't exist

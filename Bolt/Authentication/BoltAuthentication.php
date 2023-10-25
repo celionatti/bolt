@@ -25,7 +25,6 @@ class BoltAuthentication extends DatabaseModel
     private ?object $_currentUser = null;
     private Session $session;
     private RateLimiter $rateLimiter; // Inject the RateLimiter here
-    private BoltMailer $mailer;
 
     public function __construct()
     {
@@ -33,7 +32,6 @@ class BoltAuthentication extends DatabaseModel
         $database = new Database();
         $this->session = new Session();
         $this->rateLimiter = new RateLimiter($database->getConnection());
-        $this->mailer = new BoltMailer();
     }
 
     public static function tableName(): string
@@ -83,16 +81,6 @@ class BoltAuthentication extends DatabaseModel
         }
 
         return false;
-    }
-
-    public function sendEmailAfterLogin($email)
-    {
-        $emailRecipient = $email;
-        $emailSubject = 'Login Successful';
-        $emailHtmlMessage = 'You have successfully logged in to our website.';
-        $emailTextMessage = 'You have successfully logged in to our website.';
-
-        return $this->mailer->sendEmail([$emailRecipient], $emailSubject, $emailHtmlMessage, $emailTextMessage, 'no_reply@bolt.com', 'Bolt Framework');
     }
 
     private function getUserValidEmail($email)
