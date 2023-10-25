@@ -5,7 +5,7 @@ declare(strict_types=1);
 /**
  * =============================================
  * ================             ================
- * User Model
+ * Users Model
  * ================             ================
  * =============================================
  */
@@ -21,7 +21,7 @@ class Users extends DatabaseModel
 
     public static function tableName(): string
     {
-        return 'user';
+        return 'users';
     }
 
     public function setIsInsertionScenario($isInsertion)
@@ -57,6 +57,9 @@ class Users extends DatabaseModel
             ],
             'gender' => [
                 ['rule' => 'required', 'message' => 'Gender is Required.'],
+            ],
+            'terms' => [
+                ['rule' => 'required', 'message' => 'Terms and conditions is required'],
             ],
             'password' => [
                 ['rule' => 'required', 'message' => 'Password is Required.'],

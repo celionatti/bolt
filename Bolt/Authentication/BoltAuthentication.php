@@ -18,7 +18,6 @@ use Bolt\models\UserSessions;
 use Bolt\Bolt\Database\Database;
 use Bolt\Bolt\Database\DatabaseModel;
 use Bolt\Bolt\Helpers\FlashMessages\FlashMessage;
-use Bolt\Bolt\Mailer\BoltMailer;
 
 class BoltAuthentication extends DatabaseModel
 {

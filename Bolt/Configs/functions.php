@@ -301,30 +301,6 @@ function old_value(string $key, $default = '', string $type = 'post', string $da
     }
 }
 
-
-// function old_select(string $key, string $value, $default = '', string $type = 'post', bool $strict = true): string
-// {
-//     // Define the input sources and their corresponding arrays
-//     $sources = [
-//         'post' => $_POST,
-//         'get' => $_GET,
-//         // Add more sources as needed (e.g., 'session', 'cookie', etc.)
-//     ];
-
-//     // Validate the input source
-//     if (!array_key_exists($type, $sources)) {
-//         throw new InvalidArgumentException("Invalid input source: $type");
-//     }
-
-//     // Get the value from the specified input source
-//     $inputValue = $sources[$type][$key] ?? '';
-
-//     // Determine if the selected value matches the input value
-//     $isSelected = ($strict ? $inputValue === $value : $inputValue == $value) || ($default == $value);
-
-//     return $isSelected ? 'selected' : '';
-// }
-
 function old_select(string $key, string $value, $default = '', string $type = 'post', bool $strict = true): string
 {
     $sources = [
@@ -568,6 +544,13 @@ function view(string $path, array $data = [], string $layout): void
     $view->setLayout($layout);
 
     $view->render($path, $data);
+}
+
+function partials(string $path, $params = [])
+{
+    $view = new BoltView('', false, false);
+
+    $view->partial($path, $params);
 }
 
 function loadData($object, $data, $options = [])

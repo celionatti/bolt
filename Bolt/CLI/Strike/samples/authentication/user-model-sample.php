@@ -21,7 +21,7 @@ class {CLASSNAME} extends DatabaseModel
 
     public static function tableName(): string
     {
-        return '{TABLENAME}';
+        return 'users';
     }
 
     public function setIsInsertionScenario($isInsertion)

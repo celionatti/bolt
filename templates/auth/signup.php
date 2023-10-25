@@ -71,6 +71,9 @@ use Bolt\Bolt\Forms\BootstrapForm;
         <div class="col-md-6 col-sm-12">
             <?= BootstrapForm::inputField("Confirm Password", "confirm_password", old_value("confirm_password", $user["confirm_password"] ?? ''), ['class' => 'form-control', 'type' => 'password'], ['class' => 'mb-3'], $errors) ?>
         </div>
+        <div class="col-md-12 col-sm-12">
+            <?= BootstrapForm::checkField("Terms and Conditions", "terms", old_value("terms", $user["terms"] ?? ''), ['class' => 'form-check-input'], ['class' => 'mb-3'], $errors) ?>
+        </div>
         <p class="m-0">
             Already have an Account?
             <a href="/login" class="link">Login</a>

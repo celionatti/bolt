@@ -36,11 +36,11 @@ class Database
     public function __construct()
     {
         $database = [
-            "drivers" => DB_DRIVERS ?? "mysql",
-            "host" => DB_HOST ?? "127.0.0.1",
-            "dbname" => DB_NAME ?? "",
-            "username" => DB_USERNAME ?? "root",
-            "password" => DB_PASSWORD ?? ""
+            "drivers" => DB_DRIVERS ?? bolt_env("DB_DRIVERS"),
+            "host" => DB_HOST ?? bolt_env("DB_HOST"),
+            "dbname" => DB_NAME ?? bolt_env("DB_DATABASE"),
+            "username" => DB_USERNAME ?? bolt_env("DB_USERNAME"),
+            "password" => DB_PASSWORD ?? bolt_env("DB_PASSWORD")
         ];
 
         $config = Config::get(BOLT_DATABASE, $database);
@@ -51,11 +51,11 @@ class Database
     {
         // Replace $np_vars with your actual configuration
         $np_vars = [
-            'DB_DRIVERS'     => $config["drivers"],
-            'DB_HOST'       => $config["host"],
-            'DB_NAME'       => $config["dbname"],
-            'DB_USER'       => $config["username"],
-            'DB_PASSWORD'   => $config["password"],
+            'DB_DRIVERS'     => $config["drivers"] ?? bolt_env("DB_DRIVERS"),
+            'DB_HOST'       => $config["host"] ?? bolt_env("DB_HOST"),
+            'DB_NAME'       => $config["dbname"] ?? bolt_env("DB_NAME"),
+            'DB_USER'       => $config["username"] ?? bolt_env("DB_USERNAME"),
+            'DB_PASSWORD'   => $config["password"] ?? bolt_env("DB_PASSWORD"),
         ];
 
         $string = "{$np_vars['DB_DRIVERS']}:host={$np_vars['DB_HOST']};dbname={$np_vars['DB_NAME']}";

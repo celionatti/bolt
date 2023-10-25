@@ -35,7 +35,6 @@ class AuthController extends Controller
             'errors' => Bolt::$bolt->session->getFormMessage(),
             'user' => $this->retrieveUserSessionData(),
             'genderOpts' => [
-                '' => '--- Please Select ---',
                 'male' => 'Male',
                 'female' => 'Female',
                 'others' => 'Others'
@@ -60,6 +59,7 @@ class AuthController extends Controller
                 'othername',
                 'phone',
                 'email',
+                'gender',
                 'role',
                 'password'
             ]);

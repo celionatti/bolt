@@ -108,7 +108,6 @@ class View
     public function partial($path, $params = []): void
     {
         $fullPath = Bolt::$bolt->pathResolver->template_path(DIRECTORY_SEPARATOR . 'partials' . DIRECTORY_SEPARATOR . $path . '.php');
-        // $fullPath = base_path('templates' . DIRECTORY_SEPARATOR . 'partials' . DIRECTORY_SEPARATOR . $path . '.php');
         if (file_exists($fullPath)) {
             extract($params); // Extract data array into variables
             include($fullPath);
