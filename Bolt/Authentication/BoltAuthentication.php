@@ -140,9 +140,19 @@ class BoltAuthentication extends DatabaseModel
 
     private function storeRememberMeToken($userId, $token)
     {
+        $userSessions = new UserSessions();
         // Store the token in the user_sessions table with an expiration timestamp.
         $expiration = time() + 30 * 24 * 60 * 60;
-        UserSessions::createrecord(['user_id' => $userId, 'token_hash' => $token, 'expiration' => $expiration]);
+        $userSessions->fillable([
+            'user_id',
+            'token_hash',
+            'expiration'
+        ]);
+        $userSessions->createrecord([
+            'user_id' => $userId, 
+            'token_hash' => $token, 
+            'expiration' => $expiration
+        ]);
         Cookie::set("remember_me_auth_token", $token, $expiration);
     }
 
@@ -172,16 +182,17 @@ class BoltAuthentication extends DatabaseModel
 
     private function fromCookie()
     {
+        $userSessions = new UserSessions();
         if (Cookie::has("remember_me_auth_token")) {
             $hash = Cookie::get("remember_me_auth_token");
-            $session = UserSessions::findByHash($hash);
+            $session = $userSessions->findByHash($hash);
             if ($session) {
                 $this->setAuthenticatedUser($session->user_id);
             }
         }
     }
 
-    private function logout()
+    public function logout()
     {
         $this->clearUserSessions($this->_currentUser->user_id);
         $this->session->remove("authenticated_user");
@@ -191,6 +202,7 @@ class BoltAuthentication extends DatabaseModel
 
     private function clearUserSessions($userId)
     {
-        UserSessions::delete(['user_id' => $userId]);
+        $userSessions = new UserSessions();
+        $userSessions->delete(['user_id' => $userId]);
     }
 }

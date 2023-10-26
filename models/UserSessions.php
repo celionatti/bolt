@@ -16,25 +16,26 @@ use Bolt\Bolt\Database\DatabaseModel;
 
 class UserSessions extends DatabaseModel
 {
-    public static function tableName():string
+    public static function tableName(): string
     {
         return "user_sessions";
     }
 
-    public static function findByHash($hash)
+    public function findByHash($hash)
     {
-        return self::findOne([
+        return $this->findOne([
             'token_hash' => $hash
         ]);
     }
 
-    public static function createrecord(array $conditions)
+    public function createrecord(array $data)
     {
-        return self::insert($conditions);
+        return $this->create($data);
     }
 
-    public static function delete($conditions)
+
+    public function delete($conditions)
     {
-        return self::deleteBy($conditions);
+        return $this->deleteBy($conditions);
     }
 }

@@ -16,6 +16,7 @@ use Bolt\Bolt\Authentication\BoltAuthentication;
 use Bolt\Bolt\Bolt;
 use Bolt\models\Users;
 use Bolt\Bolt\Controller;
+use Bolt\Bolt\Helpers\Csrf;
 use Bolt\Bolt\Http\Request;
 use Bolt\Bolt\Helpers\FlashMessages\FlashMessage;
 
@@ -28,9 +29,28 @@ class AuthController extends Controller
         }
     }
 
+    public function signup_view()
+    {
+        $view = [
+            'errors' => Bolt::$bolt->session->getFormMessage(),
+            'user' => $this->retrieveUserSessionData(),
+            'genderOpts' => [
+                'male' => 'Male',
+                'female' => 'Female',
+                'others' => 'Others'
+            ]
+        ];
+
+        // Remove the user data from the session after it has been retrieved
+        Bolt::$bolt->session->unsetArray(['user_data']);
+
+        $this->view->render("auth/signup", $view);
+    }
+
     public function signup(Request $request)
     {
         $user = new Users();
+        $csrf = new Csrf();
 
         if ($request->isPost()) {
             $user->fillable([
@@ -39,10 +59,15 @@ class AuthController extends Controller
                 'othername',
                 'phone',
                 'email',
+                'gender',
                 'role',
                 'password'
             ]);
             $data = $request->getBody();
+            if (!$csrf->validateToken($data["_csrf_token"])) {
+                bolt_die("CSRF Token Expires");
+                return;
+            }
             $data['user_id'] = generateUuidV4();
             $user->setIsInsertionScenario(true); // Set insertion scenario flag
             $user->passwordsMatchValidation($data['password'], $data['confirm_password']);
@@ -53,29 +78,23 @@ class AuthController extends Controller
                     FlashMessage::setMessage("User Created Successfully", FlashMessage::SUCCESS, ['role' => 'alert', 'style' => 'z-index: 9999;']);
                     redirect("/");
                 }
+            } else {
+                $this->storeUserSessionData($data);
             }
         }
-
-        $view = [
-            'errors' => $user->getErrors(),
-            'user' => $user,
-            'genderOpts' => [
-                '' => '--- Please Select ---',
-                'male' => 'Male',
-                'female' => 'Female',
-                'others' => 'Others'
-            ]
-        ];
-
-        $this->view->render("auth/signup", $view);
+        Bolt::$bolt->session->setFormMessage($user->getErrors());
+        redirect("/signup");
     }
 
-    public function login_view(Request $request)
+    public function login_view()
     {
         $view = [
             'errors' => Bolt::$bolt->session->getFormMessage(),
             'user' => $this->retrieveUserSessionData(),
         ];
+
+        // Remove the user data from the session after it has been retrieved
+        Bolt::$bolt->session->unsetArray(['user_data']);
 
         $this->view->render("auth/login", $view);
     }
@@ -83,9 +102,15 @@ class AuthController extends Controller
     public function login(Request $request)
     {
         $user = new Users();
+        $csrf = new Csrf();
 
         if ($request->isPost()) {
             $data = $request->getBody();
+            if (!$csrf->validateToken($data["_csrf_token"])) {
+                bolt_die("CSRF Token Expires");
+                return;
+            }
+
             $user->setIsInsertionScenario(false); // Set insertion scenario flag
             if ($user->validate($data)) {
                 $auth = new BoltAuthentication();

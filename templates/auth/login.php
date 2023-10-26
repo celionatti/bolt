@@ -56,6 +56,9 @@ use Bolt\Bolt\Forms\BootstrapForm;
         <div class="col-md-12 col-sm-12">
             <?= BootstrapForm::inputField("Password", "password", old_value("password", $user["password"] ?? ''), ['class' => 'form-control', 'type' => 'password'], ['class' => 'mb-3'], $errors) ?>
         </div>
+        <div class="col-md-12 col-sm-12">
+            <?= BootstrapForm::checkField("Remember Me", "remember", old_value("remember", $user["remember"] ?? ''), ['class' => 'form-check-input'], ['class' => 'mb-3'], $errors) ?>
+        </div>
         <p class="m-0">
             Don't have an Account?
             <a href="/signup" class="link">Create New Account</a>
