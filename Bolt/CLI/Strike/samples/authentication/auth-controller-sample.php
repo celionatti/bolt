@@ -29,7 +29,7 @@ class AuthController extends Controller
         }
     }
 
-    public function signup_view()
+    public function signup_view(Request $request)
     {
         $view = [
             'errors' => Bolt::$bolt->session->getFormMessage(),
@@ -114,7 +114,7 @@ class AuthController extends Controller
             $user->setIsInsertionScenario(false); // Set insertion scenario flag
             if ($user->validate($data)) {
                 $auth = new BoltAuthentication();
-                $auth->login($data['email'], $data['password']);
+                $auth->login($data['email'], $data['password'], $data['remember'] ?? false);
             } else {
                 $this->storeUserSessionData($data);
             }
@@ -131,5 +131,17 @@ class AuthController extends Controller
     protected function storeUserSessionData(array $data)
     {
         Bolt::$bolt->session->set('user_data', $data);
+    }
+
+    public function logout(Request $request)
+    {
+        if ($request->isPost()) {
+            $auth = new BoltAuthentication();
+
+            if ($auth->logout()) {
+                // Display a message indicating that the account is blocked.
+                FlashMessage::setMessage("Logout Successfully.!", FlashMessage::SUCCESS, ['role' => 'alert', 'style' => 'z-index: 9999;']);
+            }
+        }
     }
 }

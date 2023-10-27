@@ -25,7 +25,7 @@ class BM_2023_10_23_134718_users extends BoltMigration
     {
         $this->createTable("users")
             ->id()->primaryKey()
-            ->varchar("user_id", 100)->index("user_id")
+            ->varchar("user_id")->index("user_id")
             ->varchar("surname")->index("surname")
             ->varchar("othername")->index("othername")
             ->varchar("email")->uniquekey("email")

@@ -30,7 +30,7 @@ class UserSessions extends DatabaseModel
 
     public function createrecord(array $data)
     {
-        return $this->create($data);
+        return $this->insert($data);
     }
 
 

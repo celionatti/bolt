@@ -49,11 +49,15 @@ use Bolt\Bolt\Forms\BootstrapForm;
         <hr class="col-3 col-md-2 mb-2">
 
         <?= BootstrapForm::openForm("", 'POST', null, ['class' => 'row g-3']) ?>
+        <?= BootstrapForm::csrfField() ?>
         <div class="col-md-12 col-sm-12">
-            <?= BootstrapForm::inputField("Email", "email", old_value("email"), ['class' => 'form-control', 'type' => 'email'], ['class' => 'mb-3'], $errors) ?>
+            <?= BootstrapForm::inputField("Email", "email", old_value("email", $user["email"] ?? '', 'get'), ['class' => 'form-control', 'type' => 'email'], ['class' => 'mb-3'], $errors) ?>
         </div>
         <div class="col-md-12 col-sm-12">
-            <?= BootstrapForm::inputField("Password", "password", old_value("password"), ['class' => 'form-control', 'type' => 'password'], ['class' => 'mb-3'], $errors) ?>
+            <?= BootstrapForm::inputField("Password", "password", old_value("password", $user["password"] ?? ''), ['class' => 'form-control', 'type' => 'password'], ['class' => 'mb-3'], $errors) ?>
+        </div>
+        <div class="col-md-12 col-sm-12">
+            <?= BootstrapForm::checkField("Remember Me", "remember", old_value("remember", $user["remember"] ?? ''), ['class' => 'form-check-input'], ['class' => 'mb-3'], $errors) ?>
         </div>
         <p class="m-0">
             Don't have an Account?

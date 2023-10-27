@@ -33,6 +33,7 @@ class {CLASSNAME} extends DatabaseModel
     {
         return $this->isInsertion;
     }
+    
     public function rules(): array
     {
         // Validation rules for user insertion (registration)
@@ -57,6 +58,9 @@ class {CLASSNAME} extends DatabaseModel
             ],
             'gender' => [
                 ['rule' => 'required', 'message' => 'Gender is Required.'],
+            ],
+            'terms' => [
+                ['rule' => 'required', 'message' => 'Terms and conditions is required'],
             ],
             'password' => [
                 ['rule' => 'required', 'message' => 'Password is Required.'],
