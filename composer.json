@@ -1,5 +1,5 @@
 {
-    "name": "bolt/bolt",
+    "name": "celionatti/bolt",
     "type": "library",
     "license": "MIT",
     "autoload": {
