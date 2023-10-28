@@ -67,7 +67,7 @@ class GenerateCommand implements CommandInterface
         if (!is_dir($configDir) || !is_dir($BoltConfigDir)) {
             // Create the configs directory
             if (!mkdir($configDir, 0755, true) || !mkdir($BoltConfigDir, 0755, true)) {
-                $this->message("Error: Unable to create the configs directory.", true, true, 'error');
+                $this->message("Error: Unable to create the configs directory.", false, true, 'error');
             }
         }
 
@@ -78,7 +78,7 @@ class GenerateCommand implements CommandInterface
         $BlotLoadFile = $BoltConfigDir . "load" . '.php';
         if (file_exists($loadFile) || file_exists($BlotLoadFile)) {
             $m = ucfirst("load");
-            $this->message("Config File {$m} already exists.", true, true, 'warning');
+            $this->message("Config File {$m} already exists.", false, true, 'warning');
         }
 
         /**

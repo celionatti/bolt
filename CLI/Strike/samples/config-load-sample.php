@@ -21,6 +21,14 @@ if (!defined('URL_ROOT')) {
     define('URL_ROOT', "");
 }
 
+if (!defined('ENABLE_BLADE')) {
+    define('ENABLE_BLADE', false);
+}
+
+if (!defined('ENABLE_TWIG')) {
+    define('ENABLE_TWIG', false);
+}
+
 if (!defined('CONFIG_ROOT')) {
     define('CONFIG_ROOT', "configs/config.json");
 }

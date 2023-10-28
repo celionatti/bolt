@@ -11,6 +11,7 @@ declare(strict_types=1);
 
 namespace celionatti\Bolt;
 
+use celionatti\Bolt\BoltException\BoltException;
 use celionatti\Bolt\Database\Database;
 use celionatti\Bolt\Http\Request;
 use celionatti\Bolt\Http\Response;
@@ -66,8 +67,8 @@ class Bolt
     {
         try {
             $this->router->resolve();
-        } catch (\Exception $e) {
-            echo $e;
+        } catch (BoltException $e) {
+            throw $e;
         }
     }
 

@@ -48,7 +48,7 @@ class Response
         $this->statusCode = $statusCode;
     }
 
-    public function getStatusText($statusCode)
+    public static function getStatusText($statusCode)
     {
         $statusTexts = [
             self::CONTINUE => 'Continue',
@@ -80,6 +80,43 @@ class Response
     public function setHeader($name, $value)
     {
         $this->headers[$name] = $value;
+    }
+
+    public function setHeaders(array $headers)
+    {
+        foreach ($headers as $name => $value) {
+            $this->setHeader($name, $value);
+        }
+    }
+
+    public function redirect($url, $statusCode = self::FOUND)
+    {
+        $this->setStatusCode($statusCode);
+        $this->setHeader('Location', $url);
+        $this->send();
+    }
+
+    public function setJsonContent(array $data)
+    {
+        $this->setHeader('Content-Type', 'application/json');
+        $this->setContent(json_encode($data));
+    }
+
+    public function setPlainTextContent($text)
+    {
+        $this->setHeader('Content-Type', 'text/plain');
+        $this->setContent($text);
+    }
+
+    public function setFileContent($filePath)
+    {
+        if (file_exists($filePath)) {
+            $this->setContent(file_get_contents($filePath));
+        } else {
+            // Handle file not found error
+            $this->setStatusCode(self::NOT_FOUND);
+            $this->setContent('File not found');
+        }
     }
 
     public function send()

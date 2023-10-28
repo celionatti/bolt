@@ -483,6 +483,7 @@ function old_checked(string $key, string $value, $default = '', string $type = '
 
 function get_image(?string $path = null, string $type = 'post'): string
 {
+    // Define default image paths
     $defaultImageMap = [
         'post' => '/assets/img/no_image.jpg',
         'male' => '/assets/img/user_male.jpg',
@@ -490,18 +491,23 @@ function get_image(?string $path = null, string $type = 'post'): string
         'icon' => '/assets/img/favicon.ico',
     ];
 
+    // Set the image path to the provided $path or an empty string if null
     $path = $path ?? '';
 
+    // Check if the provided $path exists, and return it if found
     if (!empty($path) && file_exists($path)) {
         return URL_ROOT . '/' . $path;
     }
 
-    if (array_key_exists($type, $defaultImageMap)) {
+    // If $type exists in the defaultImageMap, return the corresponding default image
+    if (isset($defaultImageMap[$type])) {
         return URL_ROOT . $defaultImageMap[$type];
     }
 
+    // If $type is not found in the defaultImageMap, return the 'post' default image
     return URL_ROOT . $defaultImageMap['post'];
 }
+
 
 function get_assets_directory($directory): string
 {
@@ -674,7 +680,7 @@ function load_required_files($directoryPath)
  */
 function view(string $path, array $data = [], string $layout): void
 {
-    $view = new BoltView('', false, false);
+    $view = new BoltView('', ENABLE_BLADE, ENABLE_TWIG);
 
     $view->setLayout($layout);
 
@@ -683,7 +689,7 @@ function view(string $path, array $data = [], string $layout): void
 
 function partials(string $path, $params = [])
 {
-    $view = new BoltView('', false, false);
+    $view = new BoltView('', ENABLE_BLADE, ENABLE_TWIG);
 
     $view->partial($path, $params);
 }
