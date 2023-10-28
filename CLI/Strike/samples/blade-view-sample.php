@@ -86,10 +86,10 @@
     <div class="jumbotron">
         <div class="framework-title">
             <span style="font-weight: bold;">⚡</span>
-            Bolt Framework
+            PhpStrike Framework
         </div>
-        <p class="desc">Bolt Framework is a modern, open-source web application framework designed to empower developers to build robust and scalable web applications with ease. It offers a comprehensive suite of tools and features, making it a versatile choice for both beginners and experienced developers.</p>
-        <a href="https://github.com/celionatti/bolt" target="_blank" class="btn-primary">Read Docs</a>
+        <p class="desc">PhpStrike Framework is a modern, open-source web application framework designed to empower developers to build robust and scalable web applications with ease. It offers a comprehensive suite of tools and features, making it a versatile choice for both beginners and experienced developers.</p>
+        <a href="https://github.com/celionatti/PHPStrike#readme" target="_blank" class="btn-primary">Read Docs</a>
     </div>
 
     <script>

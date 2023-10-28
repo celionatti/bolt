@@ -245,18 +245,132 @@ function bolt_die($value, $message = '', $title = 'BOLT Error - Oops! Something 
     die;
 }
 
+function dnd($value): void
+{
+    echo '<html>';
+    echo '<head>';
+    echo '<style>';
+    echo 'body {';
+    echo '  margin: 0;';
+    echo '  padding: 0;';
+    echo '  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;'; // Specify the desired font family
+    echo '  background-color: #E6F7FF;'; // Light bluish background
+    echo '}';
+    echo '.dd-container {';
+    echo '  width: 100%;'; // Full-screen width
+    echo '  display: flex;';
+    echo '  align-items: center;';
+    echo '  justify-content: center;';
+    echo '  min-height: 100vh;';
+    echo '}';
+    echo '.dd-box {';
+    echo '  background-color: #FFF;';
+    echo '  border: 1px solid #E0E0E0;';
+    echo '  border-radius: 5px;';
+    echo '  padding: 20px;';
+    echo '  text-align: center;';
+    echo '  max-width: 80%;'; // Content wraps when it exceeds 80% of the screen width
+    echo '  overflow-x: auto;'; // Horizontal scrolling for long lines
+    echo '}';
+    echo 'h2 {';
+    echo '  text-transform: uppercase;';
+    echo '  color: #333;';
+    echo '  font-weight: bold;';
+    echo '  font-size: 24px;'; // Specify the desired font size
+    echo '}';
+    echo 'pre {';
+    echo '  background-color: #000;';
+    echo '  color: lightgreen;';
+    echo '  margin: 5px;';
+    echo '  padding: 10px;';
+    echo '  border: 3px solid teal;';
+    echo '  white-space: pre-wrap;'; // Allows text to wrap within the pre element
+    echo '  font-weight: bold;'; // Make content inside <pre> bold
+    echo '  font-size: 18px;'; // Specify the desired font size
+    echo '}';
+    echo '</style>';
+    echo '</head>';
+    echo '<body>';
+    echo '<div class="dd-container">';
+    echo '<div class="dd-box">';
+    echo '<h2>PHPStrike - Dump and Die</h2>';
+    echo '<pre>';
+    var_dump($value);
+    echo '</pre>';
+    echo '</div>';
+    echo '</div>';
+    echo '</body>';
+    echo '</html>';
+    die;
+}
+
 function dd($value): void
 {
-    echo "<pre>";
-    echo "<div style='background-color:#000; color:lightgreen; margin: 5px; padding:5px;border:3px solid;'>";
-    echo "<h2 style='border:3px solid; border-color:teal; padding:5px; text-align:center;font-weight:bold;font-weight: bold;
-    text-transform: uppercase;'>";
-    echo "Bolt: Dump and die";
-    echo "</h2>";
+    echo '<html>';
+    echo '<head>';
+    echo '<style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #E6F7FF;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .container {
+            display: flex;
+            border: 1px solid #ccc;
+            background-color: #fff6f6;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .left-column {
+            flex: 1;
+            padding: 20px;
+            text-align: center;
+            background-color: #ff6b6b;
+        }
+        .right-column {
+            flex: 2;
+            background-color: #000;
+            color: #4caf50;
+            padding: 20px;
+            white-space: pre-wrap;
+        }
+        h2 {
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+        pre {
+            padding: 10px;
+            margin: 5px;
+            font-size: 18px;
+            font-weight: bold;
+            white-space: pre-wrap;
+            overflow-wrap: break-word;
+        }
+    </style>';
+    echo '</head>';
+    echo '<body>';
+    echo '<div class="container">';
+    echo '<div class="left-column">';
+    echo '<h2>PHPStrike Framework Details</h2>';
+    echo 'PHPStrike version: 1.0<br>';
+    echo 'Details: Dump and Die method to view<br>';
+    echo 'Details of passed in data.<br>';
+    echo 'Error code: 500<br>';
+    echo 'Error message: This is an error message.<br>';
+    echo '</div>';
+    echo '<div class="right-column">';
+    echo '<h2>PHPStrike DND</h2>';
+    echo '<pre>';
     var_dump($value);
-    echo "</div>";
-    echo "</pre>";
-
+    echo '</pre>';
+    echo '</div>';
+    echo '</div>';
+    echo '</body>';
+    echo '</html>';
     die;
 }
 

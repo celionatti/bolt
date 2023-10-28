@@ -174,16 +174,16 @@
             <svg class="bi me-2" width="40" height="32">
                 <use xlink:href="#bolt" />
             </svg>
-            <span class="fs-4">Bolt Framework</span>
+            <span class="fs-4">PhpStrike Framework</span>
         </a>
     </header>
 
     <main>
-        <h1 class="text-body-emphasis">Get started with Bolt</h1>
-        <p class="fs-5 col-md-8">Bolt Framework is a modern, open-source web application framework designed to empower developers to build robust and scalable web applications with ease. It offers a comprehensive suite of tools and features, making it a versatile choice for both beginners and experienced developers.</p>
+        <h1 class="text-body-emphasis">Get started with PhpStrike</h1>
+        <p class="fs-5 col-md-8">PhpStrike Framework is a modern, open-source web application framework designed to empower developers to build robust and scalable web applications with ease. It offers a comprehensive suite of tools and features, making it a versatile choice for both beginners and experienced developers. And PhpStrike is using Bolt as the Root Core Library.</p>
 
         <div class="mb-4">
-            <a href="https://github.com/celionatti/bolt?search=1" target="_blank" class="btn btn-primary btn-lg px-4">Download Bolt</a>
+            <a href="https://github.com/celionatti/PHPStrike/archive/refs/heads/master.zip" target="_blank" class="btn btn-primary btn-lg px-4">Download PhpStrike</a>
         </div>
 
         <hr class="col-3 col-md-2 mb-3">
@@ -193,7 +193,7 @@
         <div class="row g-3">
             <div class="col-md-6">
                 <h3 class="text-body-emphasis">Modular Architecture</h3>
-                <p>Bolt's modular architecture allows developers to organize their code into reusable components, enhancing code maintainability and scalability.</p>
+                <p>PhpStrike's modular architecture allows developers to organize their code into reusable components, enhancing code maintainability and scalability.</p>
             </div>
 
 
@@ -204,7 +204,7 @@
 
             <div class="col-md-6">
                 <h3 class="text-body-emphasis">Database Agnostic</h3>
-                <p>Bolt supports multiple database systems, including MySQL, PostgreSQL, and SQLite, offering flexibility in data storage.</p>
+                <p>PhpStrike supports multiple database systems, including MySQL, PostgreSQL, and SQLite, offering flexibility in data storage.</p>
             </div>
 
             <div class="col-md-6">
@@ -239,15 +239,15 @@
 
             <div class="col-md-6">
                 <h3 class="text-body-emphasis">Error Handling</h3>
-                <p>Bolt provides robust error handling and debugging tools to streamline development and troubleshooting.</p>
+                <p>PhpStrike provides robust error handling and debugging tools to streamline development and troubleshooting.</p>
             </div>
 
         </div>
 
         <p>
-            Whether you're creating a simple blog or a complex enterprise application, Bolt Framework offers the tools and structure to accelerate your development process while maintaining code quality and security.
+            Whether you're creating a simple blog or a complex enterprise application, PhpStrike Framework offers the tools and structure to accelerate your development process while maintaining code quality and security.
 
-            Discover the potential of Bolt Framework and start building powerful web applications today.
+            Discover the potential of PhpStrike Framework and start building powerful web applications today.
         </p>
     </main>
     <footer class="pt-5 my-5 text-body-secondary border-top">

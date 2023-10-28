@@ -14,7 +14,7 @@ namespace celionatti\Bolt\Authentication;
 
 use celionatti\Bolt\Cookie;
 use celionatti\Bolt\Session;
-use celionatti\models\UserSessions;
+use PhpStrike\models\UserSessions;
 use celionatti\Bolt\Database\Database;
 use celionatti\Bolt\Database\DatabaseModel;
 use celionatti\Bolt\Helpers\FlashMessages\FlashMessage;

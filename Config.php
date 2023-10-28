@@ -4,12 +4,13 @@ declare(strict_types=1);
 
 /**
  * ==================================
- * Bolt - Config Class ==============
+ * PhpStrike - Config Class ==============
  * ==================================
  */
 
 namespace celionatti\Bolt;
 
+use celionatti\Bolt\BoltException\BoltException;
 use Symfony\Component\Yaml\Yaml;
 
 
@@ -24,7 +25,7 @@ class Config
         $fileExtension = pathinfo($configFile, PATHINFO_EXTENSION);
 
         if (!file_exists($configFile)) {
-            throw new \Exception("Configuration file not found: $configFile");
+            throw new BoltException("Configuration file not found: $configFile");
         }
 
         switch ($fileExtension) {
@@ -39,7 +40,7 @@ class Config
                 self::$config = parse_ini_file($configFile, true);
                 break;
             default:
-                throw new \Exception("Unsupported configuration file format: $fileExtension");
+                throw new BoltException("Unsupported configuration file format: $fileExtension");
         }
     }
 

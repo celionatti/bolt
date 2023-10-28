@@ -11,6 +11,7 @@ declare(strict_types=1);
 namespace celionatti\Bolt;
 
 use Closure;
+use celionatti\Bolt\BoltException\BoltException;
 
 class Container
 {
@@ -42,7 +43,7 @@ class Container
             return $instance;
         }
 
-        throw new \Exception("Binding for '{$abstract}' not found.");
+        throw new BoltException("Binding for '{$abstract}' not found.");
     }
 
     private function build($concrete, array $parameters)
@@ -55,7 +56,7 @@ class Container
             $reflector = new \ReflectionClass($concrete);
 
             if (!$reflector->isInstantiable()) {
-                throw new \Exception("Class '{$concrete}' is not instantiable.");
+                throw new BoltException("Class '{$concrete}' is not instantiable.");
             }
 
             $constructor = $reflector->getConstructor();
@@ -68,7 +69,7 @@ class Container
 
             return $reflector->newInstanceArgs($dependencies);
         } catch (\ReflectionException $e) {
-            throw new \Exception("Error resolving '{$concrete}': " . $e->getMessage());
+            throw new BoltException("Error resolving '{$concrete}': " . $e->getMessage());
         }
     }
 
@@ -86,7 +87,7 @@ class Container
             } elseif ($parameter->isDefaultValueAvailable()) {
                 $dependencies[] = $parameter->getDefaultValue();
             } else {
-                throw new \Exception("Unable to resolve dependency: {$paramName}");
+                throw new BoltException("Unable to resolve dependency: {$paramName}");
             }
         }
 
