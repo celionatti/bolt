@@ -44,7 +44,7 @@ class Bolt
         $this->bolt_run();
 
         self::$bolt = $this;
-        $this->pathResolver = new PathResolver(dirname(__DIR__));
+        $this->pathResolver = new PathResolver(get_root_dir());
         $this->assetManager = new AssetManager(URL_ROOT);
 
         $this->session = new Session();
@@ -78,7 +78,7 @@ class Bolt
             require __DIR__ . "/Configs/functions.php",
             require __DIR__ . "/Configs/utilities.php",
             require __DIR__ . "/Configs/global-variables.php",
-            require dirname(__DIR__) . "/configs/load.php"
+            require get_root_dir() . "/configs/load.php"
         ];
     }
 

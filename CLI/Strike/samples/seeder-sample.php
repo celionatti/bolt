@@ -10,7 +10,7 @@ declare(strict_types=1);
  * ======================================
  */
 
-namespace Bolt\seeders;
+namespace PhpStrike\seeders;
 
 use Faker\Factory;
 use celionatti\Bolt\Seeder\BoltSeeder;

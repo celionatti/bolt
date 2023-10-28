@@ -174,7 +174,7 @@ class Router
             $callback = $this->getCallback();
 
             if ($callback === false) {
-                throw new BoltException("Not Found", 404);
+                throw new BoltException("Callback - [ Method: {$method}, Path: {$url} ] - Not Found", 404, 'info');
             }
         }
         if (is_string($callback)) {
@@ -187,7 +187,7 @@ class Router
                 $actionName = $callbackParts[1];
 
                 // Create the controller instance
-                $controllerClass = "\\Bolt\\controllers\\$controllerName";
+                $controllerClass = "\\PhpStrike\\controllers\\$controllerName";
                 $controller = new $controllerClass();
                 $controller->action = $actionName;
 

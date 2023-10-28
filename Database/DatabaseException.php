@@ -33,7 +33,13 @@ class DatabaseException extends Exception
         $errorMessage .= $this->getMessage() . "\n";
 
         $basePath = get_root_dir() . DIRECTORY_SEPARATOR . "logs" . DIRECTORY_SEPARATOR;
-        $logFile = $basePath . 'database-error.log';
+        if (!is_dir($basePath)) {
+            // Create the controller directory
+            if (!mkdir($basePath, 0755, true)) {
+                console_logger("Error: Unable to create the Logs directory.", true, true, 'error');
+            }
+        }
+        $logFile = $basePath . 'database.log';
 
         // Check if the log file size exceeds the specified limit
         if (file_exists($logFile) && filesize($logFile) >= $maxLogSizeBytes) {

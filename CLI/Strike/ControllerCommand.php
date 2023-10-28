@@ -26,7 +26,7 @@ class ControllerCommand implements CommandInterface
         $currentDirectory = __DIR__;
 
         // Navigate up the directory tree until you reach the project's root
-        while (!file_exists($currentDirectory . '/composer.json')) {
+        while (!file_exists($currentDirectory . '/vendor')) {
             // Go up one level
             $currentDirectory = dirname($currentDirectory);
 

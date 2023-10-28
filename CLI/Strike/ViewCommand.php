@@ -16,13 +16,15 @@ class ViewCommand implements CommandInterface
 {
     public $basePath;
 
+    private const ACTION_CREATE = 'create';
+
     public function __construct()
     {
         // Get the current file's directory
         $currentDirectory = __DIR__;
 
         // Navigate up the directory tree until you reach the project's root
-        while (!file_exists($currentDirectory . '/composer.json')) {
+        while (!file_exists($currentDirectory . '/vendor')) {
             // Go up one level
             $currentDirectory = dirname($currentDirectory);
 
@@ -38,12 +40,13 @@ class ViewCommand implements CommandInterface
     public function execute(array $args)
     {
         // Check if the required arguments are provided
-        if (count($args["args"]) < 1) {
-            $this->message("Strike Usage: view <ViewName> <folderName> -<extension> - For creating view with {Blade: .blade.php, Twig: .twig, PHP: .php} extension. The viewName is compulsory, while others are Optional. Also Note: If not define <folederName> only <fileName> will be created. If not define -<extension> the default extension will be .php", true, true, "warning");
+        if (count($args["args"]) < 2) {
+            $this->message("Strike Usage: view <action> <filename> <folders> <Optional: --extension> - For creating view with {Blade: .blade.php, Twig: .twig, PHP: .php} extension. The action and filename is compulsory, while others are Optional. Also Note: If not define <folders> only <fileName> will be created. If not define --<extension> the default extension will be .php", true, true, "warning");
         }
 
-        $viewName = $args["args"][0];
-        $folders = $args["args"][1] ?? null;
+        $action = $args["args"][0];
+        $filename = $args["args"][1];
+        $folders = $args["args"][2] ?? null;
 
         if (isset($args["options"]["blade"])) {
             $extension = ".blade.php";
@@ -53,8 +56,19 @@ class ViewCommand implements CommandInterface
             $extension = ".php";
         }
 
-        // Create the view folder's and file
-        $this->createView($viewName, $folders, $extension);
+        $this->callAction($action, $filename, $folders, $extension);
+    }
+
+    private function callAction($action, $filename, $folders, $extension)
+    {
+        // Check for the action type.
+        switch ($action) {
+            case self::ACTION_CREATE:
+                $this->createView($filename, $folders, $extension);
+                break;
+            default:
+                $this->message("Unknown Command - You can check help or docs to see the list of commands and methods of calling.", true, true, 'warning');
+        }
     }
 
     private function createView($viewName, $folders = null, $extension = ".php")

@@ -30,13 +30,34 @@ function generateUuidV4()
     return $uuid;
 }
 
+function findFile($dir, $targetFile)
+{
+    while (true) {
+        $configPath = $dir . '/' . $targetFile;
+
+        if (file_exists($configPath)) {
+            return $configPath;
+        }
+
+        // Move up one level
+        $parentDir = dirname($dir);
+
+        // Check if we've reached the root directory
+        if ($parentDir === $dir) {
+            return null; // File not found
+        }
+
+        $dir = $parentDir;
+    }
+}
+
 function get_root_dir()
 {
     // Get the current file's directory
     $currentDirectory = __DIR__;
 
     // Navigate up the directory tree until you reach the project's root
-    while (!file_exists($currentDirectory . '/composer.json')) {
+    while (!file_exists($currentDirectory . '/vendor')) {
         // Go up one level
         $currentDirectory = dirname($currentDirectory);
 

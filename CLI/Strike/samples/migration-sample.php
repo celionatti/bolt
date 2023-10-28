@@ -10,7 +10,7 @@ declare(strict_types=1);
  * ======================================
  */
 
-namespace Bolt\migrations;
+namespace PhpStrike\migrations;
 
 use celionatti\Bolt\Migration\BoltMigration;
 

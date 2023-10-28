@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Framework Title: Bolt Framework
+ * Framework Title: PhpStrike Framework
  * Creator: Celio natti
  * version: 1.0.0
  * Year: 2023

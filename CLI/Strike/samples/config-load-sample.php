@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /**
- * Framework: Bolt
+ * Framework: PhpStrike
  * Author: Celio Natti
  * version: 1.0.0
  * Year: 2023

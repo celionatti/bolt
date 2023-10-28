@@ -16,13 +16,15 @@ class MakeCommand implements CommandInterface
 {
     public $basePath;
 
+    private const ACTION_CREATE = 'create';
+
     public function __construct()
     {
         // Get the current file's directory
         $currentDirectory = __DIR__;
 
         // Navigate up the directory tree until you reach the project's root
-        while (!file_exists($currentDirectory . '/composer.json')) {
+        while (!file_exists($currentDirectory . '/vendor')) {
             // Go up one level
             $currentDirectory = dirname($currentDirectory);
 
@@ -38,9 +40,21 @@ class MakeCommand implements CommandInterface
     public function execute(array $args)
     {
         // Logic for creating views, generating migrations, etc.
-        $viewName = $args[0] ?? "main";
-        var_dump($viewName);
-        // ... (implementation specific to the 'view' command)
+        $action = $args[0];
+
+        $this->callAction($action);
+    }
+
+    private function callAction($action)
+    {
+        // Check for the action type.
+        switch ($action) {
+            case self::ACTION_CREATE:
+                // $this->createController($filename, $crudMethod);
+                break;
+            default:
+                $this->message("Unknown Command - You can check help or docs to see the list of commands and methods of calling.", true, true, 'warning');
+        }
     }
 
     public function message(string $message, bool $die = false, bool $timestamp = true, string $level = 'info'): void

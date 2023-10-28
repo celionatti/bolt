@@ -10,7 +10,7 @@ declare(strict_types=1);
  * ===============================================
  */
 
-namespace Bolt\controllers;
+namespace PhpStrike\controllers;
 
 use celionatti\Bolt\Controller;
 
