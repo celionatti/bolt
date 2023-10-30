@@ -53,19 +53,19 @@ class MigrationCommand implements CommandInterface
     {
         // Check for the action type.
         if ($action === "migrate") {
-            $this->migrate($action, $filename);
+            $this->migrate($filename);
         } elseif ($action === "rollback") {
-            $this->rollback($action, $filename);
+            $this->rollback($filename);
         } elseif ($action === "refresh") {
-            $this->refresh($action, $filename);
+            $this->refresh($filename);
         } elseif ($action === "create") {
-            $this->create($action, $filename);
+            $this->create($filename);
         } else {
             $this->message("Unknown Command - You can check help or docs, to see the lists of command and method of calling.", true, true, 'warning');
         }
     }
 
-    private function migrate($action, $filename = null)
+    private function migrate($filename = null)
     {
         // Check if the migrations directory already exists.
         $migrationDir = $this->basePath . DIRECTORY_SEPARATOR . "migrations" . DIRECTORY_SEPARATOR;
@@ -92,7 +92,7 @@ class MigrationCommand implements CommandInterface
             $class_name = trim($class_name, '_');
             $class_name = "BM_" . $class_name;
 
-            $myclass = new ("\Bolt\migrations\\$class_name");
+            $myclass = new ("\PhpStrike\migrations\\$class_name");
 
             /** Call the Up method */
             $myclass->up();
@@ -117,7 +117,7 @@ class MigrationCommand implements CommandInterface
                 $class_name = trim($class_name, '_');
                 $class_name = "BM_" . $class_name;
 
-                $myclass = new ("\Bolt\migrations\\$class_name");
+                $myclass = new ("\PhpStrike\migrations\\$class_name");
 
                 /** Call the Up method */
                 $myclass->up();
@@ -127,7 +127,7 @@ class MigrationCommand implements CommandInterface
         }
     }
 
-    private function rollback($action, $filename = null)
+    private function rollback($filename = null)
     {
         // Check if the model directory already exists.
         $migrationDir = $this->basePath . DIRECTORY_SEPARATOR . "migrations" . DIRECTORY_SEPARATOR;
@@ -154,7 +154,7 @@ class MigrationCommand implements CommandInterface
             $class_name = trim($class_name, '_');
             $class_name = "BM_" . $class_name;
 
-            $myclass = new ("\Bolt\migrations\\$class_name");
+            $myclass = new ("\PhpStrike\migrations\\$class_name");
 
             /** Call the Down method */
             $myclass->down();
@@ -179,7 +179,7 @@ class MigrationCommand implements CommandInterface
                 $class_name = trim($class_name, '_');
                 $class_name = "BM_" . $class_name;
 
-                $myclass = new ("\Bolt\migrations\\$class_name");
+                $myclass = new ("\PhpStrike\migrations\\$class_name");
 
                 /** Call the Down method */
                 $myclass->down();
@@ -189,13 +189,13 @@ class MigrationCommand implements CommandInterface
         }
     }
 
-    private function refresh($action, $filename = null)
+    private function refresh($filename = null)
     {
-        $this->rollback($action, $filename);
-        $this->migrate($action, $filename);
+        $this->rollback($filename);
+        $this->migrate($filename);
     }
 
-    private function create($action, $filename)
+    private function create($filename)
     {
         // Check if the model directory already exists
         $migrationDir = $this->basePath . DIRECTORY_SEPARATOR . "migrations" . DIRECTORY_SEPARATOR;

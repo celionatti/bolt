@@ -14,7 +14,7 @@ namespace PhpStrike\controllers;
 
 use celionatti\Bolt\Authentication\BoltAuthentication;
 use celionatti\Bolt\Bolt;
-use Bolt\models\Users;
+use PhpStrike\models\Users;
 use celionatti\Bolt\Controller;
 use celionatti\Bolt\Helpers\Csrf;
 use celionatti\Bolt\Http\Request;

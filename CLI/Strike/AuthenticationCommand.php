@@ -93,7 +93,7 @@ class AuthenticationCommand implements CommandInterface
             /**
              * Check if Migration file already exists.
              */
-            $migrationFile = $migrationDir . date("Y_m_d_His_") . $migrationName . '.php';
+            $migrationFile = $migrationDir . date("Y-m-d_His_") . $migrationName . '.php';
             if (file_exists($migrationFile)) {
                 $mg = ucfirst($migrationName);
                 $this->message("Migration File {$mg} already exists.", false, true, "warning");

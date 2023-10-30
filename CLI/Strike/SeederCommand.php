@@ -98,7 +98,7 @@ class SeederCommand implements CommandInterface
             $class_name = trim($class_name, '_');
             $class_name = "BM_" . $class_name;
 
-            $myclass = new ("\Bolt\seeders\\$class_name");
+            $myclass = new ("\PhpStrike\seeders\\$class_name");
 
             /** Call the Up method */
             $myclass->seeding();
@@ -123,7 +123,7 @@ class SeederCommand implements CommandInterface
                 $class_name = trim($class_name, '_');
                 $class_name = "BM_" . $class_name;
 
-                $myclass = new ("\Bolt\seeders\\$class_name");
+                $myclass = new ("\PhpStrike\seeders\\$class_name");
 
                 /** Call the Up method */
                 $myclass->seeding();
