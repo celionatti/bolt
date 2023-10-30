@@ -29,9 +29,9 @@ class Controller
 
     public function __construct()
     {
-        $this->onConstruct();
         $this->view = new BoltView('', ENABLE_BLADE ?? false, ENABLE_TWIG ?? false);
         $this->view->setLayout("default");
+        $this->onConstruct();
     }
 
     public function setCurrentUser($user)
