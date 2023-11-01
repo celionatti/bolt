@@ -80,6 +80,7 @@ class Bolt
             require __DIR__ . "/Configs/utilities.php",
             require __DIR__ . "/Configs/global-variables.php",
             require get_root_dir() . "/configs/load.php",
+            require get_root_dir() . "/utils/functions.php"
         ];
     }
 
