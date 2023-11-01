@@ -20,6 +20,14 @@ class BoltMigration extends Database
     private $foreignKeys = [];
     public $dataType = "mysql";
 
+    private $connection;
+
+    public function __construct()
+    {
+        parent::__construct(); // Assuming the parent class sets up the database connection
+        $this->connection = $this->getConnection();
+    }
+
     /**
      * Create a new table with the specified name.
      *
@@ -450,17 +458,17 @@ class BoltMigration extends Database
      * @param array $params (Optional) An array of parameters for prepared statements.
      * @return \PDOStatement|bool The PDO statement or false if there's an error.
      */
-    private function executeSql($sql, $params = [])
-    {
-        // Replace 'yourQueryExecutionMethod' with the actual method you use in your application
-        $statement = $this->query($sql, $params);
+    // private function executeSql($sql, $params = [])
+    // {
+    //     // Replace 'yourQueryExecutionMethod' with the actual method you use in your application
+    //     $statement = $this->query($sql, $params);
 
-        if ($statement === false) {
-            $this->error = $this->getError(); // Adjust this to get the last error from your database
-        }
+    //     if ($statement === false) {
+    //         $this->error = $this->getError(); // Adjust this to get the last error from your database
+    //     }
 
-        return $statement;
-    }
+    //     return $statement;
+    // }
 
     /**
      * Drop foreign key constraints from the table.
@@ -673,7 +681,8 @@ class BoltMigration extends Database
         }
 
         // Execute the SQL query on the database
-        if ($this->query($sql)) {
+        $statement = $this->executeSql($sql);
+        if ($statement) {
             $this->consoleLog("Table '{$this->table}' created successfully");
 
             // Add foreign keys if specified
@@ -684,6 +693,27 @@ class BoltMigration extends Database
             $this->consoleLog("Error creating table: {$this->error}", true, true, 'error');
         }
     }
+
+    /**
+     * Execute an SQL query and return the statement.
+     *
+     * @param string $sql The SQL query to execute.
+     * @param array $params (Optional) An array of parameters for prepared statements.
+     * @return \PDOStatement|bool The PDO statement or false if there's an error.
+     */
+    private function executeSql($sql, $params = [])
+    {
+        try {
+            $statement = $this->connection->prepare($sql);
+            $statement->execute($params);
+
+            return $statement;
+        } catch (\PDOException $e) {
+            $this->consoleLog("SQL Error: " . $e->getMessage(), true, true, 'error');
+            return false;
+        }
+    }
+
 
     /**
      * Log a message to the console with optional timestamp and color-coding.

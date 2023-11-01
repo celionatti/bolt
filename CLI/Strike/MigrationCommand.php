@@ -65,6 +65,44 @@ class MigrationCommand implements CommandInterface
         }
     }
 
+    // private function migrate($filename = null)
+    // {
+    //     // Check if the migrations directory already exists.
+    //     $migrationDir = $this->basePath . DIRECTORY_SEPARATOR . "migrations" . DIRECTORY_SEPARATOR;
+
+    //     if (!is_dir($migrationDir)) {
+    //         // Create the migration directory
+    //         if (!mkdir($migrationDir, 0755, true)) {
+    //             $this->message("Error: Unable to create the migration directory.", true, true, "error");
+    //         }
+    //     }
+
+    //     // Get all the files in the migrations folder
+    //     $migrationFiles = glob($migrationDir . '*.php');
+
+    //     // Separate the files containing the specific word
+    //     $filesWithWord = [];
+    //     $otherFiles = [];
+
+    //     foreach ($migrationFiles as $migrationFile) {
+    //         if (strpos(file_get_contents($migrationFile), 'login_attempts') !== false) {
+    //             $filesWithWord[] = $migrationFile;
+    //         } else {
+    //             $otherFiles[] = $migrationFile;
+    //         }
+    //     }
+
+    //     // Sort and run files without the word first
+    //     foreach ($otherFiles as $migrationFile) {
+    //         $this->runMigrationFile($migrationFile);
+    //     }
+
+    //     // Sort and run files containing the word last
+    //     foreach ($filesWithWord as $migrationFile) {
+    //         $this->runMigrationFile($migrationFile);
+    //     }
+    // }
+
     private function migrate($filename = null)
     {
         // Check if the migrations directory already exists.
@@ -77,55 +115,69 @@ class MigrationCommand implements CommandInterface
             }
         }
 
-        if (!empty($filename)) {
-            $migrationFile = $migrationDir . $filename . ".php";
-            /** Run a single class filename migration */
-            $mFile = pathinfo($migrationFile, PATHINFO_FILENAME);
-            $this->message("Migrating File: {$mFile}");
-
-            require_once $migrationFile;
-
-            $class_name = basename($migrationFile);
-            preg_match("/(\d{4}-\d{2}-\d{2}_\d{6}_\w+)/", $class_name, $match);
-            $class_name = ucfirst(str_replace(".php", "", $match[0]));
-            $class_name = ucfirst(str_replace("-", "_", $match[1]));
-            $class_name = trim($class_name, '_');
-            $class_name = "BM_" . $class_name;
-
-            $myclass = new ("\PhpStrike\migrations\\$class_name");
-
-            /** Call the Up method */
-            $myclass->up();
-            $this->message("Migration Complete!");
-            $this->message("Migrated File: {$mFile}");
-        }
-
-        /** Get all the files in the migrations folders */
+        // Get all the files in the migrations folder
         $migrationFiles = glob($migrationDir . '*.php');
 
-        if (!empty($migrationFiles)) {
-            foreach ($migrationFiles as $migrationFile) {
-                $mFile = pathinfo($migrationFile, PATHINFO_FILENAME);
-                $this->message("Migrating File: {$mFile}");
+        // Define an array of words to search for
+        $searchWords = ['login_attempts']; // Add the words you want to search for
 
-                require_once $migrationFile;
+        // Separate the files containing any of the search words
+        $filesWithSearchWords = [];
+        $otherFiles = [];
 
-                $class_name = basename($migrationFile);
-                preg_match("/(\d{4}-\d{2}-\d{2}_\d{6}_\w+)/", $class_name, $match);
-                $class_name = ucfirst(str_replace(".php", "", $match[0]));
-                $class_name = ucfirst(str_replace("-", "_", $match[1]));
-                $class_name = trim($class_name, '_');
-                $class_name = "BM_" . $class_name;
+        foreach ($migrationFiles as $migrationFile) {
+            $fileContent = file_get_contents($migrationFile);
+            $containsSearchWord = false;
 
-                $myclass = new ("\PhpStrike\migrations\\$class_name");
+            foreach ($searchWords as $searchWord) {
+                if (strpos($fileContent, $searchWord) !== false) {
+                    $containsSearchWord = true;
+                    break; // Exit the loop when a match is found
+                }
+            }
 
-                /** Call the Up method */
-                $myclass->up();
-                $this->message("Migration Complete!");
-                $this->message("Migrated Class: {$class_name}");
+            if ($containsSearchWord) {
+                $filesWithSearchWords[] = $migrationFile;
+            } else {
+                $otherFiles[] = $migrationFile;
             }
         }
+
+        // Sort and run files without any of the search words first
+        foreach ($otherFiles as $migrationFile) {
+            $this->runMigrationFile($migrationFile);
+        }
+
+        // Sort and run files containing any of the search words last
+        foreach ($filesWithSearchWords as $migrationFile) {
+            $this->runMigrationFile($migrationFile);
+        }
     }
+
+
+
+    private function runMigrationFile($migrationFile)
+    {
+        $mFile = pathinfo($migrationFile, PATHINFO_FILENAME);
+        $this->message("Migrating File: {$mFile}");
+
+        require_once $migrationFile;
+
+        $class_name = basename($migrationFile);
+        preg_match("/(\d{4}-\d{2}-\d{2}_\d{6}_\w+)/", $class_name, $match);
+        $class_name = ucfirst(str_replace(".php", "", $match[0]));
+        $class_name = ucfirst(str_replace("-", "_", $match[1]));
+        $class_name = trim($class_name, '_');
+        $class_name = "BM_" . $class_name;
+
+        $myclass = new ("\PhpStrike\migrations\\$class_name")();
+
+        /** Call the Up method */
+        $myclass->up();
+        $this->message("Migration Complete!");
+        $this->message("Migrated File: {$mFile}");
+    }
+
 
     private function rollback($filename = null)
     {
