@@ -134,6 +134,23 @@ function esc($data, $context = 'html', $encoding = 'UTF-8')
     }
 }
 
+function isCurrentPage($pageUrl)
+{
+    $currentUrl = $_SERVER['REQUEST_URI'];
+    $parts = explode("/", $currentUrl);
+
+    // Remove the first element if it's an empty string
+    if (empty($parts[0])) {
+        array_shift($parts);
+    }
+
+    // Use the first part of the URL for comparison if it's not empty
+    $compareUrl = !empty($parts[0]) ? $parts[0] : $currentUrl;
+
+    // Compare the current URL to the specified page URL
+    return $compareUrl === $pageUrl;
+}
+
 function bolt_die($value, $message = '', $title = 'BOLT Error - Oops! Something went wrong.', $status_code = 500)
 {
     http_response_code($status_code);
@@ -304,11 +321,11 @@ function dnd($value): void
     die;
 }
 
-function dd($value): void
+function dd($value, $isHTML = false): string
 {
-    echo '<html>';
-    echo '<head>';
-    echo '<style>
+    $htmlOutput = '<html>';
+    $htmlOutput .= '<head>';
+    $htmlOutput .= '<style>
         body {
             margin: 0;
             padding: 0;
@@ -351,26 +368,37 @@ function dd($value): void
             overflow-wrap: break-word;
         }
     </style>';
-    echo '</head>';
-    echo '<body>';
-    echo '<div class="container">';
-    echo '<div class="left-column">';
-    echo '<h2>PHPStrike Framework Details</h2>';
-    echo 'PHPStrike version: 1.0<br>';
-    echo 'Details: Dump and Die method to view<br>';
-    echo 'Details of passed in data.<br>';
-    echo 'Error code: 500<br>';
-    echo 'Error message: This is an error message.<br>';
-    echo '</div>';
-    echo '<div class="right-column">';
-    echo '<h2>PHPStrike DND</h2>';
-    echo '<pre>';
+    $htmlOutput .= '</head>';
+    $htmlOutput .= '<body>';
+    $htmlOutput .= '<div class="container">';
+    $htmlOutput .= '<div class="left-column">';
+    $htmlOutput .= '<h2>PHPStrike Framework Details</h2>';
+    $htmlOutput .= 'PHPStrike version: 1.0<br>';
+    $htmlOutput .= 'Details: Dump and Die method to view<br>';
+    $htmlOutput .= 'Details of passed in data.<br>';
+    $htmlOutput .= 'Error code: 500<br>';
+    $htmlOutput .= 'Error message: This is an error message.<br>';
+    $htmlOutput .= '</div>';
+    $htmlOutput .= '<div class="right-column">';
+    $htmlOutput .= '<h2>PHPStrike DND</h2>';
+    $htmlOutput .= '<pre>';
+    ob_start(); // Start output buffering
     var_dump($value);
-    echo '</pre>';
-    echo '</div>';
-    echo '</div>';
-    echo '</body>';
-    echo '</html>';
+    $htmlOutput .= ob_get_clean(); // Capture the var_dump output and add it to the HTML
+    $htmlOutput .= '</pre>';
+    $htmlOutput .= '</div>';
+    $htmlOutput .= '</div>';
+    $htmlOutput .= '</body>';
+    $htmlOutput .= '</html>';
+
+    if ($isHTML) {
+        // If it's an HTML page, echo the HTML directly
+        echo $htmlOutput;
+    } else {
+        // If it's not an HTML page, return the HTML as a string
+        return $htmlOutput;
+    }
+
     die;
 }
 
