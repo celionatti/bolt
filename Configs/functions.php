@@ -839,3 +839,25 @@ function verifyPassword(string $password, string $hashedPassword): bool
 
     return password_verify($password . $salt, $hashedPassword);
 }
+
+function filterData($data, $filterCriteria)
+{
+    $filteredData = array();
+
+    foreach ($data as $row) {
+        $match = true;
+
+        foreach ($filterCriteria as $key => $value) {
+            if (!isset($row->$key) || $row->$key !== $value) {
+                $match = false;
+                break;
+            }
+        }
+
+        if ($match) {
+            $filteredData[] = $row;
+        }
+    }
+
+    return $filteredData;
+}

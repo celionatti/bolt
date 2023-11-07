@@ -171,7 +171,7 @@ class BoltAuthentication extends DatabaseModel
             $this->logout();
         }
 
-        return $this->_currentUser;
+        return $this->_currentUser ?? null;
     }
 
     public static function currentUser()

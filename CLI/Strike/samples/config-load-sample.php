@@ -18,7 +18,7 @@ if (!defined('APP_KEY')) {
 }
 
 if (!defined('URL_ROOT')) {
-    define('URL_ROOT', "");
+    define('URL_ROOT', $_ENV["URL_ROOT"]);
 }
 
 if (!defined('ENABLE_BLADE')) {
@@ -42,23 +42,23 @@ if (!defined('BOLT_DATABASE')) {
 }
 
 if (!defined('DB_NAME')) {
-    define('DB_NAME', "bolt");
+    define('DB_NAME', $_ENV["DB_NAME"]);
 }
 
 if (!defined('DB_USERNAME')) {
-    define('DB_USERNAME', "root");
+    define('DB_USERNAME', $_ENV["DB_USERNAME"]);
 }
 
 if (!defined('DB_PASSWORD')) {
-    define('DB_PASSWORD', "");
+    define('DB_PASSWORD', $_ENV["DB_PASSWORD"]);
 }
 
 if (!defined('DB_DRIVERS')) {
-    define('DB_DRIVERS', "mysql");
+    define('DB_DRIVERS', $_ENV["DB_DRIVERS"]);
 }
 
 if (!defined('DB_HOST')) {
-    define('DB_HOST', "127.0.0.1");
+    define('DB_HOST', $_ENV["DB_HOST"]);
 }
 
 if (!defined('MAILER_EMAIL')) {
