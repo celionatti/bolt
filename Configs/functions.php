@@ -508,36 +508,9 @@ function old_checked(string $key, string $value, $default = '', string $type = '
     return $isChecked ? 'checked' : '';
 }
 
-
-// function get_image(?string $path = null, string $type = 'post'): string
-// {
-//     // Define default image paths
-//     $defaultImageMap = [
-//         'post' => '/assets/img/no_image.jpg',
-//         'male' => '/assets/img/user_male.jpg',
-//         'female' => '/assets/img/user_female.jpg',
-//         'icon' => '/assets/img/favicon.ico',
-//     ];
-
-//     // Set the image path to the provided $path or an empty string if null
-//     $path = $path ?? '';
-
-//     // Check if the provided $path exists, and return it if found
-//     if (!empty($path) && file_exists($path)) {
-//         return URL_ROOT . '/' . $path;
-//     }
-
-//     // If $type exists in the defaultImageMap, return the corresponding default image
-//     if (isset($defaultImageMap[$type])) {
-//         return URL_ROOT . $defaultImageMap[$type];
-//     }
-
-//     // If $type is not found in the defaultImageMap, return the 'post' default image
-//     return URL_ROOT . $defaultImageMap['post'];
-// }
-
 function get_image(?string $path = null, string $type = 'post'): string
 {
+    // Define default image paths
     $defaultImageMap = [
         'post' => '/assets/img/no_image.jpg',
         'male' => '/assets/img/user_male.jpg',
@@ -545,11 +518,19 @@ function get_image(?string $path = null, string $type = 'post'): string
         'icon' => '/assets/img/favicon.ico',
     ];
 
-    $path = $path && file_exists($_SERVER['DOCUMENT_ROOT'] . $path) ? $path : $defaultImageMap[$type] ?? $defaultImageMap['post'];
+    // Set the image path to the provided $path or an empty string if null
+    $path = $path ?? '';
 
-    return URL_ROOT . $path;
+    // Check if the provided $path exists, and return it if found
+    if (!empty($path) && file_exists($path)) {
+        return URL_ROOT . '/' . $path;
+    }
+
+    // If $type exists in the defaultImageMap, return the corresponding default image
+    if (isset($defaultImageMap[$type])) {
+        return URL_ROOT . ($defaultImageMap[$type]);
+    }
 }
-
 
 function get_assets_directory($directory): string
 {
