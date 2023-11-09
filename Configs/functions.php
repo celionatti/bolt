@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use celionatti\Bolt\Bolt;
+use celionatti\Bolt\Helpers\Csrf;
 use celionatti\Bolt\View\BoltView;
 use celionatti\Bolt\BoltException\BoltException;
 
@@ -624,6 +625,15 @@ function verify_csrf_token($token, string $name = 'csrf_token', int|float $expir
     throw new Exception("CSRF token verification failed.");
 }
 
+function validate_csrf_token($data)
+{
+    $csrf = new Csrf();
+
+    if (!$csrf->validateToken($data["_csrf_token"])) {
+        bolt_die("CSRF Token Expires");
+    }
+}
+
 /**
  * For displaying a color message, on the screen or in the console.
  *
@@ -842,3 +852,14 @@ function filterData($data, $filterCriteria)
 
     return $filteredData;
 }
+
+function retrieveSessionData($key, $default = [])
+{
+    return Bolt::$bolt->session->get($key, $default);
+}
+
+function storeSessionData($key, $data)
+{
+    Bolt::$bolt->session->set($key, $data);
+}
+
