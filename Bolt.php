@@ -32,6 +32,7 @@ class Bolt
     public Container $container;
     public Database $database;
     public ?Controller $controller;
+    public ExtensionCheck $extensionCheck;
 
     public static Bolt $bolt;
 
@@ -45,6 +46,8 @@ class Bolt
         $this->bolt_run();
 
         self::$bolt = $this;
+        $this->extensionCheck = new ExtensionCheck();
+        $this->extensionCheck->checkExtensions();
         $this->pathResolver = new PathResolver(get_root_dir());
         $this->assetManager = new AssetManager(URL_ROOT);
 

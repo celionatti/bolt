@@ -10,15 +10,24 @@ declare(strict_types=1);
 
 namespace celionatti\Bolt\Helpers;
 
-use Exception;
+use GdImage;
 
 class Image
 {
+    /**
+     * Resizes an image to fit within a specified maximum size.
+     *
+     * @param string $filename
+     * @param int $max_size
+     *
+     * @return string The filename of the resized image.
+     *
+     * @throws \InvalidArgumentException If the file does not exist.
+     */
     public function resize($filename, $max_size = 700)
     {
-        if (!file_exists($filename)) {
-            throw new \InvalidArgumentException('File does not exist.');
-        }
+        // Validation
+        $this->validateFileExistence($filename);
 
         $type = mime_content_type($filename);
         $image = $this->createImageResource($filename, $type);
@@ -41,14 +50,27 @@ class Image
         return $filename;
     }
 
-    public function watermark($filename, $watermarkPath, $position = 'bottom-right')
+    /**
+     * Adds a watermark to the image.
+     *
+     * @param string $filename
+     * @param string $watermarkPath
+     * @param string $position
+     *
+     * @return string The filename of the watermarked image.
+     *
+     * @throws \InvalidArgumentException If the file does not exist.
+     */
+    public function watermark(string $filename, string $watermarkPath, string $position = 'bottom-right')
     {
-        if (!file_exists($filename)) {
-            throw new \InvalidArgumentException('File does not exist.');
-        }
+        // Validation
+        $this->validateFileExistence($filename);
 
         $type = mime_content_type($filename);
         $image = $this->createImageResource($filename, $type);
+
+        // Validate watermark file existence
+        $this->validateFileExistence($watermarkPath);
 
         $watermark = $this->createImageResource($watermarkPath, mime_content_type($watermarkPath));
         $this->applyWatermark($image, $watermark, $position);
@@ -61,11 +83,24 @@ class Image
         return $filename;
     }
 
-    public function crop($filename, $width, $height, $x = 0, $y = 0)
+    /**
+     * Crops an image based on specified dimensions and starting point.
+     *
+     * @param string $filename
+     * @param int $width
+     * @param int $height
+     * @param int $x
+     * @param int $y
+     *
+     * @return string The filename of the cropped image.
+     *
+     * @throws \InvalidArgumentException If the file does not exist.
+     * @throws \RuntimeException If the crop operation fails.
+     */
+    public function crop(string $filename, int $width, int $height, int $x = 0, int $y = 0)
     {
-        if (!file_exists($filename)) {
-            throw new \InvalidArgumentException('File does not exist.');
-        }
+        // Validation
+        $this->validateFileExistence($filename);
 
         $type = mime_content_type($filename);
         $image = $this->createImageResource($filename, $type);
@@ -85,11 +120,19 @@ class Image
         return $filename;
     }
 
-    public function grayscale($filename)
+    /**
+     * Converts the image to grayscale.
+     *
+     * @param string $filename
+     *
+     * @return string The filename of the grayscale image.
+     *
+     * @throws \InvalidArgumentException If the file does not exist.
+     */
+    public function grayscale(string $filename)
     {
-        if (!file_exists($filename)) {
-            throw new \InvalidArgumentException('File does not exist.');
-        }
+        // Validation
+        $this->validateFileExistence($filename);
 
         $type = mime_content_type($filename);
         $image = $this->createImageResource($filename, $type);
@@ -103,11 +146,20 @@ class Image
         return $filename;
     }
 
+    /**
+     * Rotates the image by the specified number of degrees.
+     *
+     * @param string $filename
+     * @param int $degrees
+     *
+     * @return string The filename of the rotated image.
+     *
+     * @throws \InvalidArgumentException If the file does not exist.
+     */
     public function rotate($filename, $degrees = 90)
     {
-        if (!file_exists($filename)) {
-            throw new \InvalidArgumentException('File does not exist.');
-        }
+        // Validation
+        $this->validateFileExistence($filename);
 
         $type = mime_content_type($filename);
         $image = $this->createImageResource($filename, $type);
@@ -122,32 +174,53 @@ class Image
         return $filename;
     }
 
-    public function flip($filename, $mode = 'horizontal')
+    /**
+     * Flips the image either horizontally or vertically.
+     *
+     * @param string $filename
+     * @param string $mode
+     *
+     * @return string The filename of the flipped image.
+     *
+     * @throws \InvalidArgumentException If the file does not exist.
+     */
+    public function flip(string $filename, string $mode = 'horizontal')
     {
-        if (!file_exists($filename)) {
-            throw new \InvalidArgumentException('File does not exist.');
-        }
+        // Validation
+        $this->validateFileExistence($filename);
 
         $type = mime_content_type($filename);
         $image = $this->createImageResource($filename, $type);
 
-        $flippedImage = $mode === 'horizontal'
-            ? imageflip($image, IMG_FLIP_HORIZONTAL)
-            : imageflip($image, IMG_FLIP_VERTICAL);
+        // Flip the image directly
+        if ($mode === 'horizontal') {
+            imageflip($image, IMG_FLIP_HORIZONTAL);
+        } else {
+            imageflip($image, IMG_FLIP_VERTICAL);
+        }
 
-        $this->saveResizedImage($type, $flippedImage, $filename);
+        $this->saveResizedImage($type, $image, $filename);
 
         imagedestroy($image);
-        imagedestroy($flippedImage);
 
         return $filename;
     }
 
-    public function addBorder($filename, $color = '#000000', $size = 10)
+    /**
+     * Adds a border to the image.
+     *
+     * @param string $filename
+     * @param string $color
+     * @param int $size
+     *
+     * @return string The filename of the image with the added border.
+     *
+     * @throws \InvalidArgumentException If the file does not exist.
+     */
+    public function addBorder(string $filename, string $color = '#000000', int $size = 10)
     {
-        if (!file_exists($filename)) {
-            throw new \InvalidArgumentException('File does not exist.');
-        }
+        // Validation
+        $this->validateFileExistence($filename);
 
         $type = mime_content_type($filename);
         $image = $this->createImageResource($filename, $type);
@@ -166,11 +239,20 @@ class Image
         return $filename;
     }
 
-    public function applyFilter($filename, $filterType = IMG_FILTER_GRAYSCALE)
+    /**
+     * Applies a specified image filter to the image.
+     *
+     * @param string $filename
+     * @param int $filterType
+     *
+     * @return string The filename of the filtered image.
+     *
+     * @throws \InvalidArgumentException If the file does not exist.
+     */
+    public function applyFilter(string $filename, int $filterType = IMG_FILTER_GRAYSCALE)
     {
-        if (!file_exists($filename)) {
-            throw new \InvalidArgumentException('File does not exist.');
-        }
+        // Validation
+        $this->validateFileExistence($filename);
 
         $type = mime_content_type($filename);
         $image = $this->createImageResource($filename, $type);
@@ -184,11 +266,20 @@ class Image
         return $filename;
     }
 
-    public function blur($filename, $intensity = 5)
+    /**
+     * Applies a Gaussian blur to the image.
+     *
+     * @param string $filename
+     * @param int $intensity
+     *
+     * @return string The filename of the blurred image.
+     *
+     * @throws \InvalidArgumentException If the file does not exist.
+     */
+    public function blur(string $filename, int $intensity = 5)
     {
-        if (!file_exists($filename)) {
-            throw new \InvalidArgumentException('File does not exist.');
-        }
+        // Validation
+        $this->validateFileExistence($filename);
 
         $type = mime_content_type($filename);
         $image = $this->createImageResource($filename, $type);
@@ -204,11 +295,24 @@ class Image
         return $filename;
     }
 
-    public function addTextWatermark($filename, $text, $fontFile, $fontSize = 20, $color = '#000000', $position = 'bottom-right')
+    /**
+     * Adds a text watermark to the image.
+     *
+     * @param string $filename
+     * @param string $text
+     * @param string $fontFile
+     * @param int $fontSize
+     * @param string $color
+     * @param string $position
+     *
+     * @return string The filename of the image with the added text watermark.
+     *
+     * @throws \InvalidArgumentException If the file does not exist.
+     */
+    public function addTextWatermark(string $filename, string $text, string $fontFile, int $fontSize = 20, string $color = '#000000', string $position = 'bottom-right')
     {
-        if (!file_exists($filename)) {
-            throw new \InvalidArgumentException('File does not exist.');
-        }
+        // Validation
+        $this->validateFileExistence($filename);
 
         $type = mime_content_type($filename);
         $image = $this->createImageResource($filename, $type);
@@ -235,7 +339,17 @@ class Image
         return $filename;
     }
 
-    private function createImageResource($filename, $type)
+    /**
+     * Creates an image resource based on the given filename and MIME type.
+     *
+     * @param string $filename
+     * @param string $type MIME type of the image (e.g., 'image/jpeg', 'image/png').
+     *
+     * @return GdImage|resource An image resource identifier representing the loaded image.
+     *
+     * @throws \InvalidArgumentException If the image type is unsupported or the file does not exist.
+     */
+    private function createImageResource(string $filename, string $type)
     {
         switch ($type) {
             case 'image/png':
@@ -251,7 +365,16 @@ class Image
         }
     }
 
-    private function calculateDestinationSize($src_w, $src_h, $max_size)
+    /**
+     * Calculates the dimensions of the destination size for resizing an image while maintaining its aspect ratio.
+     *
+     * @param int $src_w Width of the source image.
+     * @param int $src_h Height of the source image.
+     * @param int $max_size Maximum size (width or height) for the destination image.
+     *
+     * @return array An array containing the calculated width and height for the destination size.
+     */
+    private function calculateDestinationSize(int $src_w, int $src_h, int $max_size)
     {
         if ($src_w > $src_h) {
             if ($src_w < $max_size) {
@@ -266,33 +389,69 @@ class Image
         }
     }
 
-    private function handleAlphaChannel($type, $image)
+    /**
+     * Handles the alpha channel for PNG images by setting appropriate blending and saving settings.
+     *
+     * @param string $type MIME type of the image (e.g., 'image/png').
+     * @param GdImage|resource $image An image resource identifier representing the loaded image.
+     *
+     * @return void
+     */
+    private function handleAlphaChannel(string $type, GdImage $image): void
     {
         if ($type == 'image/png') {
+            // Disable blending to preserve alpha channel
             imagealphablending($image, false);
+
+            // Save full alpha channel information
             imagesavealpha($image, true);
         }
     }
 
-    private function saveResizedImage($type, $image, $filename)
+    /**
+     * Saves the resized image to the specified filename based on its MIME type.
+     *
+     * @param string $type MIME type of the image (e.g., 'image/jpeg', 'image/png').
+     * @param GdImage|resource $image An image resource identifier representing the resized image.
+     * @param string $filename The filename to save the resized image to.
+     *
+     * @return void
+     *
+     * @throws \InvalidArgumentException If the image type is unsupported.
+     */
+    private function saveResizedImage(string $type, $image, string $filename): void
     {
         switch ($type) {
             case 'image/png':
+                // Save PNG image with compression level 8
                 imagepng($image, $filename, 8);
                 break;
             case 'image/gif':
+                // Save GIF image
                 imagegif($image, $filename);
                 break;
             case 'image/webp':
+                // Save WebP image with quality 90
                 imagewebp($image, $filename, 90);
                 break;
             default:
+                // Save JPEG image with quality 90
                 imagejpeg($image, $filename, 90);
                 break;
         }
     }
 
-    private function applyWatermark($image, $watermark, $position)
+
+    /**
+     * Applies a watermark to the image at a specified position.
+     *
+     * @param GdImage|resource $image An image resource identifier representing the loaded image.
+     * @param GdImage|resource $watermark An image resource identifier representing the watermark image.
+     * @param string $position The position of the watermark ('top-left', 'top-right', 'bottom-left', 'bottom-right').
+     *
+     * @return void
+     */
+    private function applyWatermark($image, $watermark, string $position): void
     {
         $imageWidth = imagesx($image);
         $imageHeight = imagesy($image);
@@ -319,12 +478,31 @@ class Image
                 break;
         }
 
+        // Copy the watermark onto the image at the specified position
         imagecopy($image, $watermark, $x, $y, 0, 0, $watermarkWidth, $watermarkHeight);
     }
 
-    private function hexToRgb($hex)
+
+    /**
+     * Converts a hexadecimal color value to an associative array representing RGB values.
+     *
+     * @param string $hex The hexadecimal color value (e.g., '#RRGGBB').
+     *
+     * @return array An associative array with 'r', 'g', and 'b' keys representing the RGB values.
+     *
+     * @throws \InvalidArgumentException If the input string is not a valid hexadecimal color.
+     */
+    private function hexToRgb(string $hex): array
     {
+        // Remove the '#' character if present
         $hex = ltrim($hex, '#');
+
+        // Validate the hexadecimal color format
+        if (!preg_match('/^[a-fA-F0-9]{6}$/', $hex)) {
+            throw new \InvalidArgumentException('Invalid hexadecimal color format.');
+        }
+
+        // Split the hex color into individual components
         $rgb = str_split($hex, 2);
 
         return [
@@ -334,7 +512,17 @@ class Image
         ];
     }
 
-    private function calculateTextPosition($position, $imageSize, $textSize)
+
+    /**
+     * Calculates the starting position for placing text within an image based on the specified position.
+     *
+     * @param string $position The position for placing text ('top-left', 'top-right', 'bottom-left', 'bottom-right', 'center').
+     * @param int $imageSize The size (width or height) of the image.
+     * @param int $textSize The size (width or height) of the text to be placed.
+     *
+     * @return int The calculated starting position for placing text within the image.
+     */
+    private function calculateTextPosition(string $position, int $imageSize, int $textSize): int
     {
         switch ($position) {
             case 'top-left':
@@ -347,6 +535,21 @@ class Image
                 return ($imageSize - $textSize) / 2;
             default:
                 return 0; // Default to top-left
+        }
+    }
+
+
+    /**
+     * Validates the existence of a file.
+     *
+     * @param string $filename
+     *
+     * @throws \InvalidArgumentException If the file does not exist.
+     */
+    private function validateFileExistence(string $filename): void
+    {
+        if (!file_exists($filename)) {
+            throw new \InvalidArgumentException('File does not exist.');
         }
     }
 }
