@@ -103,12 +103,31 @@ class Upload
         return $uniqueFileName;
     }
 
-    private function formatBytes(int $bytes, $precision = 2): string
-    {
-        $units = ['B', 'KB', 'MB', 'GB', 'TB'];
-        $bytes = max($bytes, 0);
-        $pow = floor(($bytes ? log($bytes) : 0) / log(1024));
-        $pow = min($pow, count($units) - 1);
-        return round($bytes, $precision) . $units[$pow];
-    }
+    // private function formatBytes(int $bytes, $precision = 2): string
+    // {
+    //     $units = ['B', 'KB', 'MB', 'GB', 'TB'];
+    //     $bytes = max($bytes, 0);
+    //     $pow = floor(($bytes ? log($bytes) : 0) / log(1024));
+    //     $pow = min($pow, count($units) - 1);
+    //     return round($bytes, $precision) . $units[$pow];
+    // }
+
+    private function formatBytesAdvanced(int $bytes, $precision = 2, $decimalSeparator = '.', $thousandsSeparator = ','): string
+{
+    $units = ['B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+
+    $bytes = max($bytes, 0);
+
+    // Use a more precise logarithm function for accurate results
+    $pow = floor(log($bytes, 1024));
+
+    // Ensure the calculated unit is within the defined range
+    $pow = min($pow, count($units) - 1);
+
+    // Calculate the size with the specified precision
+    $formattedSize = number_format($bytes / (1024 ** $pow), $precision, $decimalSeparator, $thousandsSeparator);
+
+    return $formattedSize . ' ' . $units[$pow];
+}
+
 }
