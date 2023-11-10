@@ -12,32 +12,40 @@ namespace celionatti\Bolt\Helpers;
 
 class Upload
 {
+    const DEFAULT_MAX_FILE_SIZE = 10485760; // 10 MB
+
     protected $uploadDir;
     protected $allowedFileTypes = [];
-    protected $maxFileSize = 10485760; // 10 MB
+    protected $maxFileSize = self::DEFAULT_MAX_FILE_SIZE;
     protected $overwriteExisting = false;
 
-    public function __construct($uploadDir)
+    public function __construct(string $uploadDir)
     {
         $this->uploadDir = $uploadDir;
+        // Ensure the upload directory exists or create it if it doesn't.
+        if (!file_exists($uploadDir)) {
+            if (!mkdir($uploadDir, 0777, true)) {
+                throw new \RuntimeException('Failed to create the upload directory.');
+            }
+        }
     }
 
-    public function setAllowedFileTypes($allowedFileTypes)
+    public function setAllowedFileTypes(array $allowedFileTypes): void
     {
         $this->allowedFileTypes = $allowedFileTypes;
     }
 
-    public function setMaxFileSize($maxFileSize)
+    public function setMaxFileSize(int $maxFileSize): void
     {
         $this->maxFileSize = $maxFileSize;
     }
 
-    public function setOverwriteExisting($overwriteExisting)
+    public function setOverwriteExisting(bool $overwriteExisting): void
     {
         $this->overwriteExisting = $overwriteExisting;
     }
 
-    public function uploadFile($fileInputName, $rename = true)
+    public function uploadFile(string $fileInputName, bool $rename = true): array
     {
         if (isset($_FILES[$fileInputName])) {
             $file = $_FILES[$fileInputName];
@@ -48,7 +56,7 @@ class Upload
                 $fileSize = $file['size'];
 
                 if ($fileSize > $this->maxFileSize) {
-                    return ['error' => 'File size exceeds the allowed limit.'];
+                    return ['error' => 'File size exceeds the allowed limit. ' . $this->formatBytes($this->maxFileSize)];
                 }
 
                 $fileType = mime_content_type($fileTmpPath);
@@ -93,5 +101,14 @@ class Upload
         $uniqueFileName = $fileName . '_' . uniqid() . '.' . $extension;
 
         return $uniqueFileName;
+    }
+
+    private function formatBytes(int $bytes, $precision = 2): string
+    {
+        $units = ['B', 'KB', 'MB', 'GB', 'TB'];
+        $bytes = max($bytes, 0);
+        $pow = floor(($bytes ? log($bytes) : 0) / log(1024));
+        $pow = min($pow, count($units) - 1);
+        return round($bytes, $precision) . $units[$pow];
     }
 }

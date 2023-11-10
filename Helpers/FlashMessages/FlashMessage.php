@@ -55,7 +55,7 @@ class FlashMessage
         }
 
         // Generate the HTML for the message
-        $html = '<div class="alert ' . $type . ' ' . $classes . '"';
+        $html = '<div class="position-relative alert ' . $type . ' ' . $classes . '"';
 
         foreach ($attributes as $key => $value) {
             $html .= ' ' . $key . '="' . htmlspecialchars($value) . '"';

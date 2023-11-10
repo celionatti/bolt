@@ -11,7 +11,16 @@ declare(strict_types=1);
  * Description: This file is for global constants
  */
 
+
+if (!file_exists(__DIR__ . '/constants.php')) {
+    die("Constants File Not Found!");
+}
+
+require __DIR__ . '/constants.php';
+
+
 $key = "{KEY}";
+
 
 if (!defined('APP_KEY')) {
     define('APP_KEY', $key);
@@ -59,16 +68,4 @@ if (!defined('DB_DRIVERS')) {
 
 if (!defined('DB_HOST')) {
     define('DB_HOST', $_ENV["DB_HOST"]);
-}
-
-if (!defined('MAILER_EMAIL')) {
-    define('MAILER_EMAIL', "");
-}
-
-if (!defined('MAILER_PASSWORD')) {
-    define('MAILER_PASSWORD', "");
-}
-
-if (!defined('MAILER_HOST')) {
-    define('MAILER_HOST', "smtp.gmail.com");
 }
