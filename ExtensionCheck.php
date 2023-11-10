@@ -84,8 +84,7 @@ class ExtensionCheck
             case 'exception':
                 throw new BoltException($errorMessage);
             default:
-                echo $errorMessage;
-                die;
+                bolt_die($errorMessage, "Missing Extensions.");
         }
     }
 }
