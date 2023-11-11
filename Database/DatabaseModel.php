@@ -211,15 +211,6 @@ abstract class DatabaseModel extends Model
             ->execute();
     }
 
-    // // Update records based on conditions
-    // public function updateBy(array $data, array $conditions)
-    // {
-    //     return $this->getQueryBuilder()
-    //         ->update($data)
-    //         ->where($conditions)
-    //         ->execute();
-    // }
-
     // Define a method to build the data array for inserts
     protected function buildFillableData(array $data): array
     {
