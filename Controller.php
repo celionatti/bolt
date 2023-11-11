@@ -53,31 +53,68 @@ class Controller
         return $this->middlewares;
     }
 
-    public function json_response($data, $statusCode = Response::OK, $headers = [], $options = JSON_PRETTY_PRINT): void
+    public function json_response($data, $statusCode = Response::OK, $headers = [], $options = JSON_PRETTY_PRINT, $enableCompression = true): void
     {
-        if (!is_array($data)) {
-            // Handle invalid data, maybe by throwing an exception or returning an error response
-            $this->json_error_response('Invalid data', Response::BAD_REQUEST);
-            return;
-        }
-
         // Allow for additional custom headers
         $defaultHeaders = [
             "Access-Control-Allow-Origin" => "*",
-            "Content-Type" => "application/json; charset=UTF-8",
+            "Content-Type" => "application/json",
         ];
 
         // Merge custom headers with default headers
         $mergedHeaders = array_merge($defaultHeaders, $headers);
 
-        header("HTTP/1.1 $statusCode " . Response::getStatusText($statusCode));
+        // CORS headers
+        $mergedHeaders['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS';
+        $mergedHeaders['Access-Control-Allow-Headers'] = 'Content-Type';
+
+        // Enable Gzip Compression if specified
+        if ($enableCompression) {
+            // Compression: Enable Gzip Compression
+            ob_start("ob_gzhandler");
+
+            // Compression: Set Content-Encoding Header
+            header('Content-Encoding: gzip');
+        }
+
+        http_response_code($statusCode);
 
         foreach ($mergedHeaders as $name => $value) {
             header("$name: $value");
         }
 
-        echo json_encode($data, $options);
-        exit;
+        $json = json_encode($data, $options);
+
+        if ($json === false) {
+            $this->json_error_response('Error encoding JSON', Response::INTERNAL_SERVER_ERROR);
+            return;
+        }
+
+        // JSONP support
+        $callback = isset($_GET['callback']) ? $_GET['callback'] : null;
+
+        if (!empty($callback)) {
+            echo $callback . '(' . $json . ');';
+        } else {
+            echo $json;
+        }
+
+        die;
+    }
+
+    /**
+     * Recursively applies htmlspecialchars to data if sanitization is enabled.
+     *
+     * @param mixed $data
+     * @return mixed
+     */
+    private function sanitizeData($data)
+    {
+        if (is_array($data)) {
+            return array_map([$this, 'sanitizeData'], $data);
+        } else {
+            return htmlspecialchars($data);
+        }
     }
 
     public function json_error_response($message, $statusCode = Response::INTERNAL_SERVER_ERROR): void

@@ -863,3 +863,11 @@ function storeSessionData($key, $data)
     Bolt::$bolt->session->set($key, $data);
 }
 
+function sanitizeData($data)
+{
+    if (is_array($data)) {
+        return array_map('sanitizeData', $data);
+    } else {
+        return htmlspecialchars($data);
+    }
+}
