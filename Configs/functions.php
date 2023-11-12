@@ -871,3 +871,21 @@ function sanitizeData($data)
         return htmlspecialchars($data);
     }
 }
+
+function toast($type, $message)
+{
+    // Validate the message type
+    $validTypes = ['success', 'error', 'info', 'warning'];
+    if (!in_array($type, $validTypes)) {
+        throw new \InvalidArgumentException('Invalid toastr message type');
+    }
+
+    // Store the message, type, and attributes in the session
+    $_SESSION['__flash_toastr'] = [
+        'message' => $message,
+        'type' => $type,
+    ];
+
+    $toastr = $_SESSION['__flash_toastr'] ?? null;
+    return $toastr;
+}
