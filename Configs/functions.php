@@ -625,12 +625,27 @@ function verify_csrf_token($token, string $name = 'csrf_token', int|float $expir
     throw new Exception("CSRF token verification failed.");
 }
 
-function validate_csrf_token($data)
+function validate_csrf_token($data, $toast = true)
 {
+    // Assuming that the Csrf class is defined and instantiated somewhere
     $csrf = new Csrf();
 
+    // Get the referring URL or set a default redirect URL
+    $redirect = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : '';
+
+    // Validate the CSRF token from the provided data
     if (!$csrf->validateToken($data["_csrf_token"])) {
-        bolt_die("CSRF Token Expires");
+        $message = "CSRF Token Expires";
+
+        // Display a toast message or use `bolt_die` to terminate with an error message
+        if ($toast) {
+            toast("info", $message);
+        } else {
+            bolt_die($message);
+        }
+
+        // Redirect to the referring URL or a default location
+        redirect($redirect);
     }
 }
 
