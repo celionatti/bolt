@@ -146,7 +146,12 @@ class Router
             }
 
             // Convert route name into regex pattern
-            $routeRegex = "@^" . preg_replace_callback('/\{\w+(:([^}]+))?}/', fn ($m) => isset($m[2]) ? "({$m[2]})" : '(\w+)', $route) . "$@";
+            // $routeRegex = "@^" . preg_replace_callback('/\{\w+(:([^}]+))?}/', fn ($m) => isset($m[2]) ? "({$m[2]})" : '(\w+)', $route) . "$@";
+            $routeRegex = "@^" . preg_replace_callback('/\{(\w+)(:([^}]+))?}/', function ($m) {
+                $paramName = $m[1];
+                $paramPattern = isset($m[3]) ? $m[3] : '\w+';
+                return "($paramPattern)";
+            }, $route) . "$@";
 
             // Test and match current route against $routeRegex
             if (preg_match_all($routeRegex, $url, $valueMatches)) {
@@ -186,7 +191,7 @@ class Router
                 $controllerName = $callbackParts[0];
                 $actionName = $callbackParts[1];
 
-                if(!method_exists($controllerName, $actionName)) {
+                if (!method_exists($controllerName, $actionName)) {
                     throw new BoltException("[{$controllerName}] - [{$actionName}] Method Not Found");
                 }
 

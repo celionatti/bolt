@@ -25,8 +25,21 @@ function generateUuidV4()
     $data[6] = chr(ord($data[6]) & 0x0F | 0x40);
     $data[8] = chr(ord($data[8]) & 0x3F | 0x80);
 
-    // Format the UUID
-    $uuid = vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($data), 4));
+    // Get the current timestamp in microseconds
+    $timestamp = microtime(true) * 10000;
+
+    // Convert the timestamp to a 64-bit binary string without zero padding
+    $timestampBinary = substr(pack('J', $timestamp), 2);
+
+    // Replace the first 8 bytes with the timestamp
+    $data = substr_replace($data, $timestampBinary, 0, 8);
+
+    // Add some additional randomness
+    $randomBytes = random_bytes(8);
+    $data .= $randomBytes;
+
+    // Format the UUID without dashes
+    $uuid = vsprintf('%s%s%s%s%s%s%s%s', str_split(bin2hex($data), 4));
 
     return $uuid;
 }
@@ -477,7 +490,7 @@ function old_select(string $key, string $value, $default = '', string $type = 'p
         throw new InvalidArgumentException("Invalid input source: $type");
     }
 
-    $inputValue = $sources[$type][$key] ?? '';
+    $inputValue = $sources[$type][$key] ?? $default;
 
     // Check if the selected value matches the input value or if it matches the default value
     $isSelected = ($strict ? $inputValue === $value : $inputValue == $value) || ($default == $value);
@@ -501,7 +514,7 @@ function old_checked(string $key, string $value, $default = '', string $type = '
     }
 
     // Get the value from the specified input source
-    $inputValue = $sources[$type][$key] ?? '';
+    $inputValue = $sources[$type][$key] ?? $default;
 
     // Determine if the checked value matches the input value
     $isChecked = ($strict ? $inputValue === $value : $inputValue == $value) || ($default == $value);
