@@ -47,6 +47,10 @@ class Upload
 
     public function uploadFile(string $fileInputName, bool $rename = true): array
     {
+        if (!isset($_FILES[$fileInputName]) || empty($_FILES[$fileInputName]['name'])) {
+            return ['error' => 'No file found for upload.'];
+        }
+
         if (isset($_FILES[$fileInputName])) {
             $file = $_FILES[$fileInputName];
 
@@ -79,8 +83,6 @@ class Upload
             } else {
                 return ['error' => 'Error during file upload.'];
             }
-        } else {
-            return ['error' => 'File not found.'];
         }
     }
 
@@ -98,6 +100,10 @@ class Upload
     {
         $extension = pathinfo($originalFileName, PATHINFO_EXTENSION);
         $fileName = pathinfo($originalFileName, PATHINFO_FILENAME);
+
+        // Limit the length of the file name to 100 characters
+        $fileName = substr($fileName, 0, 15);
+
         $uniqueFileName = $fileName . '_' . uniqid() . '.' . $extension;
 
         return $uniqueFileName;

@@ -85,6 +85,8 @@ class BoltQueryBuilder
 
     public function update(array $data)
     {
+        $this->currentStep = 'initial';
+        
         if (empty($data)) {
             throw new \InvalidArgumentException('Invalid argument for UPDATE method. Data array must not be empty.');
         }
