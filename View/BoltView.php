@@ -91,6 +91,7 @@ class BoltView
 
     public function content($key): void
     {
+        // Create your functions and helpers.
         if (array_key_exists($key, $this->_content)) {
             echo $this->_content[$key];
         } else {
