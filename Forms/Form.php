@@ -130,7 +130,7 @@ class Form
         return $html;
     }
 
-    public static function fileForm($label, $id, $input = [], $wrapper = [], $errors = []): string
+    public static function fileForm($label, $id, $input = [], $wrapperAttrs = [], $errors = []): string
     {
         $inputAttrs = self::appendErrors($id, $input, $errors);
         $wrapperAttrs['class'] = 'form-group ' . ($wrapperAttrs['class'] ?? '');
