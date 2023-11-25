@@ -94,6 +94,20 @@ class BootstrapForm extends Form
         return $html;
     }
 
+     public static function fileFieldMulitiple($label, $id, $input = [], $wrapperAttrs = [], $errors = []): string
+    {
+        $wrapperStr = self::processAttrs($wrapperAttrs);
+        $inputAttrs = self::appendBootErrors($id, $input, $errors);
+        $inputAttrs['class'] = 'form-control-file ' . ($inputAttrs['class'] ?? '');
+        $inputStr = self::processAttrs($inputAttrs);
+        $errorMsg = array_key_exists($id, $errors) ? $errors[$id] : '';
+        $html = "<div {$wrapperStr}>";
+        $html .= "<label for=\"{$id}\" class='form-label'>{$label}</label>";
+        $html .= "<input type=\"file\" id=\"{$id}\" name=\"{$id}\" {$inputStr} class='form-control-file'/>";
+        $html .= "<div class=\"invalid-feedback\">{$errorMsg}</div></div>";
+        return $html;
+    }
+
     public static function appendBootErrors($key, $inputAttrs, $errors)
     {
         if (array_key_exists($key, $errors)) {
