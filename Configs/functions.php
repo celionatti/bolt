@@ -276,144 +276,158 @@ function bolt_die($value, $message = '', $title = 'BOLT Error - Oops! Something 
     die;
 }
 
-function dnd($value): void
+function dd($value): void
 {
-    echo '<html>';
-    echo '<head>';
-    echo '<style>';
-    echo 'body {';
-    echo '  margin: 0;';
-    echo '  padding: 0;';
-    echo '  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;'; // Specify the desired font family
-    echo '  background-color: #E6F7FF;'; // Light bluish background
-    echo '}';
-    echo '.dd-container {';
-    echo '  width: 100%;'; // Full-screen width
-    echo '  display: flex;';
-    echo '  align-items: center;';
-    echo '  justify-content: center;';
-    echo '  min-height: 100vh;';
-    echo '}';
-    echo '.dd-box {';
-    echo '  background-color: #FFF;';
-    echo '  border: 1px solid #E0E0E0;';
-    echo '  border-radius: 5px;';
-    echo '  padding: 20px;';
-    echo '  text-align: center;';
-    echo '  max-width: 80%;'; // Content wraps when it exceeds 80% of the screen width
-    echo '  overflow-x: auto;'; // Horizontal scrolling for long lines
-    echo '}';
-    echo 'h2 {';
-    echo '  text-transform: uppercase;';
-    echo '  color: #333;';
-    echo '  font-weight: bold;';
-    echo '  font-size: 24px;'; // Specify the desired font size
-    echo '}';
-    echo 'pre {';
-    echo '  background-color: #000;';
-    echo '  color: lightgreen;';
-    echo '  margin: 5px;';
-    echo '  padding: 10px;';
-    echo '  border: 3px solid teal;';
-    echo '  white-space: pre-wrap;'; // Allows text to wrap within the pre element
-    echo '  font-weight: bold;'; // Make content inside <pre> bold
-    echo '  font-size: 18px;'; // Specify the desired font size
-    echo '}';
-    echo '</style>';
-    echo '</head>';
-    echo '<body>';
-    echo '<div class="dd-container">';
-    echo '<div class="dd-box">';
-    echo '<h2>PHPStrike - Dump and Die</h2>';
-    echo '<pre>';
+    echo <<<HTML
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+            body {
+                font-family: 'Arial', sans-serif;
+                margin: 0;
+                padding: 0;
+            }
+
+            .sf-dump-container {
+                display: grid;
+                grid-template-columns: 1fr 1fr; /* Two equal-width columns */
+                height: 100vh;
+            }
+
+            .sf-dump {
+                font: 13px Menlo, Monaco, monospace;
+                direction: ltr;
+                text-align: left;
+                white-space: pre;
+                word-wrap: normal;
+                background: #282828;
+                color: #eeeeee;
+                line-height: 1.2;
+                margin: 0;
+                padding: 16px;
+                border-radius: 5px;
+                overflow: hidden;
+                z-index: 100000;
+                grid-column: 2; /* Specify the column for the dump content */
+            }
+
+            .sf-dump-two {
+                font: 12px 'Arial', sans-serif; /* Use a standard font for readability */
+                background: #f0f0f0; /* Change to your desired background color */
+                color: #333; /* Change to your desired text color */
+                line-height: 1.2;
+                margin: 0;
+                padding: 16px;
+                border-radius: 5px;
+                overflow: hidden;
+                z-index: 100000;
+                grid-column: 1; /* Specify the column for the dump content */
+            }
+
+            .sf-dump span {
+                display: inline;
+            }
+
+            .sf-dump a {
+                color: #52e3f6;
+                text-decoration: none;
+            }
+
+            .sf-dump a:hover {
+                text-decoration: underline;
+            }
+
+            .sf-dump a:visited {
+                color: #5e84ea;
+            }
+
+            .sf-dump .sf-dump-public {
+                color: #568f3e;
+            }
+
+            .sf-dump .sf-dump-protected {
+                color: #568f3e;
+            }
+
+            .sf-dump .sf-dump-private {
+                color: #568f3e;
+            }
+
+            .sf-dump .sf-dump-ellipsis {
+                font-weight: bold;
+                color: #52e3f6;
+            }
+
+            .sf-dump .sf-dump-numeric {
+                color: #a0a0a0;
+            }
+
+            .sf-dump .sf-dump-null {
+                color: #aa0d91;
+            }
+
+            .sf-dump .sf-dump-bool {
+                color: #4d73bf;
+            }
+
+            .sf-dump .sf-dump-resource {
+                color: #6f42c1;
+            }
+
+            .sf-dump .sf-dump-string {
+                color: #df9355;
+            }
+
+            .sf-dump .sf-dump-key {
+                color: #a0a0a0;
+            }
+
+            .sf-dump .sf-dump-meta {
+                color: #b729d9;
+            }
+
+            .sf-dump .sf-dump-public.sf-dump-ellipsis,
+            .sf-dump .sf-dump-protected.sf-dump-ellipsis,
+            .sf-dump .sf-dump-private.sf-dump-ellipsis {
+                color: #52e3f6;
+            }
+
+            .sf-dump .sf-dump-sql {
+                color: #52e3f6;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="sf-dump-container">
+            <div class="sf-dump-two"></div>
+            <pre class="sf-dump">
+                <h4 class="sf-dump-public"><a>DETAILS</a></h4>
+HTML;
+
     var_dump($value);
-    echo '</pre>';
-    echo '</div>';
-    echo '</div>';
-    echo '</body>';
-    echo '</html>';
+
+    echo <<<HTML
+            </pre>
+        </div>
+    </body>
+    </html>
+HTML;
+
     die;
 }
 
-function dd($value, $isHTML = false): string
+function dump($value, $die = true)
 {
-    $htmlOutput = '<html>';
-    $htmlOutput .= '<head>';
-    $htmlOutput .= '<style>
-        body {
-            margin: 0;
-            padding: 0;
-            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #E6F7FF;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-        }
-        .container {
-            display: flex;
-            border: 1px solid #ccc;
-            background-color: #fff6f6;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-        .left-column {
-            flex: 1;
-            padding: 20px;
-            text-align: center;
-            background-color: #ff6b6b;
-        }
-        .right-column {
-            flex: 2;
-            background-color: #000;
-            color: #4caf50;
-            padding: 20px;
-            white-space: pre-wrap;
-        }
-        h2 {
-            font-size: 24px;
-            margin-bottom: 20px;
-        }
-        pre {
-            padding: 10px;
-            margin: 5px;
-            font-size: 18px;
-            font-weight: bold;
-            white-space: pre-wrap;
-            overflow-wrap: break-word;
-        }
-    </style>';
-    $htmlOutput .= '</head>';
-    $htmlOutput .= '<body>';
-    $htmlOutput .= '<div class="container">';
-    $htmlOutput .= '<div class="left-column">';
-    $htmlOutput .= '<h2>PHPStrike Framework Details</h2>';
-    $htmlOutput .= 'PHPStrike version: 1.0<br>';
-    $htmlOutput .= 'Details: Dump and Die method to view<br>';
-    $htmlOutput .= 'Details of passed in data.<br>';
-    $htmlOutput .= 'Error code: 500<br>';
-    $htmlOutput .= 'Error message: This is an error message.<br>';
-    $htmlOutput .= '</div>';
-    $htmlOutput .= '<div class="right-column">';
-    $htmlOutput .= '<h2>PHPStrike DND</h2>';
-    $htmlOutput .= '<pre>';
-    ob_start(); // Start output buffering
+    echo "<pre style='background:#282828; color:#52e3f6; padding:16px;border-radius:6px;overflow:hidden;word-wrap:normal;font: 12px Menlo, Monaco, monospace;text-align: left;white-space: pre;direction: ltr;line-height: 1.2;z-index: 100000;margin:0;font-size:15px;margin-bottom:5px;'>";
     var_dump($value);
-    $htmlOutput .= ob_get_clean(); // Capture the var_dump output and add it to the HTML
-    $htmlOutput .= '</pre>';
-    $htmlOutput .= '</div>';
-    $htmlOutput .= '</div>';
-    $htmlOutput .= '</body>';
-    $htmlOutput .= '</html>';
+    echo "</pre>";
 
-    if ($isHTML) {
-        // If it's an HTML page, echo the HTML directly
-        echo $htmlOutput;
-    } else {
-        // If it's not an HTML page, return the HTML as a string
-        return $htmlOutput;
+    if ($die) {
+        die;
     }
-
-    die;
 }
 
 function redirect($url, $status_code = 302, $headers = [], $query_params = [], $exit = true)
