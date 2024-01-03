@@ -18,16 +18,12 @@ class Upload
     protected $allowedFileTypes = [];
     protected $maxFileSize = self::DEFAULT_MAX_FILE_SIZE;
     protected $overwriteExisting = false;
+    protected $required = true;
 
     public function __construct(string $uploadDir)
     {
         $this->uploadDir = $uploadDir;
-        // Ensure the upload directory exists or create it if it doesn't.
-        if (!file_exists($uploadDir)) {
-            if (!mkdir($uploadDir, 0777, true)) {
-                throw new \RuntimeException('Failed to create the upload directory.');
-            }
-        }
+        $this->ensureUploadDirectoryExists($uploadDir);
     }
 
     public function setAllowedFileTypes(array $allowedFileTypes): void
@@ -45,48 +41,27 @@ class Upload
         $this->overwriteExisting = $overwriteExisting;
     }
 
+    public function setRequired(bool $required): void
+    {
+        $this->required = $required;
+    }
+
     public function uploadFile(string $fileInputName, bool $rename = true): array
     {
-        if (!isset($_FILES[$fileInputName]) || empty($_FILES[$fileInputName]['name'])) {
+        if ($this->required && (!$this->hasFile($fileInputName))) {
             return ['error' => 'No file found for upload.'];
         }
 
-        if (isset($_FILES[$fileInputName])) {
-            $file = $_FILES[$fileInputName];
+        $file = $_FILES[$fileInputName];
 
-            if ($file['error'] === UPLOAD_ERR_OK) {
-                $fileName = $rename ? $this->generateUniqueFileName($file['name']) : $file['name'];
-                $fileTmpPath = $file['tmp_name'];
-                $fileSize = $file['size'];
-
-                if ($fileSize > $this->maxFileSize) {
-                    return ['error' => 'File size exceeds the allowed limit. ' . $this->formatBytes($this->maxFileSize)];
-                }
-
-                $fileType = mime_content_type($fileTmpPath);
-
-                if (!in_array($fileType, $this->allowedFileTypes)) {
-                    return ['error' => 'Invalid file type.'];
-                }
-
-                $uploadPath = $this->uploadDir . '/' . $fileName;
-
-                if (!$this->overwriteExisting && file_exists($uploadPath)) {
-                    return ['error' => 'A file with the same name already exists.'];
-                }
-
-                if (move_uploaded_file($fileTmpPath, $uploadPath)) {
-                    return ['success' => 'File uploaded successfully.', 'path' => $uploadPath];
-                } else {
-                    return ['error' => 'File upload failed.'];
-                }
-            } else {
-                return ['error' => 'Error during file upload.'];
-            }
+        if ($file['error'] !== UPLOAD_ERR_OK) {
+            return ['error' => 'Error during file upload.'];
         }
+
+        return $this->handleValidUpload($file, $rename);
     }
 
-    public function deleteFile($filePath)
+    public function deleteFile($filePath): bool
     {
         if (file_exists($filePath)) {
             unlink($filePath);
@@ -96,17 +71,59 @@ class Upload
         return false;
     }
 
-    protected function generateUniqueFileName($originalFileName)
+    protected function ensureUploadDirectoryExists(string $uploadDir): void
+    {
+        if (!file_exists($uploadDir) && !mkdir($uploadDir, 0777, true)) {
+            throw new \RuntimeException('Failed to create the upload directory.');
+        }
+    }
+
+    protected function hasFile(string $fileInputName): bool
+    {
+        return isset($_FILES[$fileInputName]) && !empty($_FILES[$fileInputName]['name']);
+    }
+
+    protected function handleValidUpload(array $file, bool $rename): array
+    {
+        $fileName = $rename ? $this->generateUniqueFileName($file['name']) : $file['name'];
+        $fileTmpPath = $file['tmp_name'];
+        $fileSize = $file['size'];
+
+        if ($fileSize > $this->maxFileSize) {
+            return ['error' => 'File size exceeds the allowed limit. ' . $this->formatBytes($this->maxFileSize)];
+        }
+
+        $fileType = mime_content_type($fileTmpPath);
+
+        if (!in_array($fileType, $this->allowedFileTypes)) {
+            return ['error' => 'Invalid file type.'];
+        }
+
+        $uploadPath = $this->uploadDir . '/' . $fileName;
+
+        if (!$this->overwriteExisting && file_exists($uploadPath)) {
+            return ['error' => 'A file with the same name already exists.'];
+        }
+
+        return $this->moveFileToUploadDirectory($fileTmpPath, $uploadPath);
+    }
+
+    protected function moveFileToUploadDirectory(string $fileTmpPath, string $uploadPath): array
+    {
+        if (move_uploaded_file($fileTmpPath, $uploadPath)) {
+            return ['success' => 'File uploaded successfully.', 'path' => $uploadPath];
+        }
+
+        return ['error' => 'File upload failed.'];
+    }
+
+    protected function generateUniqueFileName(string $originalFileName): string
     {
         $extension = pathinfo($originalFileName, PATHINFO_EXTENSION);
         $fileName = pathinfo($originalFileName, PATHINFO_FILENAME);
-
-        // Limit the length of the file name to 100 characters
         $fileName = substr($fileName, 0, 15);
 
-        $uniqueFileName = $fileName . '_' . uniqid() . '.' . $extension;
-
-        return $uniqueFileName;
+        return $fileName . '_' . uniqid() . '.' . $extension;
     }
 
     private function formatBytes(int $bytes, $precision = 2, $decimalSeparator = '.', $thousandsSeparator = ','): string
@@ -114,14 +131,9 @@ class Upload
         $units = ['B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
 
         $bytes = max($bytes, 0);
-
-        // Use a more precise logarithm function for accurate results
         $pow = floor(log($bytes, 1024));
-
-        // Ensure the calculated unit is within the defined range
         $pow = min($pow, count($units) - 1);
 
-        // Calculate the size with the specified precision
         $formattedSize = number_format($bytes / (1024 ** $pow), $precision, $decimalSeparator, $thousandsSeparator);
 
         return $formattedSize . ' ' . $units[$pow];
