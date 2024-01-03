@@ -555,9 +555,10 @@ function get_image(?string $path = null, string $type = 'post'): string
     }
 
     // If $type exists in the defaultImageMap, return the corresponding default image
-    if (isset($defaultImageMap[$type])) {
-        return URL_ROOT . ($defaultImageMap[$type]);
+    if (empty($path) && isset($defaultImageMap[$type])) {
+        return URL_ROOT . $defaultImageMap[$type];
     }
+    return $path;
 }
 
 function get_assets_directory($directory): string
