@@ -6,6 +6,7 @@ use celionatti\Bolt\Bolt;
 use celionatti\Bolt\Helpers\Csrf;
 use celionatti\Bolt\View\BoltView;
 use celionatti\Bolt\BoltException\BoltException;
+use celionatti\Bolt\Authentication\BoltAuthentication;
 
 function bolt_env($data)
 {
@@ -931,4 +932,28 @@ function toast($type, $message)
 
     $toastr = $_SESSION['__flash_toastr'] ?? null;
     return $toastr;
+}
+
+function hasAccess(array $allowedRoles = [], string $action = 'view', array $excludedRoles = []): bool
+{
+    $currentUser = BoltAuthentication::currentUser();
+
+    if ($currentUser) {
+        $accessRules = ACCESS_RULES;
+
+        // Input validation
+        if (!array_key_exists($action, $accessRules)) {
+            throw new InvalidArgumentException('Invalid action provided');
+        }
+
+        $userRole = $currentUser->role;
+        $allowedRolesForAction = $accessRules[$action];
+
+        // Check if the user role is allowed for the action and is not in the excluded roles
+        return in_array($userRole, $allowedRolesForAction) && !in_array($userRole, $excludedRoles);
+    } else {
+        // User is not logged in, handle accordingly
+        // For example: redirect("/login");
+        return false;
+    }
 }
