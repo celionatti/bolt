@@ -1,5 +1,6 @@
 {
     "name": "celionatti/bolt",
+    "description": "Bolt is a popular open-source content management system (CMS) and application framework that is designed to be easy to use and flexible. It's known for its simplicity and speed, making it a good choice for developers looking to create websites and web applications quickly.",
     "type": "library",
     "license": "MIT",
     "autoload": {
@@ -15,6 +16,7 @@
     ],
     "minimum-stability": "stable",
     "require": {
+        "php": ">=7.2",
         "symfony/yaml": "^6.3",
         "twig/twig": "^3.7",
         "jenssegers/blade": "^1.4",
