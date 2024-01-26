@@ -17,6 +17,11 @@ function bolt_env($data)
     return false;
 }
 
+function loginUser()
+{
+    return BoltAuthentication::currentUser() ?? null;
+}
+
 function generateUuidV4()
 {
     // Generate 16 bytes of random data
@@ -433,8 +438,8 @@ function dump($value, $die = true)
 
 function redirect($url, $status_code = 302, $headers = [], $query_params = [], $exit = true)
 {
-    // Ensure a valid HTTP status code is used
-    if (!in_array($status_code, [301, 302, 303, 307, 308])) {
+   // Ensure a valid HTTP status code is used
+    if (!is_numeric($status_code) || $status_code < 100 || $status_code >= 600) {
         $status_code = 302; // Default to a temporary (302) redirect
     }
 
