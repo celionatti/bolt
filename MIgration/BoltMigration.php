@@ -653,6 +653,12 @@ class BoltMigration extends Database
      */
     public function build($addForeignKeys = false)
     {
+        // Check if the table already exists
+        if ($this->tableExists()) {
+            $this->consoleLog("Table '{$this->table}' already exists. Skipping migration.", false, true, 'info');
+            return;
+        }
+
         $sql = "CREATE TABLE IF NOT EXISTS {$this->table} (";
 
         foreach ($this->columns as $column) {
@@ -712,6 +718,15 @@ class BoltMigration extends Database
             $this->consoleLog("SQL Error: " . $e->getMessage(), true, true, 'error');
             return false;
         }
+    }
+
+    private function tableExists()
+    {
+        // Check if the table already exists in the database
+        $sql = "SHOW TABLES LIKE '{$this->table}'";
+        $result = $this->executeSql($sql);
+
+        return ($result && $result->rowCount() > 0);
     }
 
 
