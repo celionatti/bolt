@@ -328,7 +328,7 @@ class AuthenticationCommand implements CommandInterface
 
         $output .= "\033[0m"; // Reset color
 
-        echo $output;
+        echo $output . PHP_EOL;
 
         if ($die) {
             die();

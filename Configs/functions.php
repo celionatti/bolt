@@ -718,7 +718,7 @@ function console_logger(string $message, bool $die = false, bool $timestamp = tr
 
     $output .= "\033[0m"; // Reset color
 
-    echo $output;
+    echo $output . PHP_EOL;
     ob_flush();
 
     if ($die) {

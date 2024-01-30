@@ -121,7 +121,7 @@ class BoltAuthentication extends DatabaseModel
 
     private function setAuthenticatedUser($userId)
     {
-        $this->session->set("authenticated_user", $userId);
+        $this->session->set("auth_user", $userId);
     }
 
     private function generateAndStoreRememberMeToken($userId)
@@ -153,13 +153,13 @@ class BoltAuthentication extends DatabaseModel
             'token_hash' => $token, 
             'expiration' => $expiration
         ]);
-        Cookie::set("remember_me_auth_token", $token, $expiration);
+        Cookie::set("natti_at", $token, $expiration);
     }
 
     public function getCurrentUser()
     {
-        if (!$this->_currentUser && $this->session->has("authenticated_user")) {
-            $userId = $this->session->get("authenticated_user");
+        if (!$this->_currentUser && $this->session->has("auth_user")) {
+            $userId = $this->session->get("auth_user");
             $this->_currentUser = $this->findOne(['user_id' => $userId]);
         }
 
@@ -183,8 +183,8 @@ class BoltAuthentication extends DatabaseModel
     private function fromCookie()
     {
         $userSessions = new UserSessions();
-        if (Cookie::has("remember_me_auth_token")) {
-            $hash = Cookie::get("remember_me_auth_token");
+        if (Cookie::has("natti_at")) {
+            $hash = Cookie::get("natti_at");
             $session = $userSessions->findByHash($hash);
             if ($session) {
                 $this->setAuthenticatedUser($session->user_id);
@@ -195,9 +195,9 @@ class BoltAuthentication extends DatabaseModel
     public function logout()
     {
         $this->clearUserSessions($this->_currentUser->user_id);
-        $this->session->remove("authenticated_user");
+        $this->session->remove("auth_user");
         $this->_currentUser = null;
-        Cookie::delete("remember_me_auth_token");
+        Cookie::delete("natti_at");
     }
 
     private function clearUserSessions($userId)

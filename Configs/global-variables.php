@@ -22,3 +22,7 @@ if (!defined('ACCESS_RULES')) {
         // Add more actions and roles as needed
     ]);
 }
+
+if (!defined('COOKIE_SECRET')) {
+    define('COOKIE_SECRET', "");
+}

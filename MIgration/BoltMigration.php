@@ -136,6 +136,34 @@ class BoltMigration extends Database
     }
 
     /**
+ * Define a DECIMAL column with the specified name, precision, and scale.
+ *
+ * @param string $columnName The name of the DECIMAL column.
+ * @param int $precision The total number of digits.
+ * @param int $scale The number of digits after the decimal point.
+ * @return $this
+ */
+public function decimal($columnName, $precision, $scale)
+{
+    if ($this->dataType === 'mysql') {
+        $this->columns[] = [
+            'name' => $columnName,
+            'type' => "DECIMAL({$precision}, {$scale})",
+        ];
+    } elseif ($this->dataType === 'pgsql') {
+        $this->columns[] = [
+            'name' => $columnName,
+            'type' => "DECIMAL({$precision}, {$scale})",
+        ];
+    } else {
+        $this->consoleLog("Unsupported database type: {$this->dataType}", true, true, 'error');
+        return $this;
+    }
+
+    return $this;
+}
+
+    /**
      * Define a TINYINT column with the specified name.
      *
      * @param string $columnName The name of the TINYINT column.
@@ -764,7 +792,7 @@ class BoltMigration extends Database
 
         $output .= "\033[0m"; // Reset color
 
-        echo $output;
+        echo $output . PHP_EOL;
 
         if ($die) {
             die();
