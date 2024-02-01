@@ -11,15 +11,23 @@ declare(strict_types=1);
  */
 
 namespace PhpStrike\controllers;
+use celionatti\Bolt\Http\Request;
 
 use celionatti\Bolt\Controller;
 
 class {CLASSNAME} extends Controller
 {
+    public $currentUser = null;
+
     public function onConstruct(): void
     {
+        $this->currentUser = user();
         // To add middleware, if middleware is for all the controller page, dont all the array. ['users'].
-        $this->registerMiddleware(new AuthMiddleware(['users']));    
+        $this->registerMiddleware(new AuthMiddleware(['users'])); 
+
+        // if (!hasAccess([], 'all', ['user', 'guest'])) {
+        //     redirect("/", 401);
+        // }   
     }
 
     public function welcome()

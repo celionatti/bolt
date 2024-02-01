@@ -16,17 +16,8 @@ use celionatti\Bolt\Database\DatabaseModel;
 
 class {CLASSNAME} extends DatabaseModel
 {
-    /**
-     * here is how to define const
-     */
-    const GREETING = "Bolt {CLASSNAME}";
+    private $scenario = 'create'; // Default scenario is 'create'
 
-    /**
-     * Also for defining variables
-     */
-    public string $name = "Bolt";
-    public string $version;
-    private $isInsertion = false; // Default to the login scenario
 
     /**
      * If incase you are using __construct
@@ -39,8 +30,6 @@ class {CLASSNAME} extends DatabaseModel
         // Set some default values
         $this->limit = 20;
         $this->order = 'asc';
-
-        // Additional custom initialization code
     }
 
     public static function tableName():string
@@ -53,99 +42,102 @@ class {CLASSNAME} extends DatabaseModel
         $this->isInsertion = $isInsertion;
     }
 
-    public function isInsertionScenario(): bool
+    public function setIsInsertionScenario(string $scenario)
     {
-        return $this->isInsertion;
+        // You can validate the scenario here if needed
+        $this->scenario = $scenario;
     }
 
     /**
      * Validation Mode -- Option One.
      *
      */
-    public function rules(): array
+    public function rules(string $scenario = null): array
     {
-        // Validation rules for user insertion (registration)
-        $insertionRules = [
-            'surname' => [
-                ['rule' => 'required', 'message' => 'Surname is required.'],
-                ['rule' => 'maxLength', 'params' => [15], 'message' => 'Surname is a minimum of 20 characters.'],
-                ['rule' => 'alpha', 'message' => 'Only Alphabet characters are allowed.'],
+        // Define validation rules for different scenarios
+        $rules = [
+            'signup' => [
+                'surname' => [
+                    ['rule' => 'required', 'message' => 'Surname is required.'],
+                    ['rule' => 'maxLength', 'params' => [15], 'message' => 'Surname is a minimum of 20 characters.'],
+                    ['rule' => 'alpha', 'message' => 'Only Alphabet characters are allowed.'],
+                ],
+                'othername' => [
+                    ['rule' => 'required', 'message' => 'Othername is required.'],
+                    ['rule' => 'maxLength', 'params' => [15], 'message' => 'Othername is a minimum of 20 characters.'],
+                    ['rule' => 'alpha', 'message' => 'Only Alphabet characters are allowed.'],
+                ],
+                'email' => [
+                    ['rule' => 'required', 'message' => 'Email is required.'],
+                    ['rule' => 'email', 'message' => 'Email must be a valid email address.'],
+                ],
+                'phone' => [
+                    ['rule' => 'required', 'message' => 'Phone Number is Required.'],
+                    ['rule' => 'numeric', 'message' => 'Only Numbers are allowed.'],
+                ],
+                'gender' => [
+                    ['rule' => 'required', 'message' => 'Gender is Required.'],
+                ],
+                'terms' => [
+                    ['rule' => 'required', 'message' => 'Terms and conditions are required'],
+                ],
+                'password' => [
+                    ['rule' => 'required', 'message' => 'Password is Required.'],
+                    ['rule' => 'securePassword', 'message' => 'Password is not strong enough.'],
+                ],
+                'confirm_password' => [
+                    ['rule' => 'required', 'message' => 'Confirm Password is Required.'],
+                ],
             ],
-            'othername' => [
-                ['rule' => 'required', 'message' => 'Othername is required.'],
-                ['rule' => 'maxLength', 'params' => [15], 'message' => 'Othername is a minimum of 20 characters.'],
-                ['rule' => 'alpha', 'message' => 'Only Alphabet characters are allowed.'],
+            'login' => [
+                'email' => [
+                    ['rule' => 'required', 'message' => 'Email is required.'],
+                    ['rule' => 'email', 'message' => 'Email must be a valid email address.'],
+                ],
+                'password' => [
+                    ['rule' => 'required', 'message' => 'Password is Required.'],
+                ],
             ],
-            'email' => [
-                ['rule' => 'required', 'message' => 'Email is required.'],
-                ['rule' => 'email', 'message' => 'Email must be valid email address.'],
-            ],
-            'phone' => [
-                ['rule' => 'required', 'message' => 'Phone Number is Required.'],
-                ['rule' => 'numeric', 'message' => 'Only Numbers are allowed.'],
-            ],
-            'gender' => [
-                ['rule' => 'required', 'message' => 'Gender is Required.'],
-            ],
-            'password' => [
-                ['rule' => 'required', 'message' => 'Password is Required.'],
-                ['rule' => 'securePassword', 'message' => 'Password is not strong enough.'],
-            ],
-            'confirm_password' => [
-                ['rule' => 'required', 'message' => 'Confirm Password is Required.'],
+            'admin' => [
+                'surname' => [
+                    ['rule' => 'required', 'message' => 'Surname is required.'],
+                    ['rule' => 'maxLength', 'params' => [15], 'message' => 'Surname is a minimum of 20 characters.'],
+                    ['rule' => 'alpha', 'message' => 'Only Alphabet characters are allowed.'],
+                ],
+                'othername' => [
+                    ['rule' => 'required', 'message' => 'Othername is required.'],
+                    ['rule' => 'maxLength', 'params' => [15], 'message' => 'Othername is a minimum of 20 characters.'],
+                    ['rule' => 'alpha', 'message' => 'Only Alphabet characters are allowed.'],
+                ],
+                'email' => [
+                    ['rule' => 'required', 'message' => 'Email is required.'],
+                    ['rule' => 'email', 'message' => 'Email must be a valid email address.'],
+                ],
+                'phone' => [
+                    ['rule' => 'required', 'message' => 'Phone Number is Required.'],
+                    ['rule' => 'numeric', 'message' => 'Only Numbers are allowed.'],
+                ],
+                'gender' => [
+                    ['rule' => 'required', 'message' => 'Gender is Required.'],
+                ],
+                'role' => [
+                    ['rule' => 'required', 'message' => 'Role is Required.'],
+                ],
+                'terms' => [
+                    ['rule' => 'required', 'message' => 'Terms and conditions are required'],
+                ],
             ],
         ];
 
-        // Validation rules for user login
-        $loginRules = [
-            'email' => [
-                ['rule' => 'required', 'message' => 'Email is required.'],
-                ['rule' => 'email', 'message' => 'Email must be valid email address.'],
-            ],
-            'password' => [
-                ['rule' => 'required', 'message' => 'Password is Required.'],
-            ]
-        ];
+        // Determine the scenario to use or fallback to the default
+        $scenario = $scenario ?: $this->scenario;
 
-        // Define the rules based on the scenario (insertion or login)
-        return $this->isInsertionScenario() ? $insertionRules : $loginRules;
+        return $rules[$scenario] ?? [];
     }
 
-    /**
-     * Validation Mode -- Option Two.
-     *
-     */
-    // public function rules(): array
-    // {
-    //     return [
-    //         'username' => [
-    //             ['rule' => 'required', 'message' => 'Username is required.'],
-    //             ['rule' => 'maxLength', 'params' => [15], 'message' => 'Username characters is too long.'],
-    //             ['rule' => 'alpha', 'message' => 'Only Alphabet characters are allowed.'],
-    //         ],
-    //         'name' => [
-    //             ['rule' => 'required', 'message' => 'Name is required.'],
-    //             ['rule' => 'maxLength', 'params' => [255], 'message' => 'Name characters is too long.'],
-    //         ],
-    //         'email' => [
-    //             ['rule' => 'required', 'message' => 'Email is required.'],
-    //             ['rule' => 'maxLength', 'params' => [100], 'message' => 'Email is too long.'],
-    //             ['rule' => 'email', 'message' => 'Email must be valid email address.'],
-    //         ],
-    //         'phone' => [
-    //             ['rule' => 'required', 'message' => 'Phone Number is Required.'],
-    //             ['rule' => 'numeric', 'message' => 'Only Numbers are allowed.'],
-    //         ],
-    //         'password' => [
-    //             ['rule' => 'required', 'message' => 'Password is Required.'],
-    //             ['rule' => 'securePassword', 'message' => 'Password is not strong enough.'],
-    //         ],
-    //         'confirm_password' => [
-    //             ['rule' => 'required', 'message' => 'Confirm Password is Required.'],
-    //             ['rule' => 'passwordsMatch', 'params' => ['password'], 'message' => 'Passwords do not match.'],
-    //         ],
-    //     ];
-    // }
+    public function beforeSave(): void
+    {
+    }
 
     /**
      * This are just samples.
@@ -166,10 +158,5 @@ class {CLASSNAME} extends DatabaseModel
     public static function delete($conditions)
     {
         return self::deleteBy($conditions);
-    }
-
-    public function others()
-    {
-        
     }
 }

@@ -11,6 +11,7 @@ declare(strict_types=1);
  */
 
 namespace PhpStrike\controllers;
+use celionatti\Bolt\Http\Request;
 
 use celionatti\Bolt\Controller;
 
