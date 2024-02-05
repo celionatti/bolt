@@ -247,13 +247,22 @@ class BoltQueryBuilder
     private function executeQuery()
     {
         try {
-            $this->query = $this->query . '' . implode(' ', $this->joinClauses);
-            $stm = $this->connection->prepare($this->query);
+            // Combine the main query and join clauses
+            $fullQuery = $this->query;
 
+            if (!empty($this->joinClauses)) {
+                $fullQuery .= ' ' . implode(' ', $this->joinClauses);
+            }
+
+            // Prepare the combined query
+            $stm = $this->connection->prepare($fullQuery);
+
+            // Bind values
             foreach ($this->bindValues as $param => $value) {
                 $stm->bindValue($param, $value);
             }
 
+            // Execute the query
             $stm->execute();
 
             return $stm;
@@ -263,30 +272,33 @@ class BoltQueryBuilder
         }
     }
 
-    public function join($table, $onClause, $type = 'INNER')
+    public function join(string $table, string $onClause, string $type = 'INNER')
     {
-        if ($this->currentStep !== 'initial' && $this->currentStep !== 'select' && $this->currentStep !== 'count' && $this->currentStep !== 'raw') {
-            throw new \Exception('Invalid method order. JOIN should come after SELECT, WHERE, ORDER BY, GROUP BY, or a previous JOIN.');
-        }
+        $this->validateJoinMethod();
 
-        if (!is_string($table) || empty($table)) {
-            throw new \InvalidArgumentException('Invalid argument for JOIN method. Table name must be a non-empty string.');
-        }
-
-        if (!is_string($onClause) || empty($onClause)) {
-            throw new \InvalidArgumentException('Invalid argument for JOIN method. ON clause must be a non-empty string.');
-        }
-
-        if ($type !== 'INNER' && $type !== 'LEFT' && $type !== 'RIGHT' && $type !== 'OUTER') {
-            throw new \InvalidArgumentException('Invalid argument for JOIN method. Invalid join type.');
-        }
-
-        if (!is_string($table) || !is_string($onClause)) {
-            throw new \InvalidArgumentException('Invalid arguments for JOIN method.');
-        }
+        $this->validateJoinArguments($table, $onClause, $type);
 
         $this->joinClauses[] = "$type JOIN $table ON $onClause";
+
+        $this->currentStep = 'join';
+
         return $this;
+    }
+
+    private function validateJoinMethod()
+    {
+        $allowedPreviousSteps = ['initial', 'select', 'count', 'raw'];
+
+        if (!in_array($this->currentStep, $allowedPreviousSteps)) {
+            throw new \Exception('Invalid method order. JOIN should come after SELECT, COUNT, or a previous JOIN.');
+        }
+    }
+
+    private function validateJoinArguments(string $table, string $onClause, string $type)
+    {
+        if (empty($table) || empty($onClause) || !in_array($type, ['INNER', 'LEFT', 'RIGHT', 'OUTER'])) {
+            throw new \InvalidArgumentException('Invalid arguments for JOIN method.');
+        }
     }
 
     public function leftJoin($table, $onClause)
@@ -374,7 +386,8 @@ class BoltQueryBuilder
         }
 
         $this->query = $sql;
-        $this->bindValues = $bindValues;
+        $this->bindValues = array_merge($this->bindValues, $bindValues);
+        // $this->bindValues = $bindValues;
         $this->currentStep = 'raw';
 
         return $this;
