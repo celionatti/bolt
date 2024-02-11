@@ -68,9 +68,10 @@ class Pagination
 
         if ($this->getTotalPages() > 1) {
             $links .= '<nav aria-label="Page navigation"><ul class="pagination">';
-            
+
             if ($this->hasPreviousPage()) {
-                $links .= '<li class="page-item"><a class="page-link" href="' . $url . '&page=' . $this->getPreviousPage() . '">Previous</a></li>';
+                $prevUrl = $url . ((strpos($url, '?') !== false) ? '&' : '?') . 'page=' . $this->getPreviousPage();
+                $links .= '<li class="page-item"><a class="page-link" href="' . $prevUrl . '">Prev</a></li>';
             }
 
             $maxLinks = 5; // Maximum links to show before and after the current page
@@ -79,7 +80,7 @@ class Pagination
             $endPage = min($this->getTotalPages(), $startPage + $maxLinks - 1);
 
             if ($startPage > 1) {
-                $links .= '<li class="page-item"><a class="page-link" href="' . $url . '&page=1">1</a></li>';
+                $links .= '<li class="page-item"><a class="page-link" href="' . $url . ((strpos($url, '?') !== false) ? '&' : '?') . 'page=1">1</a></li>';
                 if ($startPage > 2) {
                     $links .= '<li class="page-item disabled"><span class="page-link">...</span></li>';
                 }
@@ -87,18 +88,20 @@ class Pagination
 
             for ($i = $startPage; $i <= $endPage; $i++) {
                 $activeClass = ($i == $this->currentPage) ? 'active' : '';
-                $links .= '<li class="page-item ' . $activeClass . '"><a class="page-link" href="' . $url . '&page=' . $i . '">' . $i . '</a></li>';
+                $pageUrl = $url . ((strpos($url, '?') !== false) ? '&' : '?') . 'page=' . $i;
+                $links .= '<li class="page-item ' . $activeClass . '"><a class="page-link" href="' . $pageUrl . '">' . $i . '</a></li>';
             }
 
             if ($endPage < $this->getTotalPages()) {
                 if ($endPage < $this->getTotalPages() - 1) {
                     $links .= '<li class="page-item disabled"><span class="page-link">...</span></li>';
                 }
-                $links .= '<li class="page-item"><a class="page-link" href="' . $url . '&page=' . $this->getTotalPages() . '">' . $this->getTotalPages() . '</a></li>';
+                $links .= '<li class="page-item"><a class="page-link" href="' . $url . ((strpos($url, '?') !== false) ? '&' : '?') . 'page=' . $this->getTotalPages() . '">' . $this->getTotalPages() . '</a></li>';
             }
 
             if ($this->hasNextPage()) {
-                $links .= '<li class="page-item"><a class="page-link" href="' . $url . '&page=' . $this->getNextPage() . '">Next</a></li>';
+                $nextUrl = $url . ((strpos($url, '?') !== false) ? '&' : '?') . 'page=' . $this->getNextPage();
+                $links .= '<li class="page-item"><a class="page-link" href="' . $nextUrl . '">Next</a></li>';
             }
 
             $links .= '</ul></nav>';
@@ -115,7 +118,8 @@ class Pagination
             $links .= '<ul class="pagination justify-content-center">';
 
             if ($this->hasPreviousPage()) {
-                $links .= '<li class="page-item"><a href="' . $url . '&page=' . $this->getPreviousPage() . '" class="page-link">&laquo;</a></li>';
+                $prevUrl = $url . ((strpos($url, '?') !== false) ? '&' : '?') . 'page=' . $this->getPreviousPage();
+                $links .= '<li class="page-item"><a href="' . $prevUrl . '" class="page-link">&laquo;</a></li>';
             }
 
             $maxLinks = 5; // Maximum links to show before and after the current page
@@ -125,11 +129,13 @@ class Pagination
 
             for ($i = $startPage; $i <= $endPage; $i++) {
                 $activeClass = ($i == $this->currentPage) ? 'active' : '';
-                $links .= '<li class="page-item ' . $activeClass . '"><a href="' . $url . '&page=' . $i . '" class="page-link">' . $i . '</a></li>';
+                $pageUrl = $url . ((strpos($url, '?') !== false) ? '&' : '?') . 'page=' . $i;
+                $links .= '<li class="page-item ' . $activeClass . '"><a href="' . $pageUrl . '" class="page-link">' . $i . '</a></li>';
             }
 
             if ($this->hasNextPage()) {
-                $links .= '<li class="page-item"><a href="' . $url . '&page=' . $this->getNextPage() . '" class="page-link">&raquo;</a></li>';
+                $nextUrl = $url . ((strpos($url, '?') !== false) ? '&' : '?') . 'page=' . $this->getNextPage();
+                $links .= '<li class="page-item"><a href="' . $nextUrl . '" class="page-link">&raquo;</a></li>';
             }
 
             $links .= '</ul>';
