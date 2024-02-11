@@ -277,20 +277,41 @@ abstract class DatabaseModel extends Model
     }
 
     // Find records with custom conditions and order, with pagination support
-    public function findAllByWithPagination(array $conditions, $page, $perPage, $orderByColumn, $orderDirection = 'asc')
+    public function findAllByWithPagination(array $conditions, $page = null, $perPage, $orderByColumn, $orderDirection = 'asc')
     {
+        // Check if $page is not set, and if so, try to get it from the URL query parameters
+        if ($page === null && isset($_GET['page'])) {
+            $page = (int)$_GET['page'];
+        }
+
+        // If $page is still not set or not a positive integer, default it to 1
+        $page = ($page && is_numeric($page) && $page > 0) ? $page : 1;
+
         $offset = ($page - 1) * $perPage;
-        return $this->getQueryBuilder()
+
+        // Get the total count without pagination
+        $totalCount = $this->count($conditions);
+
+        // Fetch the paginated data
+
+        $data = $this->getQueryBuilder()
             ->select()
             ->where($conditions)
             ->orderBy($orderByColumn, $orderDirection)
             ->limit($perPage)
             ->offset($offset)
             ->get();
+
+        return [
+            'data' => $data,
+            'total' => $totalCount,
+            'page' => $page,
+            'perPage' => $perPage,
+        ];
     }
 
     // Count records with custom conditions
-    public function countBy(array $conditions)
+    public function count(array $conditions)
     {
         return $this->getQueryBuilder()
             ->count()

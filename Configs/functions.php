@@ -962,3 +962,59 @@ function hasAccess(array $allowedRoles = [], string $action = 'view', array $exc
         return false;
     }
 }
+
+function formatCurrency($amount, $currencyCode = "NGN")
+{
+    // Define currency symbols
+    $currencySymbols = [
+        'USD' => '$', // Dollar
+        'NGN' => '₦', // Naira
+        'EUR' => '€', // Euro
+        // Add more currencies as needed
+    ];
+
+    // Check if the provided currency code is supported
+    if (array_key_exists($currencyCode, $currencySymbols)) {
+        // Convert the amount to float (if it's in string format)
+        $amount = floatval($amount);
+
+        // Format the amount with 2 decimal places and use commas for thousands
+        $formattedAmount = number_format($amount, 2);
+
+        // Concatenate the currency symbol with the formatted amount
+        $formattedCurrency = $currencySymbols[$currencyCode] . $formattedAmount;
+
+        return $formattedCurrency;
+    } else {
+        // If the currency code is not supported, return an error message
+        return 'Unsupported currency code';
+    }
+}
+
+function calReadTime($text, $wordsPerMinute = 200, $contentCategory = 'generic', $timeUnit = ' Min To Read') {
+    // Function to count the number of words in the text
+    $countWords = function ($text) {
+        return str_word_count(strip_tags($text));
+    };
+
+    // Adjust words per minute based on content category
+    $categorySpeeds = [
+        'generic' => 200,    // Default speed for generic content
+        'technical' => 150,  // Adjust for technical content
+        'leisure' => 250      // Adjust for leisurely reading
+        // Add more categories as needed
+    ];
+
+    $categorySpeed = isset($categorySpeeds[$contentCategory]) ? $categorySpeeds[$contentCategory] : $wordsPerMinute;
+
+    $wordCount = $countWords($text);
+
+    if ($wordCount <= 0 || $categorySpeed <= 0) {
+        return "Invalid input";
+    }
+
+    $minutes = ceil($wordCount / $categorySpeed);
+
+    return $minutes . $timeUnit;
+    // return $minutes . ($minutes == 1 ? $timeUnit : $timeUnit .'s');
+}

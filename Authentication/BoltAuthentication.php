@@ -44,6 +44,8 @@ class BoltAuthentication extends DatabaseModel
         $isValidCredentials = $this->authenticate($email, $password);
         $isValidEmail = $this->getUserValidEmail($email);
 
+        session_regenerate_id();
+
         if ($isAccountBlocked) {
             // Display a message indicating that the account is blocked.
             FlashMessage::setMessage("Account is blocked. Please contact support.", FlashMessage::WARNING, ['role' => 'alert', 'style' => 'z-index: 9999;']);
@@ -194,15 +196,16 @@ class BoltAuthentication extends DatabaseModel
 
     public function logout()
     {
-        $this->clearUserSessions($this->_currentUser->user_id);
+        $this->clearUserSessions($this->getCurrentUser()->user_id);
         $this->session->remove("auth_user");
         $this->_currentUser = null;
         Cookie::delete("natti_at");
+        session_regenerate_id();
     }
 
     private function clearUserSessions($userId)
     {
         $userSessions = new UserSessions();
-        $userSessions->delete(['user_id' => $userId]);
+        $userSessions->deleteBy(['user_id' => $userId]);
     }
 }

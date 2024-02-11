@@ -113,7 +113,7 @@ class BoltQueryBuilder
 
     public function delete()
     {
-        if ($this->currentStep !== 'initial' && $this->currentStep !== 'where' && $this->currentStep !== 'select' && $this->currentStep !== 'limit' && $this->currentStep !== 'raw') {
+        if (!in_array($this->currentStep, ['select', 'initial', 'limit', 'raw', 'where'])) {
             throw new \Exception('Invalid method order. DELETE should come before other query building methods.');
         }
 
@@ -125,8 +125,8 @@ class BoltQueryBuilder
 
     public function where(array $conditions)
     {
-        if ($this->currentStep !== 'update' && $this->currentStep !== 'select' && $this->currentStep !== 'where' && $this->currentStep !== 'delete' && $this->currentStep !== 'count' && $this->currentStep !== 'join' && $this->currentStep !== 'raw') {
-            throw new \Exception('Invalid method order. WHERE should come after SELECT, UPDATE, DELETE or a previous WHERE.');
+        if (!in_array($this->currentStep, ['select', 'update', 'delete', 'raw', 'where', 'join', 'count'])) {
+            throw new \Exception('Invalid method order. WHERE should come after SELECT, UPDATE, DELETE, or a previous WHERE.');
         }
 
         if (empty($conditions)) {
@@ -145,6 +145,64 @@ class BoltQueryBuilder
 
         $this->query .= " WHERE " . implode(' AND ', $where);
         $this->currentStep = 'where';
+
+        return $this;
+    }
+
+    public function join(string $table, string $onClause, string $type = 'INNER')
+    {
+        $this->validateJoinMethod();
+
+        $this->validateJoinArguments($table, $onClause, $type);
+
+        $this->joinClauses[] = "$type JOIN $table ON $onClause";
+
+        $this->currentStep = 'join';
+
+        return $this;
+    }
+
+    private function validateJoinMethod()
+    {
+        $allowedPreviousSteps = ['initial', 'select', 'count', 'raw'];
+
+        if (!in_array($this->currentStep, $allowedPreviousSteps)) {
+            throw new \Exception('Invalid method order. JOIN should come after SELECT, COUNT, or a previous JOIN.');
+        }
+    }
+
+    private function validateJoinArguments(string $table, string $onClause, string $type)
+    {
+        if (empty($table) || empty($onClause) || !in_array($type, ['INNER', 'LEFT', 'RIGHT', 'OUTER'])) {
+            throw new \InvalidArgumentException('Invalid arguments for JOIN method.');
+        }
+    }
+
+    public function leftJoin($table, $onClause)
+    {
+        return $this->join($table, $onClause, 'LEFT');
+    }
+
+    public function rightJoin($table, $onClause)
+    {
+        return $this->join($table, $onClause, 'RIGHT');
+    }
+
+    public function outerJoin($table, $onClause)
+    {
+        return $this->join($table, $onClause, 'OUTER');
+    }
+
+    public function count()
+    {
+        $allowedPreviousSteps = ['initial', 'select', 'count', 'raw', 'where'];
+
+        if (!in_array($this->currentStep, $allowedPreviousSteps)) {
+            throw new \Exception('Invalid method order. COUNT should come before other query building methods.');
+        }
+
+        $this->query = "SELECT COUNT(*) AS count FROM $this->table";
+        $this->currentStep = 'count';
 
         return $this;
     }
@@ -270,62 +328,6 @@ class BoltQueryBuilder
             // Handle database error, e.g., log or throw an exception
             throw new DatabaseException($e->getMessage());
         }
-    }
-
-    public function join(string $table, string $onClause, string $type = 'INNER')
-    {
-        $this->validateJoinMethod();
-
-        $this->validateJoinArguments($table, $onClause, $type);
-
-        $this->joinClauses[] = "$type JOIN $table ON $onClause";
-
-        $this->currentStep = 'join';
-
-        return $this;
-    }
-
-    private function validateJoinMethod()
-    {
-        $allowedPreviousSteps = ['initial', 'select', 'count', 'raw'];
-
-        if (!in_array($this->currentStep, $allowedPreviousSteps)) {
-            throw new \Exception('Invalid method order. JOIN should come after SELECT, COUNT, or a previous JOIN.');
-        }
-    }
-
-    private function validateJoinArguments(string $table, string $onClause, string $type)
-    {
-        if (empty($table) || empty($onClause) || !in_array($type, ['INNER', 'LEFT', 'RIGHT', 'OUTER'])) {
-            throw new \InvalidArgumentException('Invalid arguments for JOIN method.');
-        }
-    }
-
-    public function leftJoin($table, $onClause)
-    {
-        return $this->join($table, $onClause, 'LEFT');
-    }
-
-    public function rightJoin($table, $onClause)
-    {
-        return $this->join($table, $onClause, 'RIGHT');
-    }
-
-    public function outerJoin($table, $onClause)
-    {
-        return $this->join($table, $onClause, 'OUTER');
-    }
-
-    public function count()
-    {
-        if ($this->currentStep !== 'initial' && $this->currentStep !== 'select' && $this->currentStep !== 'raw') {
-            throw new \Exception('Invalid method order. COUNT should come before other query building methods.');
-        }
-
-        $this->query = "SELECT COUNT(*) AS count FROM $this->table";
-        $this->currentStep = 'count';
-
-        return $this;
     }
 
     public function distinct($columns = '*')
