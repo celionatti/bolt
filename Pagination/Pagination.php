@@ -62,7 +62,7 @@ class Pagination
         return ($this->hasNextPage()) ? $this->currentPage + 1 : null;
     }
 
-    public function bootstrapGenerateLinks($url)
+    public function generateBootstrapDotsLinks($url)
     {
         $links = '';
 
@@ -107,7 +107,7 @@ class Pagination
         return $links;
     }
 
-    public function customGenerateLinks($url)
+    public function generateBootstrapDefLinks($url)
     {
         $links = '';
 
