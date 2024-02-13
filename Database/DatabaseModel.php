@@ -359,6 +359,38 @@ abstract class DatabaseModel extends Model
             ->get();
     }
 
+    public function rawQueryPagination(array $conditions, string $sql, array $bindValues = [], $page = null, $perPage, $orderByColumn, $orderDirection = "desc")
+    {
+        // Check if $page is not set, and if so, try to get it from the URL query parameters
+        if ($page === null && isset($_GET['page'])) {
+            $page = (int)$_GET['page'];
+        }
+
+        // If $page is still not set or not a positive integer, default it to 1
+        $page = ($page && is_numeric($page) && $page > 0) ? $page : 1;
+
+        $offset = ($page - 1) * $perPage;
+
+        // Get the total count without pagination
+        $totalCount = $this->count($conditions);
+
+        // Fetch the paginated data
+
+        $data = $this->getQueryBuilder()
+            ->rawQuery($sql, $bindValues)
+            ->orderBy($orderByColumn, $orderDirection)
+            ->limit($perPage)
+            ->offset($offset)
+            ->get();
+
+        return [
+            'data' => $data,
+            'total' => $totalCount,
+            'page' => $page,
+            'perPage' => $perPage,
+        ];
+    }
+
     public function beforeSave(): void
     {
     }

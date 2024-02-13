@@ -123,7 +123,7 @@ class BoltQueryBuilder
         return $this;
     }
 
-    public function where(array $conditions)
+    public function where(array $conditions, string $operator = 'AND')
     {
         if (!in_array($this->currentStep, ['select', 'update', 'delete', 'raw', 'where', 'join', 'count'])) {
             throw new \Exception('Invalid method order. WHERE should come after SELECT, UPDATE, DELETE, or a previous WHERE.');
@@ -139,11 +139,17 @@ class BoltQueryBuilder
                 throw new \InvalidArgumentException('Invalid argument for WHERE method. Column names must be non-empty strings.');
             }
 
-            $where[] = "$column = :$column";
+            // Check if the value contains the '%' wildcard for LIKE condition
+            if (is_string($value) && strpos($value, '%') !== false) {
+                $where[] = "$column LIKE :$column";
+            } else {
+                $where[] = "$column = :$column";
+            }
+
             $this->bindValues[":$column"] = $value;
         }
 
-        $this->query .= " WHERE " . implode(' AND ', $where);
+        $this->query .= " WHERE " . implode(" $operator ", $where);
         $this->currentStep = 'where';
 
         return $this;
@@ -323,6 +329,9 @@ class BoltQueryBuilder
             // Execute the query
             $stm->execute();
 
+            // Clear existing bind values
+             $this->bindValues = [];
+
             return $stm;
         } catch (PDOException $e) {
             // Handle database error, e.g., log or throw an exception
@@ -381,19 +390,33 @@ class BoltQueryBuilder
     }
 
 
-    public function rawQuery(string $sql, array $bindValues = [])
+    // public function rawQuery(string $sql, array $bindValues = [])
+    // {
+    //     if ($this->currentStep !== 'initial' && $this->currentStep !== 'raw') {
+    //         throw new \Exception('Invalid method order. Raw query should come before other query building methods.');
+    //     }
+
+    //     $this->query = $sql;
+    //     $this->bindValues = array_merge($this->bindValues, $bindValues);
+    //     // $this->bindValues = $bindValues;
+    //     $this->currentStep = 'raw';
+
+    //     return $this;
+    // }
+
+    public function rawQuery(string $sql, array $bindValues = [], bool $clearExisting = false)
     {
-        if ($this->currentStep !== 'initial' && $this->currentStep !== 'raw') {
-            throw new \Exception('Invalid method order. Raw query should come before other query building methods.');
+        if ($clearExisting) {
+            $this->bindValues = [];
         }
 
         $this->query = $sql;
         $this->bindValues = array_merge($this->bindValues, $bindValues);
-        // $this->bindValues = $bindValues;
         $this->currentStep = 'raw';
 
         return $this;
     }
+
 
     public function alias(string $alias)
     {
