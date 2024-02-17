@@ -236,6 +236,26 @@ class Model
         return true; // Replace with actual implementation
     }
 
+    /**
+     * Filter text to search for certain patterns.
+     *
+     * @param string $text The text to be filtered.
+     * @param array $patterns An array of patterns to search for.
+     * @return bool True if any of the patterns are found, false otherwise.
+     */
+    public function filterText($text, array $patterns)
+    {
+        foreach ($patterns as $pattern) {
+            if (strpos($text, $pattern) !== false) {
+                // Pattern found in the text
+                return true;
+            }
+        }
+
+        // None of the patterns found in the text
+        return false;
+    }
+
     private function customValidationRule($value)
     {
         // Implement a custom validation rule here based on your specific requirements.
