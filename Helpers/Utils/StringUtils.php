@@ -56,15 +56,18 @@ class StringUtils
             $input = str_replace(' ', $options['separator'], $input);
         }
 
-        // Remove special characters
+        // Remove special characters except for those commonly found in URL queries
         if ($options['removeSpecialChars']) {
-            $input = preg_replace('/[^a-zA-Z0-9\-_]/', '', $input);
+            $input = preg_replace('/[^a-zA-Z0-9\-_&?=]/', '', $input);
         }
 
         // Convert the string to lowercase
         if ($options['convertToLowercase']) {
             $input = strtolower($input);
         }
+
+        // Check if the separator is already present and replace consecutive separators
+        $input = preg_replace('/' . preg_quote($options['separator'], '/') . '+/', $options['separator'], $input);
 
         return $input;
     }

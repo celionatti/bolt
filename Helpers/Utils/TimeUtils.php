@@ -10,6 +10,9 @@ declare(strict_types=1);
 
 namespace celionatti\Bolt\Helpers\Utils;
 
+use DateTime;
+use DateTimeZone;
+
 class TimeUtils
 {
 	/**
@@ -144,7 +147,7 @@ class TimeUtils
      * @param string $userTimezone
      * @return string
      */
-    public static function timeAgo($timestamp, $userTimezone = 'UTC', , $suffix = ' ago') {
+    public static function timeAgo($timestamp, $userTimezone = 'UTC', $suffix = ' ago') {
         $currentTime = time();
         $userTime = new DateTimeZone($userTimezone);
         $serverTime = new DateTimeZone(date_default_timezone_get());
