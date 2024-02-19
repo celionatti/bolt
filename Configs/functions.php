@@ -547,6 +547,7 @@ function get_image(?string $path = null, string $type = 'post'): string
     // Define default image paths
     $defaultImageMap = [
         'post' => '/assets/img/no_image.jpg',
+        'avatar' => '/assets/img/avatar.jpg',
         'male' => '/assets/img/user_male.jpg',
         'female' => '/assets/img/user_female.jpg',
         'icon' => '/assets/img/favicon.ico',
