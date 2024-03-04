@@ -176,6 +176,11 @@ class Model
         return preg_match('/^[a-zA-Z0-9\s]+$/', $value);
     }
 
+    private function alphaWithSpaces($value)
+    {
+        return preg_match('/^[a-zA-Z\s_-]+$/', $value);
+    }
+
     private function inList($value, $list)
     {
         return in_array($value, $list);

@@ -15,35 +15,20 @@ use DateTimeZone;
 
 class TimeUtils
 {
-	/**
-     * Get the current timestamp
-     *
-     * @return int
-     */
-    public static function getCurrentTimestamp() {
+	public const DEFAULT_FORMAT = 'Y-m-d H:i:s';
+
+    public static function getCurrentTimestamp(): int
+    {
         return time();
     }
 
-    /**
-     * Format a timestamp to a readable date and time
-     *
-     * @param int $timestamp
-     * @param string $format
-     * @return string
-     */
-    public static function formatTimestamp($timestamp, $format = 'Y-m-d H:i:s') {
+    public static function formatTimestamp(int $timestamp, string $format = self::DEFAULT_FORMAT): string
+    {
         return date($format, $timestamp);
     }
 
-    /**
-     * Calculate the difference between two timestamps
-     *
-     * @param int $timestamp1
-     * @param int $timestamp2
-     * @param string $interval
-     * @return int
-     */
-    public static function getTimestampDifference($timestamp1, $timestamp2, $interval = 'seconds') {
+    public static function getTimestampDifference(int $timestamp1, int $timestamp2, string $interval = 'seconds'): int|float
+    {
         $diff = abs($timestamp1 - $timestamp2);
 
         switch ($interval) {
@@ -62,125 +47,118 @@ class TimeUtils
         }
     }
 
-    /**
-     * Get the current date in a dynamic format
-     *
-     * @param string $format
-     * @return string
-     */
-    public static function getCurrentDate($format = 'Y-m-d') {
+    public static function getCurrentDate(string $format = 'Y-m-d'): string
+    {
         return date($format);
     }
 
-    /**
-     * Add or subtract time to a timestamp
-     *
-     * @param int $timestamp
-     * @param string $modifier
-     * @param int $value
-     * @return int
-     */
-    public static function modifyTimestamp($timestamp, $modifier, $value) {
+    public static function modifyTimestamp(int $timestamp, string $modifier, int $value): int
+    {
         $date = new DateTime();
         $date->setTimestamp($timestamp);
         $date->modify("$value $modifier");
+
         return $date->getTimestamp();
     }
 
-    /**
-     * Check if a timestamp is in the past
-     *
-     * @param int $timestamp
-     * @return bool
-     */
-    public static function isPast($timestamp) {
+    public static function isPast(int $timestamp): bool
+    {
         return $timestamp < time();
     }
 
-    /**
-     * Check if a timestamp is in the future
-     *
-     * @param int $timestamp
-     * @return bool
-     */
-    public static function isFuture($timestamp) {
+    public static function isFuture(int $timestamp): bool
+    {
         return $timestamp > time();
     }
 
-    /**
-     * Get the day of the week for a given timestamp
-     *
-     * @param int $timestamp
-     * @return string
-     */
-    public static function getDayOfWeek($timestamp) {
+    public static function getDayOfWeek(int $timestamp): string
+    {
         return date('l', $timestamp);
     }
 
-    /**
-     * Get the number of days in a given month
-     *
-     * @param int $month
-     * @param int $year
-     * @return int
-     */
-    public static function getDaysInMonth($month, $year) {
+    public static function getDaysInMonth(int $month, int $year): int
+    {
         return cal_days_in_month(CAL_GREGORIAN, $month, $year);
     }
 
-    /**
-     * Convert a date string to a timestamp
-     *
-     * @param string $dateString
-     * @param string $format
-     * @return int|false
-     */
-    public static function convertToDateTimestamp($dateString, $format = 'Y-m-d H:i:s') {
+    public static function convertToDateTimestamp(string $dateString, string $format = self::DEFAULT_FORMAT): int|false
+    {
         $dateTime = DateTime::createFromFormat($format, $dateString);
+
         return $dateTime ? $dateTime->getTimestamp() : false;
     }
 
-    /**
-     * Get the time ago string for a given timestamp
-     *
-     * @param int $timestamp
-     * @param string $userTimezone
-     * @return string
-     */
-    public static function timeAgo($timestamp, $userTimezone = 'UTC', $suffix = ' ago') {
+    public static function timeAgo($timestamp, $userTimezone = 'UTC', $suffix = ' ago'): string
+    {
+        // Convert string timestamp to int if needed
+        $timestamp = is_numeric($timestamp) ? (int)$timestamp : self::convertToDateTimestamp($timestamp);
+
         $currentTime = time();
         $userTime = new DateTimeZone($userTimezone);
-        $serverTime = new DateTimeZone(date_default_timezone_get());
 
-        $dateTime = new DateTime("@$timestamp");
+        $dateTime = self::createDateTimeFromTimestamp($timestamp);
+
+        if (!$dateTime) {
+            return 'Invalid timestamp';
+        }
+
         $dateTime->setTimezone($userTime);
 
-        $interval = $dateTime->diff(new DateTime("@$currentTime"));
+        $interval = $dateTime->diff(new DateTime());
         $suffix = ($interval->invert) ? $suffix : '';
 
-        if ($interval->y >= 1) {
-            return self::pluralize($interval->y, 'year') . $suffix;
-        } elseif ($interval->m >= 1) {
-            return self::pluralize($interval->m, 'month') . $suffix;
-        } elseif ($interval->d >= 1) {
-            return self::pluralize($interval->d, 'day') . $suffix;
-        } elseif ($interval->h >= 1) {
-            return self::pluralize($interval->h, 'hour') . $suffix;
-        } elseif ($interval->i >= 1) {
-            return self::pluralize($interval->i, 'minute') . $suffix;
-        } else {
-            return self::pluralize($interval->s, 'second') . $suffix;
+        $timeUnits = [
+            'year'   => $interval->y,
+            'month'  => $interval->m,
+            'day'    => $interval->d,
+            'hour'   => $interval->h,
+            'minute' => $interval->i,
+            'second' => $interval->s,
+        ];
+
+        foreach ($timeUnits as $unit => $value) {
+            if ($value >= 1) {
+                return self::pluralize($value, $unit) . $suffix;
+            }
         }
+
+        return self::pluralize($interval->s, 'second') . $suffix;
     }
 
-    /**
-     * Pluralize a word based on a count
-     *
-     * @param int $count
-     * @param string $word
-     * @return string
-     */
-    private static function pluralize($count, $word) {
-        return $count . ' ' . (($count == 1) ? $word : $word . 's');
+    public static function isLeapYear(int $year): bool
+    {
+        return ((($year % 4) === 0) && (($year % 100) !== 0) || (($year % 400) === 0));
+    }
+
+    public static function getNextWeekday(int $timestamp, int $weekday): int
+    {
+        $date = new DateTime();
+        $date->setTimestamp($timestamp);
+        $date->modify("next {$weekday}");
+
+        return $date->getTimestamp();
+    }
+
+    public static function getRandomDateInRange(int $startTimestamp, int $endTimestamp): int
+    {
+        $randomTimestamp = mt_rand($startTimestamp, $endTimestamp);
+
+        return self::normalizeTimestamp($randomTimestamp);
+    }
+
+    private static function createDateTimeFromTimestamp($timestamp): DateTime
+    {
+        return DateTime::createFromFormat('U', (string)$timestamp);
+    }
+
+    private static function pluralize(int $count, string $word): string
+    {
+        return "$count " . (($count === 1) ? $word : "${word}s");
+    }
+
+    private static function normalizeTimestamp(int $timestamp): int
+    {
+        // Custom logic to normalize the timestamp, if needed
+        return $timestamp;
     }
 }

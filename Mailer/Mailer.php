@@ -3,15 +3,15 @@
 declare(strict_types=1);
 
 /**
- * ========================================================
- * =====================            =======================
- * Mailer Class
- * =====================            =======================
- * ========================================================
+ * ====================================
+ * Bolt - Mailer Class ============
+ * ====================================
  */
 
 namespace celionatti\Bolt\Mailer;
 
+use celionatti\Bolt\Config;
+use celionatti\Bolt\BoltException\BoltException;
 
 class Mailer
 {

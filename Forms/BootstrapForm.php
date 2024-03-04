@@ -103,7 +103,7 @@ class BootstrapForm extends Form
         $errorMsg = array_key_exists($id, $errors) ? $errors[$id] : '';
         $html = "<div {$wrapperStr}>";
         $html .= "<label for=\"{$id}\" class='form-label'>{$label}</label>";
-        $html .= "<input type=\"file\" id=\"{$id}\" name=\"{$id}\" {$inputStr} class='form-control-file'/>";
+        $html .= "<input type=\"file\" id=\"{$id}\" name=\"{$id}[]\" {$inputStr} class='form-control-file'/>";
         $html .= "<div class=\"invalid-feedback\">{$errorMsg}</div></div>";
         return $html;
     }
