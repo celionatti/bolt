@@ -282,154 +282,80 @@ function bolt_die($value, $message = '', $title = 'BOLT Error - Oops! Something 
     die;
 }
 
-function dd($value): void
-{
-    echo <<<HTML
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <style>
-            body {
-                font-family: 'Arial', sans-serif;
-                margin: 0;
-                padding: 0;
-            }
-
-            .sf-dump-container {
-                display: grid;
-                grid-template-columns: 1fr 1fr; /* Two equal-width columns */
-                height: 100vh;
-            }
-
-            .sf-dump {
-                font: 13px Menlo, Monaco, monospace;
-                direction: ltr;
-                text-align: left;
-                white-space: pre;
-                word-wrap: normal;
-                background: #282828;
-                color: #eeeeee;
-                line-height: 1.2;
-                margin: 0;
-                padding: 16px;
-                border-radius: 5px;
-                overflow: hidden;
-                z-index: 100000;
-                grid-column: 2; /* Specify the column for the dump content */
-            }
-
-            .sf-dump-two {
-                font: 12px 'Arial', sans-serif; /* Use a standard font for readability */
-                background: #f0f0f0; /* Change to your desired background color */
-                color: #333; /* Change to your desired text color */
-                line-height: 1.2;
-                margin: 0;
-                padding: 16px;
-                border-radius: 5px;
-                overflow: hidden;
-                z-index: 100000;
-                grid-column: 1; /* Specify the column for the dump content */
-            }
-
-            .sf-dump span {
-                display: inline;
-            }
-
-            .sf-dump a {
-                color: #52e3f6;
-                text-decoration: none;
-            }
-
-            .sf-dump a:hover {
-                text-decoration: underline;
-            }
-
-            .sf-dump a:visited {
-                color: #5e84ea;
-            }
-
-            .sf-dump .sf-dump-public {
-                color: #568f3e;
-            }
-
-            .sf-dump .sf-dump-protected {
-                color: #568f3e;
-            }
-
-            .sf-dump .sf-dump-private {
-                color: #568f3e;
-            }
-
-            .sf-dump .sf-dump-ellipsis {
-                font-weight: bold;
-                color: #52e3f6;
-            }
-
-            .sf-dump .sf-dump-numeric {
-                color: #a0a0a0;
-            }
-
-            .sf-dump .sf-dump-null {
-                color: #aa0d91;
-            }
-
-            .sf-dump .sf-dump-bool {
-                color: #4d73bf;
-            }
-
-            .sf-dump .sf-dump-resource {
-                color: #6f42c1;
-            }
-
-            .sf-dump .sf-dump-string {
-                color: #df9355;
-            }
-
-            .sf-dump .sf-dump-key {
-                color: #a0a0a0;
-            }
-
-            .sf-dump .sf-dump-meta {
-                color: #b729d9;
-            }
-
-            .sf-dump .sf-dump-public.sf-dump-ellipsis,
-            .sf-dump .sf-dump-protected.sf-dump-ellipsis,
-            .sf-dump .sf-dump-private.sf-dump-ellipsis {
-                color: #52e3f6;
-            }
-
-            .sf-dump .sf-dump-sql {
-                color: #52e3f6;
-            }
-        </style>
-    </head>
-    <body>
-        <div class="sf-dump-container">
-            <div class="sf-dump-two"></div>
-            <pre class="sf-dump">
-                <h4 class="sf-dump-public"><a>DETAILS</a></h4>
-HTML;
-
-    var_dump($value);
-
-    echo <<<HTML
-            </pre>
-        </div>
-    </body>
-    </html>
-HTML;
-
-    die;
-}
-
 function dump($value, $die = true)
 {
-    echo "<pre style='background:#282828; color:#52e3f6; padding:16px;border-radius:6px;overflow:hidden;word-wrap:normal;font: 12px Menlo, Monaco, monospace;text-align: left;white-space: pre;direction: ltr;line-height: 1.2;z-index: 100000;margin:0;font-size:15px;margin-bottom:5px;'>";
+    $frameworkDetails = [
+        'Framework' => 'Custom PHP Framework',
+        'Version' => '1.0.0',
+        'Environment' => 'Development',
+        'PHP Version' => phpversion(),
+        'Timestamp' => date('Y-m-d H:i:s')
+    ];
+
+    echo "<style>
+    body {
+        background-color: #282828;
+        color: #52e3f6;
+        font-family: Menlo, Monaco, monospace;
+        margin: 0;
+        padding: 16px;
+    }
+    .dump-container {
+        display: flex;
+        border-radius: 6px;
+        overflow: hidden;
+        margin-bottom: 5px;
+    }
+    .details-column, .dump-column {
+        padding: 16px;
+        box-sizing: border-box;
+    }
+    .details-column {
+        width: 30%;
+        background-color: #1e1e1e;
+        border-right: 1px solid #444;
+        overflow-y: auto;
+    }
+    .dump-column {
+        width: 70%;
+        background-color: #282828;
+        overflow-x: auto;
+    }
+    .details-column ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+    .details-column li {
+        margin-bottom: 10px;
+    }
+    pre {
+        margin: 0;
+        word-wrap: normal;
+        white-space: pre;
+        direction: ltr;
+        line-height: 1.2;
+    }
+    </style>";
+
+    echo "<div class='dump-container'>
+            <div class='details-column'>
+                <ul>";
+                
+    foreach ($frameworkDetails as $key => $detail) {
+        echo "<li><strong>$key:</strong> $detail</li>";
+    }
+                
+    echo "    </ul>
+            </div>
+            <div class='dump-column'>
+                <pre>";
+    
     var_dump($value);
-    echo "</pre>";
+    
+    echo "    </pre>
+            </div>
+          </div>";
 
     if ($die) {
         die;
