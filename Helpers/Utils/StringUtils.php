@@ -12,34 +12,50 @@ namespace celionatti\Bolt\Helpers\Utils;
 
 class StringUtils
 {
-    // Generate a random token
-    public static function generateRandomToken($length = 32)
+    /**
+     * Generate a random token
+     *
+     * @param int $length
+     * @return string
+     */
+    public static function generateRandomToken(int $length = 32): string
     {
         return bin2hex(random_bytes($length));
     }
 
-    // Generate a random string of a specified length
-    public static function generateRandomStr($length = 10)
+    /**
+     * Generate a random string of a specified length
+     *
+     * @param int $length
+     * @return string
+     */
+    public static function generateRandomStr(int $length = 10): string
     {
         $characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
         $randomString = '';
 
         for ($i = 0; $i < $length; $i++) {
-            $randomString .= $characters[rand(0, strlen($characters) - 1)];
+            $randomString .= $characters[random_int(0, strlen($characters) - 1)];
         }
 
         return $randomString;
     }
 
-    // Convert a string to a URL-friendly format
-    public static function stringToUrl($input, $options = [])
+    /**
+     * Convert a string to a URL-friendly format
+     *
+     * @param string $input
+     * @param array $options
+     * @return string
+     */
+    public static function stringToUrl(string $input, array $options = []): string
     {
         // Set default options
         $defaults = [
             'replaceSpaces' => true,
             'removeSpecialChars' => true,
             'convertToLowercase' => true,
-            'preserveDiacritics' => true,
+            'preserveDiacritics' => false,
             'separator' => '-',
         ];
 
@@ -66,64 +82,75 @@ class StringUtils
             $input = strtolower($input);
         }
 
-        // Check if the separator is already present and replace consecutive separators
+        // Replace consecutive separators
         $input = preg_replace('/' . preg_quote($options['separator'], '/') . '+/', $options['separator'], $input);
 
         return $input;
     }
 
-    // Reverse the process - Convert a URL-friendly string to the original format
-    public static function reverseStringToUrl($urlString, $separator = '-')
+    /**
+     * Reverse the process - Convert a URL-friendly string to the original format
+     *
+     * @param string $urlString
+     * @param string $separator
+     * @return string
+     */
+    public static function reverseStringToUrl(string $urlString, string $separator = '-'): string
     {
         $urlString = str_replace($separator, ' ', $urlString);
-        $urlString = ucwords($urlString);
-        return $urlString;
+        return ucwords($urlString);
     }
 
-    // Remove diacritics (accents) from characters
-    private static function removeDiacritics($str)
+    /**
+     * Remove diacritics (accents) from characters
+     *
+     * @param string $str
+     * @return string
+     */
+    private static function removeDiacritics(string $str): string
     {
         $str = htmlentities($str, ENT_COMPAT, 'UTF-8');
         $str = preg_replace('/&([a-zA-Z])(uml|acute|grave|circ|tilde);/', '$1', $str);
         return html_entity_decode($str);
     }
 
-    // Generate a reference number like those used in banking or ticketing systems
-    public static function generateReferenceNumber($length = 10, $prefix = 'REF')
+    /**
+     * Generate a reference number like those used in banking or ticketing systems
+     *
+     * @param int $length
+     * @param string $prefix
+     * @return string
+     */
+    public static function generateReferenceNumber(int $length = 10, string $prefix = 'REF'): string
     {
-        // Ensure the prefix is included in the final length
         $prefixLength = strlen($prefix);
         $numericLength = max(0, $length - $prefixLength);
 
-        // Generate a random numeric portion
         $numericPart = '';
         for ($i = 0; $i < $numericLength; $i++) {
-            $numericPart .= mt_rand(0, 9);
+            $numericPart .= random_int(0, 9);
         }
 
-        // Calculate a simple checksum based on the numeric portion
         $checksum = self::calculateChecksum($numericPart);
 
-        // Combine the prefix, numeric part, and checksum
-        $referenceNumber = $prefix . $numericPart . $checksum;
-
-        return $referenceNumber;
+        return $prefix . $numericPart . $checksum;
     }
 
-    // Calculate a simple checksum based on the numeric portion
-    private static function calculateChecksum($numericPart)
+    /**
+     * Calculate a simple checksum based on the numeric portion
+     *
+     * @param string $numericPart
+     * @return int
+     */
+    private static function calculateChecksum(string $numericPart): int
     {
         $checksum = 0;
 
-        // Sum the digits of the numeric portion
-        for ($i = 0; $i < strlen($numericPart); $i++) {
+        for ($i = 0, $len = strlen($numericPart); $i < $len; $i++) {
             $checksum += (int)$numericPart[$i];
         }
 
-        // Take the last digit of the sum
-        $checksum = $checksum % 10;
-
-        return $checksum;
+        return $checksum % 10;
     }
 
     /**
@@ -132,7 +159,8 @@ class StringUtils
      * @param string $str
      * @return string
      */
-    public static function toUpperCase($str) {
+    public static function toUpperCase(string $str): string
+    {
         return strtoupper($str);
     }
 
@@ -142,11 +170,12 @@ class StringUtils
      * @param string $str
      * @return string
      */
-    public static function toLowerCase($str) {
+    public static function toLowerCase(string $str): string
+    {
         return strtolower($str);
     }
 
-     /**
+    /**
      * Replace a substring within a string
      *
      * @param string $haystack
@@ -154,7 +183,8 @@ class StringUtils
      * @param string $replacement
      * @return string
      */
-    public static function replace($haystack, $needle, $replacement) {
+    public static function replace(string $haystack, string $needle, string $replacement): string
+    {
         return str_replace($needle, $replacement, $haystack);
     }
 
@@ -166,11 +196,15 @@ class StringUtils
      * @param string $suffix
      * @return string
      */
-    public static function excerpt($str, $length = 100, $suffix = '...') {
+    public static function excerpt(string $str, int $length = 100, string $suffix = '...'): string
+    {
         if (strlen($str) <= $length) {
             return $str;
         }
-        $excerpt = substr($str, 0, $length - strlen($suffix));
+
+        $lastSpace = strrpos(substr($str, 0, $length - strlen($suffix)), ' ');
+        $excerpt = substr($str, 0, $lastSpace);
+
         return rtrim($excerpt, " ,.!") . $suffix;
     }
 
@@ -181,7 +215,8 @@ class StringUtils
      * @param string $needle
      * @return bool
      */
-    public static function contains($haystack, $needle) {
+    public static function contains(string $haystack, string $needle): bool
+    {
         return strpos($haystack, $needle) !== false;
     }
 }

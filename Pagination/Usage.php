@@ -1,5 +1,17 @@
 <?php
 
+    $totalItems = 100;
+    $itemsPerPage = 10;
+    $currentPage = 5;
+
+    $pagination = new Pagination($totalItems, $itemsPerPage, $currentPage);
+
+    $url = 'http://example.com/page';
+
+    echo $pagination->generateNextPrevLinks($url);
+    echo $pagination->generateEllipsesLinks($url);
+
+
 public function findAllByWithPagination(array $conditions, $page = null, $perPage, $orderByColumn, $orderDirection = 'asc')
 {
     // ... (previous code)
@@ -21,41 +33,4 @@ public function findAllByWithPagination(array $conditions, $page = null, $perPag
         'paginator' => $paginator,
         'paginationLinks' => $paginationLinks,
     ];
-}
-
-
-class CustomPaginator
-{
-    // ... (previous methods)
-
-    public function generateLinks($url)
-    {
-        $links = '';
-
-        if ($this->getTotalPages() > 1) {
-            $links .= '<ul class="pagination justify-content-center">';
-
-            if ($this->hasPreviousPage()) {
-                $links .= '<li class="page-item"><a href="' . $url . '&p=' . $this->getPreviousPage() . '" class="page-link">&laquo;</a></li>';
-            }
-
-            $maxLinks = 5; // Maximum links to show before and after the current page
-            $halfMaxLinks = floor($maxLinks / 2);
-            $startPage = max(1, $this->currentPage - $halfMaxLinks);
-            $endPage = min($this->getTotalPages(), $startPage + $maxLinks - 1);
-
-            for ($i = $startPage; $i <= $endPage; $i++) {
-                $activeClass = ($i == $this->currentPage) ? 'active' : '';
-                $links .= '<li class="page-item ' . $activeClass . '"><a href="' . $url . '&p=' . $i . '" class="page-link">' . $i . '</a></li>';
-            }
-
-            if ($this->hasNextPage()) {
-                $links .= '<li class="page-item"><a href="' . $url . '&p=' . $this->getNextPage() . '" class="page-link">&raquo;</a></li>';
-            }
-
-            $links .= '</ul>';
-        }
-
-        return $links;
-    }
 }
