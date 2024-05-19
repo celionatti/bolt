@@ -285,8 +285,8 @@ function bolt_die($value, $message = '', $title = 'BOLT Error - Oops! Something 
 function dump($value, $die = true)
 {
     $frameworkDetails = [
-        'Framework' => 'Custom PHP Framework',
-        'Version' => '1.0.0',
+        'Framework' => 'Bolt PHP Framework',
+        'Version' => '1.0.4',
         'Environment' => 'Development',
         'PHP Version' => phpversion(),
         'Timestamp' => date('Y-m-d H:i:s')
