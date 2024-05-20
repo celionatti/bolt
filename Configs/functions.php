@@ -965,3 +965,64 @@ function filterText($text, array $patterns)
     // None of the patterns found in the text
     return false;
 }
+
+function generateRandomNumberID($existingIDs, $minID = 100000, $maxID = 999999)
+{
+    // Helper function to generate a random number within the specified range
+    function getRandomNumber($min, $max)
+    {
+        return mt_rand($min, $max);
+    }
+
+    do {
+        $newID = getRandomNumber($minID, $maxID);
+    } while (in_array($newID, $existingIDs));
+
+    return $newID;
+}
+
+function generateStringsToken($length = 64)
+{
+    // Define the characters to be used in the token
+    $characters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    $charactersLength = strlen($characters);
+    $token = '';
+
+    for ($i = 0; $i < $length; $i++) {
+        $token .= $characters[random_int(0, $charactersLength - 1)];
+    }
+
+    return $token;
+}
+
+function generateKeyPhrase($numWords = 10)
+{
+    // Predefined list of words (expand this list as needed)
+    $wordList = [
+        'apple', 'banana', 'cherry', 'date', 'elderberry', 'fig', 'grape', 'honeydew',
+        'kiwi', 'lemon', 'mango', 'nectarine', 'orange', 'papaya', 'quince', 'raspberry',
+        'strawberry', 'tangerine', 'ugli', 'vanilla', 'watermelon', 'xigua', 'yam', 'zucchini'
+    ];
+
+    // Check if the requested number of words exceeds the available unique words
+    if ($numWords > count($wordList)) {
+        throw new Exception("Number of words requested exceeds the number of available unique words.");
+    }
+
+    $wordListLength = count($wordList);
+    $keyPhrase = [];
+
+    // Generate unique random words for the key phrase
+    $usedIndices = [];
+    for ($i = 0; $i < $numWords; $i++) {
+        do {
+            $randomIndex = random_int(0, $wordListLength - 1);
+        } while (in_array($randomIndex, $usedIndices));
+
+        $usedIndices[] = $randomIndex;
+        $keyPhrase[] = $wordList[$randomIndex];
+    }
+
+    // Return the generated key phrase as a single string
+    return implode(' ', $keyPhrase);
+}
