@@ -38,7 +38,7 @@ class BoltAuthentication extends DatabaseModel
         return "users";
     }
 
-    public function login($email, $password, $rememberMe = false)
+    public function login($email, $password, $rememberMe = false, $redirect = "/")
     {
         $isAccountBlocked = $this->isAccountBlocked($email);
         $isValidCredentials = $this->authenticate($email, $password);
@@ -55,7 +55,7 @@ class BoltAuthentication extends DatabaseModel
                 $this->generateAndStoreRememberMeToken($this->_currentUser->user_id);
             }
             $this->setAuthenticatedUser($this->_currentUser->user_id);
-            redirect("/");
+            redirect($redirect);
         } else {
             if ($isValidEmail) {
                 $this->incrementLoginAttempts($email);
