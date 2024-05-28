@@ -1026,3 +1026,14 @@ function generateKeyPhrase($numWords = 10)
     // Return the generated key phrase as a single string
     return implode(' ', $keyPhrase);
 }
+
+function compressToZip($source, $destination)
+{
+    $zip = new ZipArchive();
+    if ($zip->open($destination, ZipArchive::CREATE) !== TRUE) {
+        return false;
+    }
+    $zip->addFile($source, basename($source));
+    $zip->close();
+    return $destination;
+}
