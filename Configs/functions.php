@@ -866,26 +866,19 @@ function toast($type, $message)
     return $toastr;
 }
 
-function hasAccess(array $allowedRoles = [], string $action = 'view', array $excludedRoles = []): bool
+function hasAccess(array $allowedRoles = [], array $excludedRoles = []): bool
 {
     $currentUser = BoltAuthentication::currentUser();
 
     if ($currentUser) {
-        $accessRules = ACCESS_RULES;
-
-        // Input validation
-        if (!array_key_exists($action, $accessRules)) {
-            throw new InvalidArgumentException('Invalid action provided');
-        }
-
         $userRole = $currentUser->role;
-        $allowedRolesForAction = $accessRules[$action];
 
-        // Check if the user role is allowed for the action and is not in the excluded roles
-        return in_array($userRole, $allowedRolesForAction) && !in_array($userRole, $excludedRoles);
+        // Check if the user role is allowed and is not in the excluded roles
+        return in_array($userRole, $allowedRoles) && !in_array($userRole, $excludedRoles);
     } else {
         // User is not logged in, handle accordingly
-        // For example: redirect("/login");
+        // For example, you can log the access attempt, redirect, or simply return false.
+        // Example: redirect("/login");
         return false;
     }
 }
