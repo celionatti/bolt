@@ -992,9 +992,39 @@ function generateKeyPhrase($numWords = 10)
 {
     // Predefined list of words (expand this list as needed)
     $wordList = [
+        // Fruits
         'apple', 'banana', 'cherry', 'date', 'elderberry', 'fig', 'grape', 'honeydew',
         'kiwi', 'lemon', 'mango', 'nectarine', 'orange', 'papaya', 'quince', 'raspberry',
-        'strawberry', 'tangerine', 'ugli', 'vanilla', 'watermelon', 'xigua', 'yam', 'zucchini'
+        'strawberry', 'tangerine', 'ugli', 'vanilla', 'watermelon', 'xigua', 'yam', 'zucchini',
+        'apricot', 'blackberry', 'cantaloupe', 'dragonfruit', 'blueberry', 'coconut', 'currant',
+        'durian', 'gooseberry', 'grapefruit', 'guava', 'jackfruit', 'lime', 'lychee', 'mandarin',
+        'mulberry', 'olive', 'passionfruit', 'peach', 'pear', 'pineapple', 'plum', 'pomegranate',
+        'starfruit', 'soursop', 'tamarind',
+        
+        // Places
+        'paris', 'london', 'tokyo', 'newyork', 'sydney', 'mumbai', 'cairo', 'moscow',
+        'rome', 'berlin', 'amsterdam', 'barcelona', 'dubai', 'beijing', 'singapore', 'losangeles',
+        'chicago', 'toronto', 'miami', 'seoul', 'bangkok', 'istanbul', 'madrid', 'boston', 'vienna',
+        
+        // Animals
+        'lion', 'tiger', 'elephant', 'giraffe', 'zebra', 'kangaroo', 'panda', 'dolphin',
+        'whale', 'shark', 'eagle', 'falcon', 'owl', 'wolf', 'bear', 'fox', 'rabbit', 'squirrel',
+        'koala', 'leopard', 'cheetah', 'buffalo', 'rhinoceros', 'hippopotamus', 'crocodile', 'alligator',
+        
+        // Names
+        'alice', 'bob', 'charlie', 'david', 'eve', 'frank', 'grace', 'heidi', 'ivan', 'judy',
+        'ken', 'laura', 'mike', 'nancy', 'oscar', 'peggy', 'quentin', 'rachel', 'sam', 'tom', 'ursula',
+        'victor', 'wendy', 'xander', 'yvonne', 'zach',
+        
+        // Foods
+        'pizza', 'burger', 'sushi', 'pasta', 'tacos', 'burrito', 'ramen', 'steak', 'sandwich',
+        'salad', 'soup', 'omelette', 'pancakes', 'waffles', 'bacon', 'sausages', 'noodles', 'dumplings',
+        'paella', 'falafel', 'hummus', 'lasagna', 'risotto', 'curry', 'quiche', 'frittata',
+        
+        // Miscellaneous
+        'galaxy', 'universe', 'planet', 'comet', 'asteroid', 'nebula', 'quasar', 'blackhole',
+        'volcano', 'earthquake', 'tsunami', 'hurricane', 'tornado', 'avalanche', 'blizzard', 'storm',
+        'desert', 'forest', 'ocean', 'river', 'mountain', 'valley', 'canyon', 'lake', 'waterfall'
     ];
 
     // Check if the requested number of words exceeds the available unique words
