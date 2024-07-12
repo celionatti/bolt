@@ -790,7 +790,10 @@ function hashPassword(string $password, $cost = 12): string
         throw new BoltException('Password hash could not be created.');
     }
 
-    return $hash;
+    return [
+        'hash' => $hash,
+        'salt' => $salt
+    ];
 }
 
 /**
