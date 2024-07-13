@@ -341,18 +341,18 @@ function dump($value, $die = true)
     echo "<div class='dump-container'>
             <div class='details-column'>
                 <ul>";
-                
+
     foreach ($frameworkDetails as $key => $detail) {
         echo "<li><strong>$key:</strong> $detail</li>";
     }
-                
+
     echo "    </ul>
             </div>
             <div class='dump-column'>
                 <pre>";
-    
+
     var_dump($value);
-    
+
     echo "    </pre>
             </div>
           </div>";
@@ -364,7 +364,7 @@ function dump($value, $die = true)
 
 function redirect($url, $status_code = 302, $headers = [], $query_params = [], $exit = true)
 {
-   // Ensure a valid HTTP status code is used
+    // Ensure a valid HTTP status code is used
     if (!is_numeric($status_code) || $status_code < 100 || $status_code >= 600) {
         $status_code = 302; // Default to a temporary (302) redirect
     }
@@ -496,32 +496,17 @@ function get_image(?string $path = null, string $type = 'post'): string
 
 function get_assets_directory($directory): string
 {
-    return Bolt::$bolt->assetManager->getAssetPath("assets" . $directory);
+    return Bolt::$bolt->assetManager->getAssetPath("{$directory}");
 }
 
-function get_package(string $package): string
+function asset($path): string
 {
-    return get_assets_directory(DIRECTORY_SEPARATOR . "packages" . DIRECTORY_SEPARATOR . $package);
-}
-
-function get_bootstrap(string $path): string
-{
-    return get_assets_directory(DIRECTORY_SEPARATOR . "bootstrap" . DIRECTORY_SEPARATOR . $path);
-}
-
-function get_stylesheet(string $path): string
-{
-    return get_assets_directory(DIRECTORY_SEPARATOR . "css" . DIRECTORY_SEPARATOR . $path);
-}
-
-function get_script($path): string
-{
-    return get_assets_directory(DIRECTORY_SEPARATOR . "js" . DIRECTORY_SEPARATOR . $path);
+    return get_assets_directory(DIRECTORY_SEPARATOR . $path);
 }
 
 function get_date(?string $date = null, string $format = "jS M, Y", string $timezone = "UTC"): string
 {
-    $date = $date ?? '';
+    $date ?? '';
 
     if (empty($date)) {
         return '';
@@ -545,13 +530,13 @@ function csrf_token(string $name = 'csrf_token', int|float $expiration = 3600, i
     // Generate a CSRF token if one doesn't exist
     if (!isset($_SESSION[$name])) {
         $_SESSION[$name] = bin2hex(random_bytes($tokenLength));
-        $_SESSION[$name . '_timestamp'] = time();
+        $_SESSION["{$name}_timestamp"] = time();
     }
 
     // Check if the token has expired
-    if (time() - $_SESSION[$name . '_timestamp'] > $expiration) {
+    if (time() - $_SESSION["{$name}_timestamp"] > $expiration) {
         unset($_SESSION[$name]);
-        unset($_SESSION[$name . '_timestamp']);
+        unset($_SESSION["{$name}_timestamp"]);
         return false;
     }
 
@@ -560,14 +545,14 @@ function csrf_token(string $name = 'csrf_token', int|float $expiration = 3600, i
 
 function check_csrf_token(string $name = 'csrf_token', int|float $expiration = 3600)
 {
-    if (!isset($_SESSION[$name]) || !isset($_SESSION[$name . '_timestamp'])) {
+    if (!isset($_SESSION[$name]) || !isset($_SESSION["{$name}_timestamp"])) {
         throw new Exception("CSRF token is missing or expired.");
     }
 
     // Check if the token has expired
-    if (time() - $_SESSION[$name . '_timestamp'] > $expiration) {
+    if (time() - $_SESSION["{$name}_timestamp"] > $expiration) {
         unset($_SESSION[$name]);
-        unset($_SESSION[$name . '_timestamp']);
+        unset($_SESSION["{$name}_timestamp"]);
         throw new Exception("CSRF token has expired.");
     }
 }
@@ -579,7 +564,7 @@ function verify_csrf_token($token, string $name = 'csrf_token', int|float $expir
     if ($token === $_SESSION[$name]) {
         // Remove the token to prevent reuse
         unset($_SESSION[$name]);
-        unset($_SESSION[$name . '_timestamp']);
+        unset($_SESSION["{$name}_timestamp"]);
         return true;
     }
 
@@ -592,7 +577,7 @@ function validate_csrf_token($data, $toast = true)
     $csrf = new Csrf();
 
     // Get the referring URL or set a default redirect URL
-    $redirect = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : '';
+    $redirect = $_SERVER['HTTP_REFERER'] ?? '';
 
     // Validate the CSRF token from the provided data
     if (!$csrf->validateToken($data["_csrf_token"])) {
@@ -781,7 +766,7 @@ function typeCastData($key, $value)
  * @param integer $cost Adjust the cost factor as needed (higher is slower but more secure)
  * @return void
  */
-function hashPassword(string $password, $cost = 12): string
+function hashPassword(string $password, $cost = 12): array
 {
     $salt = bin2hex(random_bytes(16)); // Generate a random salt
     $hash = password_hash($password . $salt, PASSWORD_BCRYPT, ['cost' => $cost]);
@@ -914,7 +899,8 @@ function formatCurrency($amount, $currencyCode = "NGN")
     }
 }
 
-function calReadTime($text, $wordsPerMinute = 200, $contentCategory = 'generic', $timeUnit = ' Min To Read') {
+function calReadTime($text, $wordsPerMinute = 200, $contentCategory = 'generic', $timeUnit = ' Min To Read')
+{
     // Function to count the number of words in the text
     $countWords = function ($text) {
         return str_word_count(strip_tags($text));
@@ -1003,27 +989,27 @@ function generateKeyPhrase($numWords = 10)
         'durian', 'gooseberry', 'grapefruit', 'guava', 'jackfruit', 'lime', 'lychee', 'mandarin',
         'mulberry', 'olive', 'passionfruit', 'peach', 'pear', 'pineapple', 'plum', 'pomegranate',
         'starfruit', 'soursop', 'tamarind',
-        
+
         // Places
         'paris', 'london', 'tokyo', 'newyork', 'sydney', 'mumbai', 'cairo', 'moscow',
         'rome', 'berlin', 'amsterdam', 'barcelona', 'dubai', 'beijing', 'singapore', 'losangeles',
         'chicago', 'toronto', 'miami', 'seoul', 'bangkok', 'istanbul', 'madrid', 'boston', 'vienna',
-        
+
         // Animals
         'lion', 'tiger', 'elephant', 'giraffe', 'zebra', 'kangaroo', 'panda', 'dolphin',
         'whale', 'shark', 'eagle', 'falcon', 'owl', 'wolf', 'bear', 'fox', 'rabbit', 'squirrel',
         'koala', 'leopard', 'cheetah', 'buffalo', 'rhinoceros', 'hippopotamus', 'crocodile', 'alligator',
-        
+
         // Names
         'alice', 'bob', 'charlie', 'david', 'eve', 'frank', 'grace', 'heidi', 'ivan', 'judy',
         'ken', 'laura', 'mike', 'nancy', 'oscar', 'peggy', 'quentin', 'rachel', 'sam', 'tom', 'ursula',
         'victor', 'wendy', 'xander', 'yvonne', 'zach',
-        
+
         // Foods
         'pizza', 'burger', 'sushi', 'pasta', 'tacos', 'burrito', 'ramen', 'steak', 'sandwich',
         'salad', 'soup', 'omelette', 'pancakes', 'waffles', 'bacon', 'sausages', 'noodles', 'dumplings',
         'paella', 'falafel', 'hummus', 'lasagna', 'risotto', 'curry', 'quiche', 'frittata',
-        
+
         // Miscellaneous
         'galaxy', 'universe', 'planet', 'comet', 'asteroid', 'nebula', 'quasar', 'blackhole',
         'volcano', 'earthquake', 'tsunami', 'hurricane', 'tornado', 'avalanche', 'blizzard', 'storm',
