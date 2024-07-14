@@ -11,7 +11,13 @@ declare(strict_types=1);
  * Description: This file is for Bolt global constants
  */
 
-$key = "2c0b2fdf89bd3455b81b4ff409578d1b7bc3a067147631db9d5486b9e95024fa";
+
+/**
+ * Bolt key value.
+ * @var string
+ */
+
+$key = null;
 
 if (!defined('BOLT_APP_KEY')) {
     define('BOLT_APP_KEY', $key);

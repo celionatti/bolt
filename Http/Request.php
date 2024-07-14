@@ -12,7 +12,18 @@ declare(strict_types=1);
 
 class Request
 {
+    protected $_request;
+    protected $_method;
+    protected $_headers;
+
     private array $parameters = [];
+
+    public function __construct()
+    {
+        $this->_request = $_REQUEST; // You can use $_GET, $_POST, or other specific superglobals as needed
+        $this->_method = $_SERVER['REQUEST_METHOD'];
+        $this->_headers = getallheaders();
+    }
 
     public function getPath()
     {
@@ -52,6 +63,48 @@ class Request
     public function isDelete(): bool
     {
         return $this->method() === 'DELETE';
+    }
+
+    public function getBody(): array
+    {
+        $body = [];
+        if ($this->isGet() || $this->isDelete()) {
+            foreach ($this->_request as $key => $value) {
+                $body[$key] = filter_input(INPUT_GET, $key, FILTER_SANITIZE_SPECIAL_CHARS);
+            }
+        }
+        if ($this->isPost() || $this->isPatch() || $this->isPut() || $this->isDelete()) {
+            foreach ($this->_request as $key => $value) {
+                $body[$key] = filter_input(INPUT_POST, $key, FILTER_SANITIZE_SPECIAL_CHARS);
+            }
+        }
+        return $body;
+    }
+
+    public function getData($input = false): false|array|string
+    {
+        if (!$input) {
+            $data = [];
+            foreach ($this->_request as $field => $value) {
+                $data[$field] = self::sanitize($value);
+            }
+            return $data;
+        }
+        return array_key_exists($input, $this->_request) ? self::sanitize($this->_request[$input]) : false;
+    }
+
+    /**
+     * Check if the current path matches the given pattern.
+     *
+     * @param string $pattern
+     * @return bool
+     */
+    public function is(string $pattern): bool
+    {
+        $path = $this->getPath();
+
+        // Perform a simple string comparison to check if the path matches the pattern
+        return trim($path, '/') === $pattern;
     }
 
     /**
@@ -102,40 +155,12 @@ class Request
         return $default;
     }
 
-    public function getBody(): array
-    {
-        $body = [];
-        if ($this->isGet() || $this->isDelete()) {
-            foreach ($_GET as $key => $value) {
-                $body[$key] = filter_input(INPUT_GET, $key, FILTER_SANITIZE_SPECIAL_CHARS);
-            }
-        }
-        if ($this->isPost() || $this->isPatch() || $this->isPut() || $this->isDelete()) {
-            foreach ($_POST as $key => $value) {
-                $body[$key] = filter_input(INPUT_POST, $key, FILTER_SANITIZE_SPECIAL_CHARS);
-            }
-        }
-        return $body;
-    }
-
-    public function getData($input = false): false|array|string
-    {
-        if (!$input) {
-            $data = [];
-            foreach ($_REQUEST as $field => $value) {
-                $data[$field] = self::sanitize($value);
-            }
-            return $data;
-        }
-        return array_key_exists($input, $_REQUEST) ? self::sanitize($_REQUEST[$input]) : false;
-    }
-
     public static function sanitize($dirty): string
     {
         return htmlspecialchars($dirty);
     }
 
-    public function esc($str): string
+    protected function esc($str): string
     {
         return htmlspecialchars($str);
     }

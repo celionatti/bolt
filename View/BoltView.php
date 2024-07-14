@@ -13,10 +13,11 @@ declare(strict_types=1);
 namespace celionatti\Bolt\View;
 
 use Exception;
-use celionatti\Bolt\Bolt;
 use Twig\Environment;
+use celionatti\Bolt\Bolt;
 use Jenssegers\Blade\Blade;
 use Twig\Loader\FilesystemLoader;
+use celionatti\Bolt\Helpers\Logger;
 
 
 class BoltView
@@ -24,16 +25,17 @@ class BoltView
     private string $_title = '';
     private string $_header = 'Dashboard';
     private array $_content = [];
-    private $_currentContent;
     private $_buffer;
     private string $_layout;
     private string $_defaultViewPath;
     private ?Blade $_blade = null;
     private ?Environment $_twig = null;
+    private ?Logger $_logger = null;
 
-    public function __construct($path = '', $enableBlade = false, $enableTwig = false)
+    public function __construct($path = '', $enableBlade = false, $enableTwig = false, ?Logger $logger = null)
     {
         $this->_defaultViewPath = $path;
+        $this->_logger = $logger;
 
         // Initialize Blade if enabled
         if ($enableBlade) {
@@ -104,48 +106,152 @@ class BoltView
         $fullPath = Bolt::$bolt->pathResolver->template_path(DIRECTORY_SEPARATOR . 'partials' . DIRECTORY_SEPARATOR . $path . '.php');
         if (file_exists($fullPath)) {
             extract($params);
-            include($fullPath);
+            include $fullPath;
+        } else {
+            $this->logError("Partial view not found: $fullPath");
         }
     }
 
-    public function render($path = '', $params = []): void
+    public function render(string $path = '', array $params = [], bool $returnOutput = false): ?string
     {
         if (empty($path)) {
             $path = $this->_defaultViewPath;
         }
 
-        // Render using Blade if enabled
-        if ($this->_blade) {
-            echo $this->_blade->make($path, $params)->render();
-        }
-        // Render using Twig if enabled
-        elseif ($this->_twig) {
-            try {
-                echo $this->_twig->render($path, $params);
-            } catch (Exception $e) {
-                echo 'Twig Error: ' . $e->getMessage();
+        $output = '';
+
+        try {
+            // Render using Blade if enabled
+            if ($this->_blade) {
+                $output = $this->_blade->make($path, $params)->render();
+            }
+            // Render using Twig if enabled
+            elseif ($this->_twig) {
+                $output = $this->_twig->render($path, $params);
+            }
+            // Fallback to .php rendering if no template engine is enabled
+            else {
+                $output = $this->renderBoltTemplate($path, $params);
+            }
+        } catch (Exception $e) {
+            $this->logError('Rendering Error: ' . $e->getMessage());
+            if (!$returnOutput) {
+                echo 'Rendering Error: ' . $e->getMessage();
             }
         }
-        // Fallback to .php rendering if no template engine is enabled
-        else {
 
-            foreach ($params as $key => $value) {
-                $$key = $value;
-            }
-
-            $layoutPath = Bolt::$bolt->pathResolver->template_path(DIRECTORY_SEPARATOR . 'layouts' . DIRECTORY_SEPARATOR . $this->_layout . '.php');
-            $fullPath = Bolt::$bolt->pathResolver->template_path(DIRECTORY_SEPARATOR . $path . '.php');
-
-            if (!file_exists($fullPath)) {
-                throw new Exception("The view \"{$path}\" does not exist.");
-            }
-            if (!file_exists($layoutPath)) {
-                throw new Exception("The layout \"{$this->_layout}\" does not exist.");
-            }
-
-            require($fullPath);
-            require($layoutPath);
+        if ($returnOutput) {
+            return $output;
+        } else {
+            echo $output;
         }
+
+        return null;
+    }
+
+    public function renderJson(array $data): void
+    {
+        header('Content-Type: application/json');
+        echo json_encode($data);
+    }
+
+    // private function renderBoltTemplate(string $path, array $params = []): string
+    // {
+    //     foreach ($params as $key => $value) {
+    //         $$key = $value;
+    //     }
+
+    //     $layoutPath = Bolt::$bolt->pathResolver->template_path(DIRECTORY_SEPARATOR . 'layouts' . DIRECTORY_SEPARATOR . $this->_layout . '.php');
+    //     $fullPath = Bolt::$bolt->pathResolver->template_path(DIRECTORY_SEPARATOR . $path . '.php');
+
+    //     if (!file_exists($fullPath)) {
+    //         throw new Exception("The view \"{$path}\" does not exist.");
+    //     }
+    //     if (!file_exists($layoutPath)) {
+    //         throw new Exception("The layout \"{$this->_layout}\" does not exist.");
+    //     }
+
+    //     ob_start();
+    //     require $fullPath;
+    //     require $layoutPath;
+    //     return ob_get_clean();
+    // }
+
+    private function renderBoltTemplate(string $path, array $params = []): string
+    {
+        // Extract params as variables
+        foreach ($params as $key => $value) {
+            $$key = $value;
+        }
+
+        $layoutPath = Bolt::$bolt->pathResolver->template_path(DIRECTORY_SEPARATOR . 'layouts' . DIRECTORY_SEPARATOR . $this->_layout . '.php');
+        $fullPath = Bolt::$bolt->pathResolver->template_path(DIRECTORY_SEPARATOR . $path . '.php');
+
+        if (!file_exists($fullPath)) {
+            throw new Exception("The view \"{$path}\" does not exist.");
+        }
+        if (!file_exists($layoutPath)) {
+            throw new Exception("The layout \"{$this->_layout}\" does not exist.");
+        }
+
+        // Read and parse the template file
+        $templateContent = file_get_contents($fullPath);
+        $parsedContent = $this->renderTemplate($templateContent, $params);
+
+        // Read and parse the layout file
+        $layoutContent = file_get_contents($layoutPath);
+        $parsedLayout = $this->renderTemplate($layoutContent, $params);
+
+        ob_start();
+        echo $parsedContent;
+        echo $parsedLayout;
+        return ob_get_clean();
+    }
+
+    // Function to replace {{ }}
+    private function renderTemplate($template, $data = [], $cache = false, $escapeOutput = true)
+    {
+        $parseTemplate = function ($template) use ($escapeOutput) {
+            return preg_replace_callback('/\{\{\s*(.+?)\s*\}\}/', function ($matches) use ($escapeOutput) {
+                return $escapeOutput
+                    ? "<?= htmlspecialchars({$matches[1]}, ENT_QUOTES, 'UTF-8') ?>"
+                    : "<?= {$matches[1]} ?>";
+            }, $template);
+        };
+
+        // Optionally use cache
+        $cacheKey = md5($template);
+        $cacheDir = Bolt::$bolt->pathResolver->storage_path(DIRECTORY_SEPARATOR . 'cache' . DIRECTORY_SEPARATOR);
+        $cacheFile = "{$cacheDir}{$cacheKey}.php";
+
+        if ($cache && file_exists($cacheFile)) {
+            $parsedTemplate = file_get_contents($cacheFile);
+        } else {
+            $parsedTemplate = $parseTemplate($template);
+            if ($cache) {
+                if (!file_exists($cacheDir)) {
+                    mkdir($cacheDir, 0777, true);
+                }
+                file_put_contents($cacheFile, $parsedTemplate);
+            }
+        }
+
+        // Extract data to be used in the template
+        extract($data);
+
+        // Start output buffering
+        ob_start();
+
+        // Error handling
+        try {
+            eval("?>{$parsedTemplate}");
+        } catch (\Throwable $e) {
+            ob_end_clean();
+            throw new Exception("Error rendering template: " . $e->getMessage());
+        }
+
+        // Get the content from the buffer
+        return ob_get_clean();
     }
 
     // Optional: Initialize Blade template engine
@@ -172,5 +278,12 @@ class BoltView
             'autoescape' => 'html',      // Auto-escaping strategy ('html', 'js', 'css', 'url', 'html_attr', or false)
         ];
         $this->_twig = new Environment($loader, $twigOptions);
+    }
+
+    private function logError(string $message): void
+    {
+        if ($this->_logger) {
+            $this->_logger->error($message);
+        }
     }
 }

@@ -19,9 +19,6 @@ if (!file_exists(__DIR__ . '/constants.php')) {
 require __DIR__ . '/constants.php';
 
 
-$key = "{KEY}";
-
-
 if (!defined('APP_KEY')) {
     define('APP_KEY', $key);
 }

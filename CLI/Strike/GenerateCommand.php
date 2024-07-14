@@ -95,17 +95,17 @@ class GenerateCommand implements CommandInterface
         $bolt_sample_file = __DIR__ . "/samples/bolt-load-sample.php";
 
         if (!file_exists($sample_file))
-            $this->message("Error: Config load Sample file not found in: " . $sample_file, true, true, 'warning');
+            $this->message("Error: Config load Sample file not found in: {$sample_file}", true, true, 'warning');
 
         if (!file_exists($bolt_sample_file))
-            $this->message("Error: Bolt Config load Sample file not found in: " . $bolt_sample_file, true, true, 'warning');
+            $this->message("Error: Bolt Config load Sample file not found in: {$bolt_sample_file}", true, true, 'warning');
 
         
         $key = $this->create_random_key();
 
         $content = file_get_contents($sample_file);
         $boltcontent = file_get_contents($bolt_sample_file);
-        $content = str_replace("{KEY}", $key, $content);
+
         $boltcontent = str_replace("{KEY}", $key, $boltcontent);
 
         if (file_put_contents($loadFile, $content) === false) {

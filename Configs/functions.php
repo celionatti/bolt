@@ -5,6 +5,7 @@ declare(strict_types=1);
 use celionatti\Bolt\Bolt;
 use celionatti\Bolt\Helpers\Csrf;
 use celionatti\Bolt\View\BoltView;
+use celionatti\Bolt\Illuminate\Collection;
 use celionatti\Bolt\BoltException\BoltException;
 use celionatti\Bolt\Authentication\BoltAuthentication;
 
@@ -1048,4 +1049,28 @@ function compressToZip($source, $destination)
     $zip->addFile($source, basename($source));
     $zip->close();
     return $destination;
+}
+
+function tap($value, callable $callback)
+{
+    $callback($value);
+    return $value;
+}
+
+function when($condition, callable $callback)
+{
+    if ($condition) {
+        return $callback();
+    }
+    return null; // or return void as needed
+}
+
+function collect(array $items)
+{
+    return new Collection($items);
+}
+
+function request()
+{
+    return new \celionatti\Bolt\Http\Request();
 }

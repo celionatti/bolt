@@ -89,12 +89,8 @@ class Bolt
 
     private function bolt_run()
     {
-        // Evaluate the expressions and store their results
-        $result1 = BOLT_APP_KEY;
-        $result2 = APP_KEY;
-
         // Check if both results are not empty and equal
-        if (!empty($result1) && !empty($result2) && $result1 === $result2) {
+        if (!empty(BOLT_APP_KEY)) {
             return true; // Both expressions are not empty and equal
         }
 
