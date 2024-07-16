@@ -10,11 +10,9 @@ declare(strict_types=1);
  * ======================================
  */
 
-namespace PhpStrike\migrations;
-
 use celionatti\Bolt\Migration\BoltMigration;
 
-class {CLASSNAME} extends BoltMigration
+return new class extends BoltMigration
 {
     /**
      * The Up method is to create table.
@@ -23,7 +21,7 @@ class {CLASSNAME} extends BoltMigration
      */
     public function up()
     {
-        $this->createTable("login_attempts")
+        $this->createTable("{TABLENAME}")
             ->id()->primaryKey()
             ->varchar("user_id", 255)->nullable()->foreignKey("user_id", "users", "user_id")
             ->varchar("user_attempted")
@@ -42,6 +40,6 @@ class {CLASSNAME} extends BoltMigration
      */
     public function down()
     {
-        $this->dropTable("login_attempts");
+        $this->dropTable("{TABLENAME}");
     }
-}
+};

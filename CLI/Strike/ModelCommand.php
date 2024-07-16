@@ -141,7 +141,7 @@ class ModelCommand implements CommandInterface
         /**
          * Check if Migration file already exists.
          */
-        $migrationFile = $migrationDir . date("Y-m-d_His_") . $modelName . '.php';
+        $migrationFile = $migrationDir . date("Y_m_d_His_") . 'create_' . strtolower($modelName) . '_table' . '.php';
         if (file_exists($migrationFile)) {
             $mg = ucfirst($modelName);
             $this->message("Migration File {$mg} already exists.", true, true, "warning");
