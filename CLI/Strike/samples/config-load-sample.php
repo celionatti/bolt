@@ -19,10 +19,6 @@ if (!file_exists(__DIR__ . '/constants.php')) {
 require __DIR__ . '/constants.php';
 
 
-if (!defined('APP_KEY')) {
-    define('APP_KEY', $key);
-}
-
 if (!defined('URL_ROOT')) {
     define('URL_ROOT', $_ENV["URL_ROOT"]);
 }
