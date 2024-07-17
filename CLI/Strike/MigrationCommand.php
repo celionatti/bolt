@@ -139,7 +139,8 @@ class MigrationCommand extends CliActions implements CommandInterface
             return;
         }
 
-        $migrationFiles = glob($migrationDir . '*.php');
+        // $migrationFiles = glob($migrationDir . '*.php');
+        $migrationFiles = glob("{$migrationDir}*.php");
 
         if (empty($migrationFiles)) {
             $this->message("No migrations found.", false, true, "info");

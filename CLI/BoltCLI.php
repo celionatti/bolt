@@ -242,9 +242,6 @@ class BoltCLI
     public function activeCommands($strike)
     {
         $strike->registerCommand('greet', 'Greet the user', new GreetCommand());
-        $strike->registerCommand('model', 'Create a model and associated files like migration', new ModelCommand);
-        $strike->registerCommand('controller', 'Create a controller and associated files like view file', new ControllerCommand);
-        $strike->registerCommand('view', 'Create a view file, for all types of extensions {Twig: .twig, Blade: .blade.php, or default: .php}', new ViewCommand);
         $strike->registerCommand('migration', 'Create a migration file, migrate, rollback, refresh, create', new MigrationCommand);
         $strike->registerCommand('make', 'Make Command is for creating complete Package, commands like Resource,', new MakeCommand);
         $strike->registerCommand('serve', 'Serve Bolt Framework with the PHP web server,', new ServerCommand);
@@ -257,6 +254,7 @@ class BoltCLI
         $strike->registerAlias('add', 'calculate');
         $strike->registerAlias('seed', 'seeder');
         $strike->registerAlias('auth', 'authentication');
+        $strike->registerAlias('gen', 'generate');
     }
 
     public function welcomeMessage()

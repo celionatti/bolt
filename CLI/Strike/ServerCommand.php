@@ -10,13 +10,104 @@ declare(strict_types=1);
 
 namespace celionatti\Bolt\CLI\Strike;
 
+use celionatti\Bolt\CLI\CliActions;
 use celionatti\Bolt\CLI\CommandInterface;
 
-class ServerCommand implements CommandInterface
+class ServerCommand extends CliActions implements CommandInterface
 {
-    public $basePath;
+    private $basePath;
 
     public function __construct()
+    {
+        $this->configure();
+    }
+
+    public function execute(array $args)
+    {
+        if (empty($args) || empty($args["args"])) {
+            $this->listAvailableActions();
+            return;
+        }
+
+        $action = $args["args"][0] ?? null;
+
+        switch ($action) {
+            case 'start':
+                $this->startServer();
+                break;
+            case 'stop':
+                $this->stopServer();
+                break;
+            case 'restart':
+                $this->restartServer();
+                break;
+            default:
+                $this->message("Unknown Command. Usage: server <action> (start/stop/restart)", true, true, 'warning');
+        }
+    }
+
+    private function startServer()
+    {
+        $port = $this->prompt("Enter port number (default: 8000):");
+        $port = !empty($port) ? (int)$port : 8000;
+
+        $this->message("Starting PHP development server on http://localhost:$port", false, true, 'info');
+
+        // Verify if the public directory exists
+        $publicDir = "{$this->basePath}/public";
+        if (!is_dir($publicDir)) {
+            $this->message("Error: 'public' directory does not exist in the project root.", true, true, 'error');
+            return;
+        }
+
+        // Change the working directory to the "public" folder
+        chdir($publicDir);
+        $cmd = "php -S localhost:$port";
+
+        // Add debug message for the command
+        $this->message("Executing command: $cmd", false, true, 'info');
+
+        // Execute server command
+        $this->executeCommandInBackground($cmd, $port);
+    }
+
+    private function stopServer()
+    {
+        $this->message("Stopping PHP development server", false, true, 'info');
+
+        if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+            // Windows-specific command to stop the server
+            exec("taskkill /F /IM php.exe");
+        } else {
+            // Unix-based command to stop the server
+            exec("pkill -f 'php -S'");
+        }
+
+        $this->message("Server stopped successfully", false, true, 'info');
+    }
+
+    private function restartServer()
+    {
+        $this->stopServer();
+        $this->startServer();
+    }
+
+    private function executeCommandInBackground(string $cmd, $port)
+    {
+        $this->message("Server Started on http://localhost:$port . Press Ctrl+C to stop.", false, true, 'info');
+        //Execute command in background
+        exec($cmd);
+    }
+
+    private function listAvailableActions()
+    {
+        $this->message("Available Server Commands:", false, false, 'info');
+        $this->output("  \033[0;37mstart\033[0m: \033[0;36mStart the PHP development server\033[0m", 1);
+        $this->output("  \033[0;37mstop\033[0m: \033[0;36mStop the PHP development server\033[0m", 1);
+        $this->output("  \033[0;37mrestart\033[0m: \033[0;36mRestart the PHP development server\033[0m", 1);
+    }
+
+    private function configure()
     {
         // Get the current file's directory
         $currentDirectory = __DIR__;
@@ -29,75 +120,10 @@ class ServerCommand implements CommandInterface
             // Check if you have reached the filesystem root (to prevent infinite loop)
             if ($currentDirectory === '/') {
                 $this->message("Error: Project root not found.", true, true, "error");
+                return;
             }
         }
 
         $this->basePath = $currentDirectory;
-    }
-
-    public function execute(array $args)
-    {
-        // Check if the required arguments are provided
-        if (count($args["args"]) < 2) {
-            $this->message("Strike Usage: serve <host> <port>", true, true, 'warning');
-        }
-
-        $host = $args["args"][0];
-        $port = $args["args"][1];
-
-        // Start the PHP web server
-        $this->startServer($host, $port);
-    }
-
-    private function startServer($host, $port)
-    {
-        // Change the working directory to the "public" folder
-        chdir($this->basePath . '/public');
-
-        $command = "php -S $host:$port";
-
-        // Display a message indicating that the server is running
-        $this->message("Bolt Framework PHP server is running on $host:$port. Press Ctrl+C to stop.", false, true, 'info');
-
-        // Use the `exec` function to run the PHP web server command
-        exec($command);
-
-        // Keep the script running to allow the server to continue serving
-        while (true) {
-            sleep(1);
-        }
-    }
-
-    public function message(string $message, bool $die = false, bool $timestamp = true, string $level = 'info'): void
-    {
-        $output = '';
-
-        if ($timestamp) {
-            $output .= "[" . date("Y-m-d H:i:s") . "] - ";
-        }
-
-        $output .= ucfirst($message) . PHP_EOL;
-
-        switch ($level) {
-            case 'info':
-                $output = "\033[0;32m" . $output; // Green color for info
-                break;
-            case 'warning':
-                $output = "\033[0;33m" . $output; // Yellow color for warning
-                break;
-            case 'error':
-                $output = "\033[0;31m" . $output; // Red color for error
-                break;
-            default:
-                break;
-        }
-
-        $output .= "\033[0m"; // Reset color
-
-        echo $output . PHP_EOL;
-
-        if ($die) {
-            die();
-        }
     }
 }

@@ -21,12 +21,20 @@ class MakeCommand extends CliActions implements CommandInterface
     private const MODEL = 'model';
     private const MIGRATION = 'migration';
     private const VIEW = 'view';
+    private const LAYOUT = 'layout';
+    private const MIDDLEWARE = 'middleware';
+    private const SERVICE = 'service';
+    private const COMPONENT = 'component';
 
     private const ACTIONS = [
         self::CONTROLLER => 'Create a new controller class',
         self::MODEL => 'Create a new model class',
         self::MIGRATION => 'Create a new migration class',
         self::VIEW => 'Create a new view file',
+        self::LAYOUT => 'Create a new layout file',
+        self::MIDDLEWARE => 'Create a new middleware class',
+        self::SERVICE => 'Create a new service class',
+        self::COMPONENT => 'Create a new component'
         // Add other actions and their descriptions here
     ];
 
@@ -68,6 +76,21 @@ class MakeCommand extends CliActions implements CommandInterface
             case self::MODEL:
                 $this->createModel(false);
                 break;
+            case self::VIEW:
+                $this->createView();
+                break;
+            case self::LAYOUT:
+                $this->createLayout();
+                break;
+            case self::MIDDLEWARE:
+                $this->createMiddleware();
+                break;
+            case self::SERVICE:
+                $this->createService();
+                break;
+            case self::COMPONENT:
+                $this->createComponent();
+                break;
             default:
                 $this->message("Unknown Command - You can check help or docs to see the list of commands and methods of calling.", true, true, 'warning');
         }
@@ -98,7 +121,7 @@ class MakeCommand extends CliActions implements CommandInterface
             return;
         }
 
-        $sampleFile = __DIR__ . "/samples/controller-sample.php";
+        $sampleFile = __DIR__ . "/samples/controller/controller-sample.php";
 
         if (!file_exists($sampleFile)) {
             $this->message("Error: Controller sample file not found.", true, true, "error");
@@ -162,7 +185,7 @@ class MakeCommand extends CliActions implements CommandInterface
         touch($modelFile);
 
         // Customize the content of model class here from the sample class.
-        if($choice === 2) {
+        if ($choice === 2) {
             $sample_file = __DIR__ . "/samples/model/basic-sample.php";
         } else {
             $sample_file = __DIR__ . "/samples/model/empty-sample.php";
@@ -244,6 +267,295 @@ class MakeCommand extends CliActions implements CommandInterface
         }
 
         $this->message("Migration file created successfully: '$migrationFile'", false, true, "info");
+    }
+
+    private function createView()
+    {
+        $filename = $this->prompt("Enter the view filename");
+
+        if (empty($filename)) {
+            $this->message("Error: Filename cannot be empty.", true, true, "error");
+            return;
+        }
+
+        $createInFolder = $this->promptOptions("Do you want to create the view in a specific folder?", [
+            '1' => 'Yes',
+            '2' => 'No'
+        ], '2');
+
+        $folders = null;
+        if ($createInFolder === '1') {
+            $folders = $this->prompt("Enter the folder name");
+        }
+
+        $extension = $this->promptOptions("Choose the view file extension:", [
+            '1' => '.php',
+            '2' => '.blade.php',
+            '3' => '.twig'
+        ], '1');
+
+        $extension = match ($extension) {
+            '1' => '.php',
+            '2' => '.blade.php',
+            '3' => '.twig',
+            default => '.php',
+        };
+
+        // Determine where to create folders based on the extension
+        if ($extension === ".blade.php") {
+            $viewDir = $this->basePath . DIRECTORY_SEPARATOR . "templates" . DIRECTORY_SEPARATOR . "blade-views" . DIRECTORY_SEPARATOR . $folders;
+        } elseif ($extension === ".twig") {
+            $viewDir = $this->basePath . DIRECTORY_SEPARATOR . "templates" . DIRECTORY_SEPARATOR . "twig-views" . DIRECTORY_SEPARATOR . $folders;
+        } else {
+            $viewDir = $this->basePath . DIRECTORY_SEPARATOR . "templates" . DIRECTORY_SEPARATOR . $folders;
+        }
+
+        if (!is_dir($viewDir)) {
+            if (!mkdir($viewDir, 0755, true)) {
+                $this->message("Error: Unable to create the view directory.", true, true, "error");
+                return;
+            }
+        }
+
+        $viewFile = $viewDir . DIRECTORY_SEPARATOR . $filename . $extension;
+        if (file_exists($viewFile)) {
+            $this->message("View File {$filename}{$extension} already exists.", true, true, "warning");
+            return;
+        }
+
+        touch($viewFile);
+
+        // Customize the content of the view file here
+        if ($extension === ".blade.php") {
+            $sampleFile = __DIR__ . "/samples/view/blade-view-sample.php";
+        } elseif ($extension === ".twig") {
+            $sampleFile = __DIR__ . "/samples/view/twig-view-sample.php";
+        } else {
+            $sampleFile = __DIR__ . "/samples/view/view-sample.php";
+        }
+
+        if (!file_exists($sampleFile)) {
+            $this->message("Error: View Sample file not found in: {$sampleFile}", true, true, "error");
+            return;
+        }
+
+        $content = file_get_contents($sampleFile);
+
+        if (file_put_contents($viewFile, $content) === false) {
+            $this->message("Error: Unable to create the view file.", true, true, "error");
+            return;
+        }
+
+        $this->message("View file created successfully: '$viewFile'", false, true, "info");
+    }
+
+    private function createLayout()
+    {
+        $filename = $this->prompt("Enter the layout filename");
+
+        if (empty($filename)) {
+            $this->message("Error: Filename cannot be empty.", true, true, "error");
+            return;
+        }
+
+        $createInFolder = $this->promptOptions("Do you want to create the layout in a specific folder?", [
+            '1' => 'Yes',
+            '2' => 'No'
+        ], '2');
+
+        $folders = null;
+        if ($createInFolder === '1') {
+            $folders = $this->prompt("Enter the folder name");
+        }
+
+        $extension = $this->promptOptions("Choose the layout file extension:", [
+            '1' => '.php',
+            '2' => '.blade.php',
+            '3' => '.twig'
+        ], '1');
+
+        $extension = match ($extension) {
+            '1' => '.php',
+            '2' => '.blade.php',
+            '3' => '.twig',
+            default => '.php',
+        };
+
+        // Determine where to create folders based on the extension
+        if ($extension === ".blade.php") {
+            $layoutDir = $this->basePath . DIRECTORY_SEPARATOR . "templates" . DIRECTORY_SEPARATOR . "layouts" . DIRECTORY_SEPARATOR . "blade-views" . DIRECTORY_SEPARATOR . $folders;
+        } elseif ($extension === ".twig") {
+            $layoutDir = $this->basePath . DIRECTORY_SEPARATOR . "templates" . DIRECTORY_SEPARATOR . "layouts" . DIRECTORY_SEPARATOR . "twig-views" . DIRECTORY_SEPARATOR . $folders;
+        } else {
+            $layoutDir = $this->basePath . DIRECTORY_SEPARATOR . "templates" . DIRECTORY_SEPARATOR . "layouts" . DIRECTORY_SEPARATOR . $folders;
+        }
+
+        if (!is_dir($layoutDir)) {
+            if (!mkdir($layoutDir, 0755, true)) {
+                $this->message("Error: Unable to create the layout directory.", true, true, "error");
+                return;
+            }
+        }
+
+        $layoutFile = $layoutDir . DIRECTORY_SEPARATOR . $filename . $extension;
+        if (file_exists($layoutFile)) {
+            $this->message("Layout File {$filename}{$extension} already exists.", true, true, "warning");
+            return;
+        }
+
+        touch($layoutFile);
+
+        // Customize the content of the view file here
+        $sampleFile = __DIR__ . "/samples/view/layout-sample.php";
+
+        if (!file_exists($sampleFile)) {
+            $this->message("Error: Layout Sample file not found in: {$sampleFile}", true, true, "error");
+            return;
+        }
+
+        $content = file_get_contents($sampleFile);
+
+        if (file_put_contents($layoutFile, $content) === false) {
+            $this->message("Error: Unable to create the layout file.", true, true, "error");
+            return;
+        }
+
+        $this->message("Layout file created successfully: '$layoutFile'", false, true, "info");
+    }
+
+    private function createMiddleware()
+    {
+        $middlewareName = $this->prompt("Enter the middleware name");
+
+        if (empty($middlewareName)) {
+            $this->message("Error: Middleware name cannot be empty.", true, true, "error");
+            return;
+        }
+
+        $middlewareDir = $this->basePath . DIRECTORY_SEPARATOR . "middleware" . DIRECTORY_SEPARATOR;
+
+        if (!is_dir($middlewareDir)) {
+            if (!mkdir($middlewareDir, 0755, true)) {
+                $this->message("Error: Unable to create the middleware directory.", true, true, "error");
+                return;
+            }
+        }
+
+        $middlewareFile = $middlewareDir . ucfirst($middlewareName) . 'Middleware.php';
+
+        if (file_exists($middlewareFile)) {
+            $this->message("Error: Middleware file already exists.", true, true, "warning");
+            return;
+        }
+
+        $sampleFile = __DIR__ . "/samples/middleware-sample.php";
+
+        if (!file_exists($sampleFile)) {
+            $this->message("Error: Middleware sample file not found.", true, true, "error");
+            return;
+        }
+
+        $className = ucfirst($middlewareName) . 'Middleware';
+
+        $content = file_get_contents($sampleFile);
+        $content = str_replace("{CLASSNAME}", $className, $content);
+
+        if (file_put_contents($middlewareFile, $content) === false) {
+            $this->message("Error: Unable to create the middleware file.", true, true, "error");
+            return;
+        }
+
+        $this->message("Middleware file created successfully: '$middlewareFile'", false, true, "info");
+    }
+
+    private function createService()
+    {
+        $serviceName = $this->prompt("Enter the service name");
+
+        if (empty($serviceName)) {
+            $this->message("Error: Service name cannot be empty.", true, true, "error");
+            return;
+        }
+
+        $serviceDir = $this->basePath . DIRECTORY_SEPARATOR . "services" . DIRECTORY_SEPARATOR;
+
+        if (!is_dir($serviceDir)) {
+            if (!mkdir($serviceDir, 0755, true)) {
+                $this->message("Error: Unable to create the services directory.", true, true, "error");
+                return;
+            }
+        }
+
+        $serviceFile = $serviceDir . ucfirst($serviceName) . 'Service.php';
+
+        if (file_exists($serviceFile)) {
+            $this->message("Error: Service file already exists.", true, true, "warning");
+            return;
+        }
+
+        $sampleFile = __DIR__ . "/samples/service-sample.php";
+
+        if (!file_exists($sampleFile)) {
+            $this->message("Error: Service sample file not found.", true, true, "error");
+            return;
+        }
+
+        $className = ucfirst($serviceName) . 'Service';
+
+        $content = file_get_contents($sampleFile);
+        $content = str_replace("{CLASSNAME}", $className, $content);
+
+        if (file_put_contents($serviceFile, $content) === false) {
+            $this->message("Error: Unable to create the service file.", true, true, "error");
+            return;
+        }
+
+        $this->message("Service file created successfully: '$serviceFile'", false, true, "info");
+    }
+
+    private function createComponent()
+    {
+        $componentName = $this->prompt("Enter the component name");
+
+        if (empty($componentName)) {
+            $this->message("Error: Component name cannot be empty.", true, true, "error");
+            return;
+        }
+
+        $componentDir = $this->basePath . DIRECTORY_SEPARATOR . "components" . DIRECTORY_SEPARATOR;
+
+        if (!is_dir($componentDir)) {
+            if (!mkdir($componentDir, 0755, true)) {
+                $this->message("Error: Unable to create the components directory.", true, true, "error");
+                return;
+            }
+        }
+
+        $componentFile = $componentDir . ucfirst($componentName) . 'Component.php';
+
+        if (file_exists($componentFile)) {
+            $this->message("Error: Component file already exists.", true, true, "warning");
+            return;
+        }
+
+        $sampleFile = __DIR__ . "/samples/component-sample.php";
+
+        if (!file_exists($sampleFile)) {
+            $this->message("Error: Component sample file not found.", true, true, "error");
+            return;
+        }
+
+        $className = ucfirst($componentName) . 'Component';
+
+        $content = file_get_contents($sampleFile);
+        $content = str_replace("{CLASSNAME}", $className, $content);
+
+        if (file_put_contents($componentFile, $content) === false) {
+            $this->message("Error: Unable to create the component file.", true, true, "error");
+            return;
+        }
+
+        $this->message("Component file created successfully: '$componentFile'", false, true, "info");
     }
 
     private function listAvailableActions()

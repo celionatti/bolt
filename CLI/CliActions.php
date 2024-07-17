@@ -105,32 +105,44 @@ class CliActions
 
     public function message(string $message, bool $die = false, bool $timestamp = true, string $level = 'info'): void
     {
+        // Initialize output string
         $output = '';
 
-        if ($timestamp) {
-            $output .= "[" . date("Y-m-d H:i:s") . "] - ";
-        }
+        // Format the message with initial uppercase
+        $formattedMessage = ucfirst($message);
 
-        $output .= ucfirst($message) . PHP_EOL;
+        // Calculate total message length for padding and borders
+        $messageLength = strlen($formattedMessage);
+        $borderLength = $messageLength + 6; // Borders on both sides
 
-        switch ($level) {
-            case 'info':
-                $output = "\033[0;32m{$output}"; // Green color for info
-                break;
-            case 'warning':
-                $output = "\033[0;33m{$output}"; // Yellow color for warning
-                break;
-            case 'error':
-                $output = "\033[0;31m{$output}"; // Red color for error
-                break;
-            default:
-                break;
-        }
+        // Create the timestamp with a more friendly format
+        $friendlyTimestamp = $timestamp ? "[" . date("M d, Y - H:i:s") . "] - " : '';
 
-        $output .= "\033[0m"; // Reset color
+        // Build the top border with asterisks
+        $topBorder = str_repeat('*', $borderLength) . PHP_EOL;
 
+        // Calculate padding for centering the message
+        $padding = str_repeat(' ', intval(floor(($borderLength - $messageLength) / 2))); // Ensure integer value
+
+        // Build the middle content with borders and padding
+        $middleContent = "*{$padding}{$formattedMessage}{$padding}*" . PHP_EOL;
+
+        // Build the bottom border with asterisks
+        $bottomBorder = str_repeat('*', $borderLength) . PHP_EOL;
+
+        // Colorize output to light blue
+        $output .= "\033[1;36m"; // Light blue color
+
+        // Concatenate all parts: top border, timestamp, middle content, bottom border
+        $output .= "{$topBorder}{$friendlyTimestamp}{$middleContent}{$bottomBorder}";
+
+        // Reset color after the message
+        $output .= "\033[0m";
+
+        // Output the formatted message
         echo $output . PHP_EOL;
 
+        // Exit script if die flag is set
         if ($die) {
             die();
         }
