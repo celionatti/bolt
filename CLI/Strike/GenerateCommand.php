@@ -41,6 +41,18 @@ class GenerateCommand extends CliActions implements CommandInterface
             case 'key':
                 $this->generateKey();
                 break;
+            case 'controller':
+                $this->generateController();
+                break;
+            case 'model':
+                $this->generateModel();
+                break;
+            case 'migration':
+                $this->generateMigration();
+                break;
+            case 'view':
+                $this->generateView();
+                break;
             default:
                 $this->message("Unknown Command. Usage: generate <action> (create)", true, true, 'warning');
         }
@@ -182,6 +194,131 @@ class GenerateCommand extends CliActions implements CommandInterface
         $this->message("Config file created successfully, FileName: '$m'!");
     }
 
+    private function generateController()
+    {
+        $controllerName = $this->prompt("Enter controller name:");
+        $namespace = $this->prompt("Enter namespace (optional):");
+
+        $namespaceLine = !empty($namespace) ? "namespace $namespace;" : "";
+        $classContent = "<?php\n\n$namespaceLine\n\nclass {$controllerName}Controller\n{\n";
+        $classContent .= "    public function index()\n    {\n        // code...\n    }\n";
+        $classContent .= "    public function show(\$id)\n    {\n        // code...\n    }\n";
+        $classContent .= "    public function create()\n    {\n        // code...\n    }\n";
+        $classContent .= "    public function store()\n    {\n        // code...\n    }\n";
+        $classContent .= "    public function edit(\$id)\n    {\n        // code...\n    }\n";
+        $classContent .= "    public function update(\$id)\n    {\n        // code...\n    }\n";
+        $classContent .= "    public function destroy(\$id)\n    {\n        // code...\n    }\n";
+        $classContent .= "}\n";
+
+        $directory = !empty($namespace) ? str_replace('\\', '/', $namespace) : 'controllers';
+        $filePath = "{$this->basePath}/$directory/{$controllerName}Controller.php";
+
+        if (!is_dir(dirname($filePath))) {
+            mkdir(dirname($filePath), 0755, true);
+        }
+
+        if (file_exists($filePath)) {
+            $this->message("Error: Controller file already exists.", true, true, 'error');
+            return;
+        }
+
+        file_put_contents($filePath, $classContent);
+
+        $this->message("Controller file created successfully at $filePath", false, true, 'info');
+    }
+
+    private function generateModel()
+    {
+        $modelName = $this->prompt("Enter model name:");
+        $namespace = $this->prompt("Enter namespace (optional):");
+
+        $namespaceLine = !empty($namespace) ? "namespace $namespace;" : "";
+        $classContent = "<?php\n\n$namespaceLine\n\nclass $modelName\n{\n";
+        $classContent .= "    protected \$attributes = [];\n\n";
+        $classContent .= "    public function __construct(array \$attributes = [])\n    {\n";
+        $classContent .= "        \$this->attributes = \$attributes;\n";
+        $classContent .= "    }\n\n";
+        $classContent .= "    // Add other model methods here...\n";
+        $classContent .= "}\n";
+
+        $directory = !empty($namespace) ? str_replace('\\', '/', $namespace) : 'models';
+        $filePath = "{$this->basePath}/$directory/$modelName.php";
+
+        if (!is_dir(dirname($filePath))) {
+            mkdir(dirname($filePath), 0755, true);
+        }
+
+        if (file_exists($filePath)) {
+            $this->message("Error: Model file already exists.", true, true, 'error');
+            return;
+        }
+
+        file_put_contents($filePath, $classContent);
+
+        $this->message("Model file created successfully at $filePath", false, true, 'info');
+    }
+
+    private function generateMigration()
+    {
+        $migrationName = $this->prompt("Enter migration name:");
+
+        $timestamp = date('Y_m_d_His');
+        $fileName = "{$timestamp}_{$migrationName}.php";
+
+        $classContent = "<?php\n\nuse Illuminate\\Database\\Migrations\\Migration;\nuse Illuminate\\Database\\Schema\\Blueprint;\nuse Illuminate\\Support\\Facades\\Schema;\n\n";
+        $classContent .= "class {$migrationName} extends Migration\n{\n";
+        $classContent .= "    public function up()\n    {\n";
+        $classContent .= "        Schema::create('table_name', function (Blueprint \$table) {\n";
+        $classContent .= "            \$table->id();\n";
+        $classContent .= "            // Add other columns here...\n";
+        $classContent .= "            \$table->timestamps();\n";
+        $classContent .= "        });\n";
+        $classContent .= "    }\n\n";
+        $classContent .= "    public function down()\n    {\n";
+        $classContent .= "        Schema::dropIfExists('table_name');\n";
+        $classContent .= "    }\n";
+        $classContent .= "}\n";
+
+        $directory = "{$this->basePath}/database/migrations";
+        $filePath = "$directory/$fileName";
+
+        if (!is_dir(dirname($filePath))) {
+            mkdir(dirname($filePath), 0755, true);
+        }
+
+        if (file_exists($filePath)) {
+            $this->message("Error: Migration file already exists.", true, true, 'error');
+            return;
+        }
+
+        file_put_contents($filePath, $classContent);
+
+        $this->message("Migration file created successfully at $filePath", false, true, 'info');
+    }
+
+    private function generateView()
+    {
+        $viewName = $this->prompt("Enter view name:");
+        $directory = "{$this->basePath}/resources/templates";
+
+        $filePath = "$directory/$viewName.php";
+
+        if (!is_dir($directory)) {
+            mkdir($directory, 0755, true);
+        }
+
+        if (file_exists($filePath)) {
+            $this->message("Error: View file already exists.", true, true, 'error');
+            return;
+        }
+
+        $content = "<!-- View: $viewName -->\n<h1>$viewName</h1>\n<p>This is the $viewName view.</p>\n";
+
+        file_put_contents($filePath, $content);
+
+        $this->message("View file created successfully at $filePath", false, true, 'info');
+    }
+
     private function create_random_key(): string
     {
         return bin2hex(random_bytes(32));
@@ -193,6 +330,10 @@ class GenerateCommand extends CliActions implements CommandInterface
         $this->output("  \033[0;37mclass\033[0m: \033[0;36mGenerate a new class\033[0m", 1);
         $this->output("  \033[0;37mfactory\033[0m: \033[0;36mGenerate a new factory class\033[0m", 1);
         $this->output("  \033[0;37mkey\033[0m: \033[0;36mGenerate a new config key\033[0m", 1);
+        $this->output("  \033[0;37mcontroller\033[0m: \033[0;36mGenerate a new controller class\033[0m", 1);
+        $this->output("  \033[0;37mmodel\033[0m: \033[0;36mGenerate a new model class\033[0m", 1);
+        $this->output("  \033[0;37mmigration\033[0m: \033[0;36mGenerate a new migration file\033[0m", 1);
+        $this->output("  \033[0;37mview\033[0m: \033[0;36mGenerate a new view file\033[0m", 1);
     }
 
     private function configure()

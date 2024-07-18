@@ -10,27 +10,27 @@ declare(strict_types=1);
  * ======================================
  */
 
-use celionatti\Bolt\Migration\BoltMigration;
+ use celionatti\Bolt\Migration\Migration;
+ use celionatti\Bolt\illuminate\Schema\Schema;
+ use celionatti\Bolt\illuminate\Schema\Blueprint;
 
-return new class extends BoltMigration
+return new class extends Migration
 {
     /**
      * The Up method is to create table.
      *
      * @return void
      */
-    public function up()
+    public function up():void
     {
-        $this->createTable("{TABLENAME}")
-            ->id()->primaryKey()
-            ->varchar("user_id", 255)->nullable()->foreignKey("user_id", "users", "user_id")
-            ->varchar("user_attempted")
-            ->varchar("ip_address")->nullable()
-            ->varchar("user_agent")->nullable()
-            ->timestamp("timestamp")
-            ->enum("success", ['true', 'false'])->defaultValue("false")
-            ->varchar("failure_reason")->nullable()
-            ->build(true);
+        Schema::create("{TABLENAME}", function (Blueprint $table) {
+            $table->id();
+            $table->string('name')->nullable();
+            $table->string('email')->unique('email');
+            $table->timestamp('email_verified_at')->nullable();
+            $table->string('password');
+            $table->timestamps();
+        });
     }
 
     /**
@@ -38,8 +38,8 @@ return new class extends BoltMigration
      *
      * @return void
      */
-    public function down()
+    public function down():void
     {
-        $this->dropTable("{TABLENAME}");
+        Schema::dropIfExists("{TABLENAME}");
     }
 };
