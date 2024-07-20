@@ -12,182 +12,109 @@ namespace celionatti\Bolt\Database;
 
 use PDO;
 use PDOException;
-use celionatti\Bolt\Config;
-use celionatti\Bolt\BoltQueryBuilder\BoltQueryBuilder;
+use celionatti\Bolt\BoltException\BoltException;
+use celionatti\Bolt\BoltQueryBuilder\QueryBuilder;
 
 
 class Database
 {
-    public static $query_id = '';
-    public int $affected_rows = 0;
-    public mixed $insert_id = 0;
-    public $error = '';
-    public bool $has_error = false;
+    private PDO $connection;
+    private static array $instances = [];
 
-    private $connection;
-    public $transactionLevel = 0;
-    public $missing_tables = [];
-
-    private static $instances = [];
-
-    public $databaseType;
-
-    public function __construct()
+    public function __construct(array $config = null)
     {
-        $database = [
+        $config = $config ?? $this->loadDefaultConfig();
+        $this->connect($config);
+    }
+
+    private function loadDefaultConfig(): array
+    {
+        return [
             "drivers" => DB_DRIVERS ?? bolt_env("DB_DRIVERS"),
             "host" => DB_HOST ?? bolt_env("DB_HOST"),
             "dbname" => DB_NAME ?? bolt_env("DB_DATABASE"),
             "username" => DB_USERNAME ?? bolt_env("DB_USERNAME"),
             "password" => DB_PASSWORD ?? bolt_env("DB_PASSWORD")
         ];
+    }
 
-        $config = Config::get(BOLT_DATABASE, $database);
+    private function connect(array $config)
+    {
+        $np_vars = [
+            'DB_DRIVERS' => $config["drivers"] ?? bolt_env("DB_DRIVERS"),
+            'DB_HOST' => $config["host"] ?? bolt_env("DB_HOST"),
+            'DB_NAME' => $config["dbname"] ?? bolt_env("DB_NAME"),
+            'DB_USER' => $config["username"] ?? bolt_env("DB_USERNAME"),
+            'DB_PASSWORD' => $config["password"] ?? bolt_env("DB_PASSWORD"),
+        ];
+
+        try {
+            if ($np_vars['DB_DRIVERS'] === 'mysql') {
+                $dsn = "mysql:host={$np_vars['DB_HOST']};dbname={$np_vars['DB_NAME']};charset=utf8mb4";
+                $this->connection = new PDO($dsn, $np_vars['DB_USER'], $np_vars['DB_PASSWORD'], [
+                    PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                    PDO::ATTR_EMULATE_PREPARES => false,
+                    PDO::ATTR_PERSISTENT => true,
+                    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_OBJ
+                ]);
+            } elseif ($np_vars['DB_DRIVERS'] === 'sqlite') {
+                $dsn = "sqlite:{$np_vars['DB_NAME']}";
+                $this->connection = new PDO($dsn, null, null, [
+                    PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_OBJ
+                ]);
+            }
+        } catch (PDOException $e) {
+            throw new BoltException($e->getMessage(), $e->getCode(), "info");
+        }
+
+        // Reconnection Logic
+        if ($this->connection === null) {
+            $this->connect($config);
+        }
+    }
+
+    // Reconnection method
+    public function reconnect()
+    {
+        $config = $this->loadDefaultConfig();
         $this->connect($config);
     }
 
-    private function connect($config)
+    // Example Query Logging
+    private function logQuery(string $query, array $params = [])
     {
-        // Replace $np_vars with your actual configuration
-        $np_vars = [
-            'DB_DRIVERS'     => $config["drivers"] ?? bolt_env("DB_DRIVERS"),
-            'DB_HOST'       => $config["host"] ?? bolt_env("DB_HOST"),
-            'DB_NAME'       => $config["dbname"] ?? bolt_env("DB_NAME"),
-            'DB_USER'       => $config["username"] ?? bolt_env("DB_USERNAME"),
-            'DB_PASSWORD'   => $config["password"] ?? bolt_env("DB_PASSWORD"),
-        ];
-
-        $string = "{$np_vars['DB_DRIVERS']}:host={$np_vars['DB_HOST']};dbname={$np_vars['DB_NAME']}";
-
-        try {
-            $this->connection = new PDO($string, $np_vars['DB_USER'], $np_vars['DB_PASSWORD']);
-            $this->connection->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-            $this->connection->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
-            $this->connection->setAttribute(PDO::ATTR_PERSISTENT, true);
-            $this->connection->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_OBJ);
-        } catch (PDOException $e) {
-            $this->handleDatabaseError($e->getMessage());
-        }
-
-        return $this->connection;
+        // Implement your logging mechanism here
+        file_put_contents('query.log', date('Y-m-d H:i:s') . " - " . $query . " - " . json_encode($params) . PHP_EOL, FILE_APPEND);
     }
 
-    public function getConnection()
+    public function getConnection(): PDO
     {
         return $this->connection;
     }
 
-    public static function getInstance(string $connectionName = 'database')
+    public static function getInstance(string $connectionName = 'database'): self
     {
         if (!isset(self::$instances[$connectionName])) {
-            self::$instances[$connectionName] = new self($connectionName);
+            self::$instances[$connectionName] = new self();
         }
 
         return self::$instances[$connectionName];
     }
 
-    public function secureQuery(string $query, array $data = [], string $data_type = 'object')
-    {
-        // Implement input validation and proper escaping to prevent SQL injection attacks
-        // ...
-
-        return $this->query($query, $data, $data_type);
-    }
-
     public function beginTransaction()
     {
-        try {
-            if ($this->transactionLevel === 0) {
-                $this->connection->beginTransaction();
-            }
-            $this->transactionLevel++;
-        } catch (PDOException $e) {
-            $this->handleDatabaseError($e->getMessage());
-        }
+        $this->connection->beginTransaction();
     }
 
-    public function createSavepoint(string $savepoint)
+    public function commit()
     {
-        try {
-            $this->connection->exec("SAVEPOINT $savepoint");
-        } catch (PDOException $e) {
-            $this->handleDatabaseError($e->getMessage());
-        }
+        $this->connection->commit();
     }
 
-    public function rollbackToSavepoint(string $savepoint)
+    public function rollBack()
     {
-        try {
-            $this->connection->exec("ROLLBACK TO SAVEPOINT $savepoint");
-        } catch (PDOException $e) {
-            $this->handleDatabaseError($e->getMessage());
-        }
-    }
-
-    public function commitTransaction()
-    {
-        if ($this->transactionLevel === 1) {
-            try {
-                $this->connection->commit();
-            } catch (PDOException $e) {
-                $this->handleDatabaseError($e->getMessage());
-            }
-        }
-        $this->transactionLevel = max(0, $this->transactionLevel - 1);
-    }
-
-    public function rollbackTransaction()
-    {
-        if ($this->transactionLevel === 1) {
-            try {
-                $this->connection->rollBack();
-            } catch (PDOException $e) {
-                $this->handleDatabaseError($e->getMessage());
-            }
-        }
-        $this->transactionLevel = max(0, $this->transactionLevel - 1);
-    }
-
-    public function setDatabaseType(string $databaseType)
-    {
-        // Validate and set the database type
-        if (in_array($databaseType, ['mysql', 'pgsql'])) {
-            $this->databaseType = $databaseType;
-        } else {
-            $this->handleDatabaseError("Unsupported database type: {$databaseType}");
-        }
-    }
-
-    public function getDatabaseType()
-    {
-        return $this->databaseType;
-    }
-
-    public function queryBuilder($table)
-    {
-        return new BoltQueryBuilder($this->connection, $table);
-    }
-
-    private function handleDatabaseError($errorMessage)
-    {
-        $this->error = $errorMessage;
-        $this->has_error = true;
-
-        // Example: Log error to a file
-        error_log("Database Error: $errorMessage");
-
-        // You can also throw an exception if desired
-        bolt_die("Database Error", $errorMessage);
-    }
-
-    public function get_row(string $query, array $data = [], string $data_type = 'object')
-    {
-        $result = $this->query($query, $data, $data_type);
-        if (is_array($result) && count($result) > 0) {
-            return $result[0];
-        }
-
-        return false;
+        $this->connection->rollBack();
     }
 
     public function prepare($query)
@@ -195,91 +122,40 @@ class Database
         return $this->connection->prepare($query);
     }
 
+    public function queryBuilder(): QueryBuilder
+    {
+        return new QueryBuilder($this->connection);
+    }
+
     public function query(string $query, array $params = [], string $data_type = 'object')
     {
-        $this->error = '';
-        $this->has_error = false;
-
         try {
+            $this->logQuery($query, $params);
             $stmt = $this->connection->prepare($query);
-
-            // Bind named parameters if provided
             foreach ($params as $paramName => $paramValue) {
-                $stmt->bindValue(":" . $paramName, $paramValue);
+                $stmt->bindValue(":{$paramName}", $paramValue);
             }
-
             $result = $stmt->execute();
-
-            $this->affected_rows = $stmt->rowCount();
-            $this->insert_id = $this->connection->lastInsertId();
-
+            
             if ($result) {
-                if ($data_type == 'object') {
-                    $rows = $stmt->fetchAll(PDO::FETCH_OBJ);
-                } elseif ($data_type == 'assoc') {
-                    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
-                } else {
-                    $rows = $stmt->fetchAll(PDO::FETCH_CLASS);
-                }
+                $rows = match ($data_type) {
+                    'object' => $stmt->fetchAll(PDO::FETCH_OBJ),
+                    'assoc' => $stmt->fetchAll(PDO::FETCH_ASSOC),
+                    default => $stmt->fetchAll(PDO::FETCH_CLASS),
+                };
             }
-        } catch (PDOException $e) {
-            // Log the error
-            error_log("Database Query Error: " . $e->getMessage());
 
-            // Handle the error based on your application's needs
-            // For example, you can throw a custom exception or return an error response
-            $this->error = $e->getMessage();
-            $this->has_error = true;
-        }
-
-        $resultData = [
+            $resultData = [
             'query' => $query,
             'params' => $params,
             'result' => $rows ?? [],
-            'query_id' => self::$query_id,
+            'count' => $stmt->rowCount(),
+            'query_id' => $this->connection->lastInsertId(),
         ];
-        self::$query_id = '';
+        } catch (PDOException $e) {
+            throw new BoltException("Database Query Error: {$e->getMessage()}", $e->getCode(), "info");
+        }
 
         return $resultData;
-    }
-
-    public function getError()
-    {
-        return $this->error;
-    }
-
-    public function table_exists(string|array $tables): bool
-    {
-        if (!is_array($tables)) {
-            $tables = [$tables];
-        }
-
-        $this->error = '';
-        $this->has_error = false;
-
-        try {
-            $existingTables = [];
-
-            // Fetch existing table names from the database
-            $stmt = $this->connection->prepare('SHOW TABLES');
-            $stmt->execute();
-            $result = $stmt->fetchAll(PDO::FETCH_COLUMN);
-
-            if ($result !== false) {
-                $existingTables = $result;
-            }
-
-            // Check if all specified tables exist
-            foreach ($tables as $table) {
-                if (!in_array($table, $existingTables)) {
-                    $this->missing_tables[] = $table;
-                }
-            }
-
-            return empty($this->missing_tables);
-        } catch (PDOException $e) {
-            $this->handleDatabaseError($e->getMessage());
-            return false;
-        }
     }
 }

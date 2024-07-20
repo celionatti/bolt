@@ -82,8 +82,7 @@ class BoltException extends Exception
         $serverInfo = [
             'Request URI' => $_SERVER['REQUEST_URI'] ?? 'N/A',
             'HTTP Method' => $_SERVER['REQUEST_METHOD'] ?? 'N/A',
-            'IP Address' => $_SERVER['REMOTE_ADDR'] ?? 'N/A',
-            'User Agent' => $_SERVER['HTTP_USER_AGENT'] ?? 'N/A',
+            'PHP VERSION' => phpversion(),
         ];
 
         $serverInfoHtml = '';
@@ -118,9 +117,10 @@ class BoltException extends Exception
                     border: 1px solid #333; 
                     border-radius: 8px; 
                     padding: 20px;
-                    overflow: auto; /* Ensure content doesn't overflow */
-                    word-wrap: break-word; /* Break long words */
-                    overflow-wrap: break-word; /* Break long words */
+                    overflow: auto;
+                    word-wrap: break-word;
+                    overflow-wrap: break-word;
+                    max-height: 90vh; /* Ensure it doesn't take up the entire viewport height */
                 }
                 .error-header { 
                     text-align: center; 
@@ -128,6 +128,9 @@ class BoltException extends Exception
                     padding: 10px 20px; 
                     border-radius: 5px;
                     margin-bottom: 20px;
+                    word-wrap: break-word;
+                    overflow-wrap: break-word;
+                    max-width: 100%;
                 }
                 .error-details { 
                     margin-top: 20px; 
@@ -140,7 +143,10 @@ class BoltException extends Exception
                 }
                 .error-main h5 { 
                     font-size: .8em; 
-                    margin-bottom: 9px; 
+                    margin-bottom: 9px;
+                    word-wrap: break-word;
+                    overflow-wrap: break-word;
+                    max-width: 100%; 
                 }
                 .error-main p { 
                     font-size: 1.1em; 
@@ -153,9 +159,11 @@ class BoltException extends Exception
                     margin-top: 20px;
                 }
                 .error-content {
-                    display: flex; 
-                    justify-content: space-between; 
+                    display: flex;
+                    flex-direction: row; /* Change to column to stack trace and server info vertically */
                     margin-top: 20px;
+                    gap: 20px;
+                    overflow: hidden;
                 }
                 .trace, .server-info {
                     background-color: #333;
@@ -163,13 +171,33 @@ class BoltException extends Exception
                     border-radius: 5px;
                     margin-top: 8px;
                     overflow: auto;
-                    width: 48%;
+                    width: 100%;
                     box-sizing: border-box;
                     font-size: 13px;
-                    word-wrap: break-word; /* Ensure text wraps */
+                    word-wrap: break-word;
+                }
+                .trace {
+                    flex: 2;
+                }
+                .server-info {
+                    flex: 1;
                 }
                 .trace pre, .server-info pre {
-                    white-space: pre-wrap; /* Ensure content wraps correctly */
+                    white-space: pre-wrap;
+                }
+                ::-webkit-scrollbar {
+                    width: 8px;
+                }
+                ::-webkit-scrollbar-track {
+                    background: #333;
+                    border-radius: 5px;
+                }
+                ::-webkit-scrollbar-thumb {
+                    background: rgb(21,69,152); /* Match the background color */
+                    border-radius: 5px;
+                }
+                ::-webkit-scrollbar-thumb:hover {
+                    background: #888;
                 }
             </style>
         </head>
@@ -199,6 +227,6 @@ class BoltException extends Exception
         HTML;
 
         echo $html;
-        exit(1);
+        exit;
     }
 }

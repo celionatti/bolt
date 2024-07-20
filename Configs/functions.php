@@ -188,7 +188,8 @@ function bolt_die($value, $message = '', $title = 'BOLT Error - Oops! Something 
             body {
                 margin: 0;
                 font-family: Arial, sans-serif;
-                background: linear-gradient(45deg, #ff5733, #007bff);
+                background: rgb(21,69,152);
+                background: linear-gradient(90deg, rgba(21,69,152,1) 0%, rgba(22,155,173,1) 26%, rgba(235,230,232,1) 37%, rgba(99,156,173,1) 45%, rgba(37,78,149,1) 100%);
                 display: flex;
                 align-items: center;
                 justify-content: center;
