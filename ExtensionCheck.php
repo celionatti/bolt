@@ -82,7 +82,7 @@ class ExtensionCheck
 
         switch ($this->config['errorHandler']) {
             case 'exception':
-                throw new BoltException($errorMessage);
+                throw new BoltException($errorMessage, 400, "critical");
             default:
                 bolt_die($errorMessage, "Missing Extensions.");
         }

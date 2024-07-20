@@ -43,7 +43,7 @@ class Container
             return $instance;
         }
 
-        throw new BoltException("Binding for '{$abstract}' not found.");
+        throw new BoltException("Binding for '{$abstract}' not found.", 404, "critical");
     }
 
     private function build($concrete, array $parameters)
@@ -56,7 +56,7 @@ class Container
             $reflector = new \ReflectionClass($concrete);
 
             if (!$reflector->isInstantiable()) {
-                throw new BoltException("Class '{$concrete}' is not instantiable.");
+                throw new BoltException("Class '{$concrete}' is not instantiable.", 424, "info");
             }
 
             $constructor = $reflector->getConstructor();
@@ -69,7 +69,7 @@ class Container
 
             return $reflector->newInstanceArgs($dependencies);
         } catch (\ReflectionException $e) {
-            throw new BoltException("Error resolving '{$concrete}': " . $e->getMessage());
+            throw new BoltException("Error resolving '{$concrete}': " . $e->getMessage(), $e->getCode());
         }
     }
 
@@ -87,7 +87,7 @@ class Container
             } elseif ($parameter->isDefaultValueAvailable()) {
                 $dependencies[] = $parameter->getDefaultValue();
             } else {
-                throw new BoltException("Unable to resolve dependency: {$paramName}");
+                throw new BoltException("Unable to resolve dependency: {$paramName}", 424, "info");
             }
         }
 

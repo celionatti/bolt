@@ -10,9 +10,9 @@ declare(strict_types=1);
  */
 
  namespace celionatti\Bolt;
- 
 
- use DateTime;
+use celionatti\Bolt\BoltException\BoltRuntimeException;
+use DateTime;
 
 
  class Cookie
@@ -41,7 +41,7 @@ declare(strict_types=1);
         string $sameSite = 'Lax'
     ) {
         if (!defined('COOKIE_SECRET')) {
-            throw new \RuntimeException('COOKIE_SECRET is not defined.');
+            throw new BoltRuntimeException('COOKIE_SECRET is not defined.', 400, "critical");
         }
 
         // Convert expires to timestamp if it's a DateTime object

@@ -10,6 +10,10 @@ declare(strict_types=1);
 
 namespace celionatti\Bolt\Helpers;
 
+use Monolog\Logger as MonologLogger;
+use Monolog\Handler\StreamHandler;
+use Monolog\Formatter\LineFormatter;
+
 class Logger
 {
     private $logFilePath;
@@ -17,11 +21,22 @@ class Logger
     private $logFileBackupCount = 5;
     private $logLevels = ['DEBUG', 'INFO', 'WARNING', 'ERROR'];
     private $logDestination = 'file'; // 'file' or 'stdout'
+    private $monolog;
 
     public function __construct($logFilePath)
     {
         $this->logFilePath = get_root_dir() . DIRECTORY_SEPARATOR . "logs" . DIRECTORY_SEPARATOR . $logFilePath;
         $this->rotateLogFiles();
+
+        // Set up Monolog
+        $this->monolog = new MonologLogger('app_logger');
+        $streamHandler = new StreamHandler($this->logFilePath, MonologLogger::DEBUG);
+
+        // Optional: Customize the log format
+        $formatter = new LineFormatter(null, null, true, true);
+        $streamHandler->setFormatter($formatter);
+
+        $this->monolog->pushHandler($streamHandler);
     }
 
     public function log($message, $logLevel = 'INFO')
@@ -33,7 +48,7 @@ class Logger
         $logMessage = $this->formatLogMessage($message, $logLevel);
 
         if ($this->logDestination === 'file') {
-            file_put_contents($this->logFilePath, $logMessage, FILE_APPEND);
+            $this->monolog->log(constant(MonologLogger::class . '::' . $logLevel), $logMessage);
         } elseif ($this->logDestination === 'stdout') {
             echo $logMessage;
         }
@@ -44,8 +59,7 @@ class Logger
     private function formatLogMessage($message, $logLevel)
     {
         $timestamp = date('Y-m-d H:i:s');
-        $formattedMessage = "[$timestamp] [$logLevel] $message" . PHP_EOL;
-        return $formattedMessage;
+        return "[$timestamp] [$logLevel] $message";
     }
 
     public function setLogDestination($destination)
@@ -67,11 +81,11 @@ class Logger
         if (file_exists($this->logFilePath) && filesize($this->logFilePath) >= $this->maxLogFileSize) {
             for ($i = $this->logFileBackupCount; $i > 0; $i--) {
                 $backupIndex = $i - 1;
-                $backupFileName = $this->logFilePath . '.' . $backupIndex;
+                $backupFileName = "{$this->logFilePath}.{$backupIndex}";
 
                 if ($backupIndex === 0) {
                     // Delete the oldest backup file
-                    unlink($backupFileName);
+                    @unlink($backupFileName);
                 } else {
                     // Rename previous backup file to the current index
                     $previousBackupFileName = $this->logFilePath . '.' . ($backupIndex - 1);
@@ -88,23 +102,21 @@ class Logger
 
     public function debug($message)
     {
-        if (defined('DEBUG') && DEBUG === true) {
-            $this->log("[DEBUG] $message");
-        }
+        $this->log($message, 'DEBUG');
     }
 
     public function error($message)
     {
-        $this->log("[ERROR] $message", "ERROR");
+        $this->log($message, 'ERROR');
     }
 
     public function info($message)
     {
-        $this->log("[INFO] $message", "INFO");
+        $this->log($message, 'INFO');
     }
 
     public function warning($message)
     {
-        $this->log("[WARNING] $message", "WARNING");
+        $this->log($message, 'WARNING');
     }
 }

@@ -71,7 +71,7 @@ class Bolt
         try {
             $this->router->resolve();
         } catch (BoltException $e) {
-            throw $e;
+            throw new BoltException($e->getMessage(), $e->getCode(), "error");
         }
     }
 

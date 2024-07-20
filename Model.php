@@ -50,7 +50,7 @@ class Model
                         $this->addError($field, 'custom', [], $message);
                     }
                 } else {
-                    throw new BoltException("Validation rule '$ruleName' does not exist.");
+                    throw new BoltException("Validation rule '$ruleName' does not exist.", 400, "warning");
                 }
             }
         }

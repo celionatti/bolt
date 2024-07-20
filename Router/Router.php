@@ -192,7 +192,7 @@ class Router
                 $actionName = $callbackParts[1];
 
                 if (!method_exists($controllerName, $actionName)) {
-                    throw new BoltException("[{$controllerName}] - [{$actionName}] Method Not Found");
+                    throw new BoltException("[{$controllerName}] - [{$actionName}] Method Not Found", 404, "error");
                 }
 
                 // Create the controller instance
