@@ -1,0 +1,50 @@
+<?php
+
+namespace celionatti\Bolt\Models;
+
+use celionatti\Bolt\Database\Model;
+
+class User extends Model
+{
+    protected $table = 'users';
+
+    public function profile()
+    {
+        return $this->hasOne(Profile::class, 'user_id');
+    }
+
+    public function posts()
+    {
+        return $this->hasMany(Post::class, 'user_id');
+    }
+}
+
+class Profile extends Model
+{
+    protected $table = 'profiles';
+
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
+}
+
+class Post extends Model
+{
+    protected $table = 'posts';
+
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
+}
+
+
+=================================================================================
+
+$user = User::find(1);
+$profile = $user->profile()->get();
+$posts = $user->posts()->get();
+
+$post = Post::find(1);
+$user = $post->user()->get();

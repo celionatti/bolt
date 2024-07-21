@@ -10,310 +10,148 @@ declare(strict_types=1);
 
 namespace celionatti\Bolt\API;
 
-use Exception;
-use GuzzleHttp\Psr7\Utils;
-use GuzzleHttp\Psr7\Response;
-use GuzzleHttp\Psr7\StreamWrapper;
-use celionatti\Bolt\BoltException\BoltException;
+use GuzzleHttp\Client;
+use GuzzleHttp\Exception\RequestException;
+use GuzzleHttp\Exception\ConnectException;
+use GuzzleHttp\Middleware;
+use Psr\Http\Message\RequestInterface;
+use Psr\Http\Message\ResponseInterface;
+use Psr\Log\LoggerInterface;
+use Symfony\Component\Cache\Adapter\FilesystemAdapter;
+use Symfony\Contracts\Cache\ItemInterface;
 
 
 class BoltApi
 {
-    protected $httpClient;
-    protected $baseUrl;
-    protected $apiKey;
+    private $client;
+    private $baseUri;
+    private $headers;
+    private $cache;
+    private $logger;
 
-    public function __construct($baseUrl, $apiKey = null)
+    public function __construct($baseUri, $headers = [], LoggerInterface $logger = null)
     {
-        $this->baseUrl = $baseUrl;
-        $this->apiKey = $apiKey;
+        $this->baseUri = $baseUri;
+        $this->headers = $headers;
+        $this->cache = new FilesystemAdapter(); // Using Symfony's Filesystem Cache
+        $this->logger = $logger;
 
-        $this->httpClient = new \GuzzleHttp\Client([
-            'base_uri' => $this->baseUrl,
-            'headers' =>  $this->buildHeaders(),
+        $handlerStack = \GuzzleHttp\HandlerStack::create();
+        $handlerStack->push($this->retryMiddleware());
+        $handlerStack->push($this->logMiddleware());
+
+        $this->client = new Client([
+            'base_uri' => $baseUri,
+            'headers' => $headers,
+            'handler' => $handlerStack,
+            'timeout' => 10,
         ]);
     }
 
-    public function get($endpoint, $params = [])
+    public function get($endpoint, $queryParams = [], $cacheTtl = 3600)
     {
-        try {
-            $response = $this->httpClient->get($endpoint, ['query' => $params]);
-            $data = $this->getData($response);
-            return $data;
-        } catch (\GuzzleHttp\Exception\RequestException $e) {
-            throw new Exception("Error: " . $e->getResponse()->getBody());
-        }
-    }
-
-    public function getAsync($endpoint, $params = [])
-    {
-        return $this->httpClient->requestAsync('GET', $endpoint, ['query' => $params])->then(function ($response) {
-            return $this->getData($response);
+        $cacheKey = $this->getCacheKey('GET', $endpoint, $queryParams);
+        return $this->cache->get($cacheKey, function (ItemInterface $item) use ($endpoint, $queryParams, $cacheTtl) {
+            $item->expiresAfter($cacheTtl);
+            return $this->request('GET', $endpoint, ['query' => $queryParams]);
         });
     }
 
-    public function getWithRetry($endpoint, $params = [], $retryCount = 3, $retryDelay = 1)
+    public function post($endpoint, $data = [], $contentType = 'json')
     {
-        $attempts = 0;
-
-        while ($attempts < $retryCount) {
-            try {
-                $response = $this->httpClient->get($endpoint, ['query' => $params]);
-
-                return $this->getData($response);
-            } catch (BoltException $e) {
-                // Handle any exceptions if needed
-                bolt_die($e);
-            }
-
-            $attempts++;
-            if ($attempts < $retryCount) {
-                sleep($retryDelay);
-            }
-        }
-
-        throw new Exception("Request failed after $retryCount attempts.");
+        return $this->request('POST', $endpoint, $this->prepareOptions($data, $contentType));
     }
 
-    public function post($endpoint, $data)
+    public function put($endpoint, $data = [], $contentType = 'json')
+    {
+        return $this->request('PUT', $endpoint, $this->prepareOptions($data, $contentType));
+    }
+
+    public function delete($endpoint, $data = [], $contentType = 'json')
+    {
+        return $this->request('DELETE', $endpoint, $this->prepareOptions($data, $contentType));
+    }
+
+    private function prepareOptions($data, $contentType)
+    {
+        switch ($contentType) {
+            case 'form_params':
+                return ['form_params' => $data];
+            case 'multipart':
+                return ['multipart' => $data];
+            case 'json':
+            default:
+                return ['json' => $data];
+        }
+    }
+
+    private function request($method, $endpoint, $options = [])
     {
         try {
-            $response = $this->httpClient->post($endpoint, [
-                'json' => $data,
-            ]);
-            $data = $this->getData($response);
-            return $data;
-        } catch (\GuzzleHttp\Exception\RequestException $e) {
-            throw new Exception("Error: " . $e->getResponse()->getBody());
+            $response = $this->client->request($method, $endpoint, $options);
+            return $this->handleResponse($response);
+        } catch (RequestException $e) {
+            if ($e->hasResponse()) {
+                return $this->handleResponse($e->getResponse());
+            }
+            return ['error' => $e->getMessage()];
         }
     }
 
-    public function postAsync($endpoint, $data)
+    private function handleResponse(ResponseInterface $response)
     {
-        return $this->httpClient->requestAsync('POST', $endpoint, [
-            'json' => $data,
-        ])->then(function ($response) {
-            return $this->getData($response);
+        $statusCode = $response->getStatusCode();
+        $body = $response->getBody()->getContents();
+        $data = json_decode($body, true);
+
+        return [
+            'status_code' => $statusCode,
+            'data' => $data,
+        ];
+    }
+
+    private function retryMiddleware()
+    {
+        return Middleware::retry(function (
+            $retries,
+            RequestInterface $request,
+            ResponseInterface $response = null,
+            RequestException $exception = null
+        ) {
+            if ($retries >= 3) {
+                return false;
+            }
+
+            if ($exception instanceof ConnectException) {
+                return true;
+            }
+
+            if ($response) {
+                $statusCode = $response->getStatusCode();
+                if ($statusCode >= 500 || $statusCode === 429) {
+                    return true;
+                }
+            }
+
+            return false;
         });
     }
 
-    public function postWithRetry($endpoint, $data, $retryCount = 3, $retryDelay = 1)
+    private function logMiddleware()
     {
-        $attempts = 0;
-
-        while ($attempts < $retryCount) {
-            try {
-                $response = $this->httpClient->post($endpoint, ['json' => $data]);
-
-                return $this->getData($response);
-            } catch (BoltException $e) {
-                // Handle any exceptions if needed
-                bolt_die($e);
+        return Middleware::tap(function (RequestInterface $request, $options) {
+            if ($this->logger) {
+                $this->logger->info('Sending request', ['request' => $request]);
             }
-
-            $attempts++;
-            if ($attempts < $retryCount) {
-                sleep($retryDelay);
+        }, function (RequestInterface $request, ResponseInterface $response) {
+            if ($this->logger) {
+                $this->logger->info('Received response', ['response' => $response]);
             }
-        }
-
-        throw new Exception("Request failed after $retryCount attempts.");
+        });
     }
 
-    public function put($endpoint, $data)
+    private function getCacheKey($method, $endpoint, $params = [])
     {
-        try {
-            $response = $this->httpClient->put($endpoint, [
-                'json' => $data,
-            ]);
-            $data = $this->getData($response);
-            return $data;
-        } catch (\GuzzleHttp\Exception\RequestException $e) {
-            throw new Exception("Error: " . $e->getResponse()->getBody());
-        }
-    }
-
-    public function putWithRetry($endpoint, $data, $retryCount = 3, $retryDelay = 1)
-    {
-        $attempts = 0;
-
-        while ($attempts < $retryCount) {
-            try {
-                $response = $this->httpClient->put($endpoint, ['json' => $data]);
-
-                return $this->getData($response);
-            } catch (BoltException $e) {
-                // Handle any exceptions if needed
-                bolt_die($e);
-            }
-
-            $attempts++;
-            if ($attempts < $retryCount) {
-                sleep($retryDelay);
-            }
-        }
-
-        throw new Exception("Request failed after $retryCount attempts.");
-    }
-
-    public function delete($endpoint)
-    {
-        try {
-            $response = $this->httpClient->delete($endpoint);
-            // return $response->getStatusCode(); // successful deletion
-            return $response->getStatusCode() === 204 || $response->getStatusCode() === 200; // 204 indicates a successful deletion
-        } catch (\GuzzleHttp\Exception\RequestException $e) {
-            throw new Exception("Error: " . $e->getResponse()->getBody());
-        }
-    }
-
-    public function deleteWithRetry($endpoint, $retryCount = 3, $retryDelay = 1)
-    {
-        $attempts = 0;
-
-        while ($attempts < $retryCount) {
-            try {
-                $response = $this->httpClient->delete($endpoint);
-
-                return $response->getStatusCode() === 204 || $response->getStatusCode() === 200;
-            } catch (BoltException $e) {
-                // Handle any exceptions if needed
-                bolt_die($e);
-            }
-
-            $attempts++;
-            if ($attempts < $retryCount) {
-                sleep($retryDelay);
-            }
-        }
-
-        throw new Exception("Request failed after $retryCount attempts.");
-    }
-
-    public function getData($response)
-    {
-        $responseBody = (string)$response->getBody();
-
-        if ($response instanceof Response && $response->getStatusCode() === 200)
-            return json_decode($responseBody, true);
-    }
-
-    public function getAllPaginatedData($endpoint, $params = [])
-    {
-        $allData = [];
-
-        $page = 1;
-        $perPage = 100; // Adjust this as per your API's pagination settings.
-
-        do {
-            $params['page'] = $page;
-            $params['per_page'] = $perPage;
-
-            $response = $this->get($endpoint, $params);
-
-            if (empty($response)) {
-                break; // No more data to fetch.
-            }
-
-            $allData = array_merge($allData, $response);
-
-            $page++; // Move to the next page.
-
-        } while (count($response) === $perPage);
-
-        return $allData;
-    }
-
-    public function batchCreate($endpoint, array $dataItems)
-    {
-        $responses = [];
-
-        foreach ($dataItems as $data) {
-            try {
-                $response = $this->post($endpoint, $data);
-                $responses[] = $response;
-            } catch (Exception $e) {
-                $responses[] = ['error' => $e->getMessage()];
-            }
-        }
-
-        return $responses;
-    }
-
-    public function requestWithRetry($method, $endpoint, $data = null, $retryCount = 3)
-    {
-        $attempts = 0;
-
-        while ($attempts < $retryCount) {
-            try {
-                if ($method === 'get') {
-                    $response = $this->httpClient->get($endpoint, ['query' => $data]);
-                } elseif ($method === 'post') {
-                    $response = $this->httpClient->post($endpoint, ['json' => $data]);
-                } elseif ($method === 'put') {
-                    $response = $this->httpClient->put($endpoint, ['json' => $data]);
-                } elseif ($method === 'delete') {
-                    $response = $this->httpClient->delete($endpoint);
-                }
-
-                // Check if the response is successful
-                if ($response instanceof Response && $response->getStatusCode() === 200) {
-                    return json_decode((string)$response->getBody(), true);
-                }
-            } catch (BoltException $e) {
-                // Handle any exceptions if needed
-                bolt_die($e);
-            }
-
-            $attempts++;
-            if ($attempts < $retryCount) {
-                sleep(1); // You can adjust the sleep duration between retries.
-            }
-        }
-
-        throw new Exception("Request failed after $retryCount attempts.");
-    }
-
-    public function buildHeaders()
-    {
-        $headers = ['Accept' => 'application/json'];
-
-        if ($this->apiKey) {
-            $headers['Authorization'] = 'Bearer ' . $this->apiKey;
-        }
-
-        return $headers;
-    }
-
-    public function uploadFile($endpoint, $filePath)
-    {
-        try {
-            $response = $this->httpClient->post($endpoint, [
-                'multipart' => [
-                    [
-                        'name'     => 'file',
-                        'contents' => Utils::tryFopen($filePath, 'r'),
-                    ],
-                ],
-            ]);
-            $data = $this->getData($response);
-            return $data;
-        } catch (\GuzzleHttp\Exception\RequestException $e) {
-            throw new Exception("Error: " . $e->getResponse()->getBody());
-        }
-    }
-
-    public function downloadFile($endpoint, $localFilePath)
-    {
-        try {
-            $response = $this->httpClient->get($endpoint);
-            $stream = StreamWrapper::getResource($response->getBody());
-            $fileHandle = fopen($localFilePath, 'w');
-            stream_copy_to_stream($stream, $fileHandle);
-            fclose($fileHandle);
-            return true; // Successful download
-        } catch (\GuzzleHttp\Exception\RequestException $e) {
-            throw new Exception("Error: " . $e->getResponse()->getBody());
-        }
+        return md5($method . $endpoint . json_encode($params));
     }
 }

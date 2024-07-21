@@ -15,7 +15,7 @@ use celionatti\Bolt\Config;
 use celionatti\Bolt\BoltException\BoltException;
 use celionatti\Bolt\BoltQueryBuilder\BoltQueryBuilder;
 
-abstract class DatabaseModel extends Model
+abstract class DatabaseModelTest extends Model
 {
     public string $tableName;
     abstract public static function tableName(): string;

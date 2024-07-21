@@ -12,8 +12,8 @@ namespace celionatti\Bolt\Database;
 
 use PDO;
 use PDOException;
-use celionatti\Bolt\BoltException\BoltException;
 use celionatti\Bolt\BoltQueryBuilder\QueryBuilder;
+use celionatti\Bolt\Database\Exception\DatabaseException;
 
 
 class Database
@@ -65,7 +65,7 @@ class Database
                 ]);
             }
         } catch (PDOException $e) {
-            throw new BoltException($e->getMessage(), $e->getCode(), "info");
+            throw new DatabaseException($e->getMessage(), $e->getCode(), "info");
         }
 
         // Reconnection Logic
@@ -153,7 +153,7 @@ class Database
             'query_id' => $this->connection->lastInsertId(),
         ];
         } catch (PDOException $e) {
-            throw new BoltException("Database Query Error: {$e->getMessage()}", $e->getCode(), "info");
+            throw new DatabaseException("Database Query Error: {$e->getMessage()}", $e->getCode(), "info");
         }
 
         return $resultData;

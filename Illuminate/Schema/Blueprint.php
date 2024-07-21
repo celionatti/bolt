@@ -17,6 +17,7 @@ class Blueprint
     protected $indexes = [];
     protected $uniqueIndexes = [];
     protected $foreignKeys = [];
+    protected $relationships = [];
 
     public function __construct(string $table)
     {
@@ -54,12 +55,38 @@ class Blueprint
         return $this;
     }
 
-    public function foreignId(string $name, string $references = '', string $on = ''): self
+    public function foreignId(string $name): self
     {
         $this->columns[] = "`$name` INT UNSIGNED";
-        if ($references && $on) {
-            $this->foreignKeys[] = "FOREIGN KEY (`$name`) REFERENCES `$on`(`$references`)";
-        }
+        $this->foreignKeys[] = ['column' => $name];
+        return $this;
+    }
+
+    public function references(string $references): self
+    {
+        $lastKey = array_key_last($this->foreignKeys);
+        $this->foreignKeys[$lastKey]['references'] = $references;
+        return $this;
+    }
+
+    public function on(string $on): self
+    {
+        $lastKey = array_key_last($this->foreignKeys);
+        $this->foreignKeys[$lastKey]['on'] = $on;
+        return $this;
+    }
+
+    public function onDelete(string $action): self
+    {
+        $lastKey = array_key_last($this->foreignKeys);
+        $this->foreignKeys[$lastKey]['onDelete'] = $action;
+        return $this;
+    }
+
+    public function onUpdate(string $action): self
+    {
+        $lastKey = array_key_last($this->foreignKeys);
+        $this->foreignKeys[$lastKey]['onUpdate'] = $action;
         return $this;
     }
 
@@ -176,6 +203,17 @@ class Blueprint
         return $this;
     }
 
+    public function addRelationship(string $relation, string $relatedClass, string $foreignKey, string $localKey = 'id'): self
+    {
+        $this->relationships[] = [
+            'relation' => $relation,
+            'relatedClass' => $relatedClass,
+            'foreignKey' => $foreignKey,
+            'localKey' => $localKey,
+        ];
+        return $this;
+    }
+
     public function toSql(): string
     {
         $columns = implode(', ', $this->columns);
@@ -215,6 +253,22 @@ class Blueprint
             return '';
         }
 
-        return implode(', ', $this->foreignKeys);
+        $foreignKeys = [];
+        foreach ($this->foreignKeys as $foreignKey) {
+            $foreignKeySql = "FOREIGN KEY (`{$foreignKey['column']}`) REFERENCES `{$foreignKey['on']}`(`{$foreignKey['references']}`)";
+            if (isset($foreignKey['onDelete'])) {
+                $foreignKeySql .= " ON DELETE {$foreignKey['onDelete']}";
+            }
+            if (isset($foreignKey['onUpdate'])) {
+                $foreignKeySql .= " ON UPDATE {$foreignKey['onUpdate']}";
+            }
+            $foreignKeys[] = $foreignKeySql;
+        }
+        return implode(', ', $foreignKeys);
+    }
+
+    public function getRelationships(): array
+    {
+        return $this->relationships;
     }
 }

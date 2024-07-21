@@ -1,0 +1,64 @@
+<?php
+
+namespace celionatti\Bolt\Models;
+
+use celionatti\Bolt\Database\Model;
+
+class User extends Model
+{
+    protected $table = 'users';
+
+    public function profile()
+    {
+        return $this->hasOne(Profile::class, 'user_id');
+    }
+
+    public function posts()
+    {
+        return $this->hasMany(Post::class, 'user_id');
+    }
+}
+
+class Profile extends Model
+{
+    protected $table = 'profiles';
+
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
+}
+
+class Post extends Model
+{
+    protected $table = 'posts';
+
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
+}
+
+
+==================================================================================================
+Migration Usage
+
+use celionatti\Bolt\Illuminate\Schema\Blueprint;
+
+$blueprint = new Blueprint('users');
+$blueprint->id();
+$blueprint->string('name');
+$blueprint->timestamps();
+
+$blueprint = new Blueprint('profiles');
+$blueprint->id();
+$blueprint->foreignId('user_id')->references('id')->on('users')->onDelete('cascade')->onUpdate('cascade');
+$blueprint->string('bio');
+$blueprint->timestamps();
+
+$blueprint = new Blueprint('posts');
+$blueprint->id();
+$blueprint->foreignId('user_id')->references('id')->on('users')->onDelete('cascade')->onUpdate('cascade');
+$blueprint->string('title');
+$blueprint->text('content');
+$blueprint->timestamps();

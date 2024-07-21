@@ -77,6 +77,14 @@ class QueryBuilder
         return $this;
     }
 
+    public function whereIn($column, array $values)
+    {
+        $placeholders = implode(',', array_fill(0, count($values), '?'));
+        $this->where[] = "$column IN ($placeholders)";
+        $this->bindings = array_merge($this->bindings, $values);
+        return $this;
+    }
+
     public function orderBy($column, $direction = 'ASC')
     {
         $this->orderBy[] = "$column $direction";
