@@ -17,215 +17,113 @@ use celionatti\Bolt\BoltException\BoltException;
 
 class Router
 {
-    public Request $request;
-    public Response $response;
-    private array $routeMap = [];
-    protected array $namedRoutes = [];
-    private string $currentPrefix = '';
-
+    protected $routes = [];
+    protected $request;
+    protected $response;
+    protected $currentRoute = [];
+    
     public function __construct(Request $request, Response $response)
     {
         $this->request = $request;
         $this->response = $response;
     }
 
-    public function get(string $url, $callback)
+    public function addRoute($method, $path, $action)
     {
-        $this->routeMap['GET'][$url] = $callback;
+        $path = preg_replace('/{\:(\w+)}/', '(?P<$1>[^/]+)', $path);
+        $this->routes[] = [
+            'method' => $method,
+            'path' => $path,
+            'action' => $action,
+            'name' => null,
+            'middleware' => []
+        ];
+        $this->currentRoute = &$this->routes[count($this->routes) - 1];
+        return $this;
     }
 
-    public function post(string $url, $callback)
+    public function get($path, $action)
     {
-        $this->routeMap['POST'][$url] = $callback;
+        return $this->addRoute('GET', $path, $action);
     }
 
-    public function put(string $url, $callback)
+    public function post($path, $action)
     {
-        $this->routeMap['PUT'][$url] = $callback;
+        return $this->addRoute('POST', $path, $action);
     }
 
-    public function delete(string $url, $callback)
+    public function put($path, $action)
     {
-        $this->routeMap['DELETE'][$url] = $callback;
+        return $this->addRoute('PUT', $path, $action);
     }
 
-    public function patch(string $url, $callback)
+    public function delete($path, $action)
     {
-        $this->routeMap['PATCH'][$url] = $callback;
+        return $this->addRoute('DELETE', $path, $action);
     }
 
-    public function resource(string $url, string $controller)
+    public function name($name)
     {
-        // Implement resource controllers for CRUD routes
-        self::get("$url", "$controller@index");
-        self::get("$url/create", "$controller@create");
-        self::post("$url", "$controller@store");
-        self::get("$url/{id}", "$controller@show");
-        self::get("$url/{id}/edit", "$controller@edit");
-        self::put("$url/{id}", "$controller@update");
-        self::delete("$url/{id}", "$controller@destroy");
+        $this->currentRoute['name'] = $name;
+        return $this;
     }
 
-    public function namedRoute(string $name, string $url, $callback)
+    public function middleware($middleware)
     {
-        // Add the route to the route map and support for named routes
-        self::$routeMap['GET'][$url] = $callback;
-        $this->namedRoutes[$name] = $url;
-    }
-
-    public function generateUrl(string $name, array $params = []): string
-    {
-        // Generate URLs using named routes
-        if (isset($this->namedRoutes[$name])) {
-            $url = $this->namedRoutes[$name];
-
-            foreach ($params as $key => $value) {
-                $url = str_replace("{{$key}}", $value, $url);
-            }
-
-            return $url;
-        }
-
-        return '';
-    }
-
-    public function group(array $attributes, callable $callback)
-    {
-        // Store the previous prefix and middleware
-        $previousPrefix = $this->currentPrefix;
-
-        // Update the current prefix with the one from the group attributes (if provided)
-        $this->currentPrefix .= $attributes['prefix'] ?? '';
-
-        // Execute the callback, which may contain nested routes or middleware
-        $callback($this);
-
-        // Restore the previous prefix and middleware after the group is finished
-        $this->currentPrefix = $previousPrefix;
-    }
-
-
-    public function getCurrentPrefix(): string
-    {
-        return $this->currentPrefix;
-    }
-
-    /**
-     * @return array
-     */
-    public function getRouteMap($method): array
-    {
-        return $this->routeMap[$method] ?? [];
-    }
-
-    public function getCallback()
-    {
-        $method = $this->request->method();
-        $url = $this->request->getPath();
-        // Trim slashes
-        $url = trim($url, '/');
-
-        // Get all routes for current request method
-        $routes = $this->getRouteMap($method);
-
-        $routeParams = false;
-
-        // Start iterating registed routes
-        foreach ($routes as $route => $callback) {
-            // Trim slashes
-            $route = trim($route, '/');
-            $routeNames = [];
-
-            if (!$route) {
-                continue;
-            }
-
-            // Find all route names from route and save in $routeNames
-            if (preg_match_all('/\{(\w+)(:[^}]+)?}/', $route, $matches)) {
-                $routeNames = $matches[1];
-            }
-
-            // Convert route name into regex pattern
-            // $routeRegex = "@^" . preg_replace_callback('/\{\w+(:([^}]+))?}/', fn ($m) => isset($m[2]) ? "({$m[2]})" : '(\w+)', $route) . "$@";
-            $routeRegex = "@^" . preg_replace_callback('/\{(\w+)(:([^}]+))?}/', function ($m) {
-                $paramName = $m[1];
-                $paramPattern = isset($m[3]) ? $m[3] : '\w+';
-                return "($paramPattern)";
-            }, $route) . "$@";
-
-            // Test and match current route against $routeRegex
-            if (preg_match_all($routeRegex, $url, $valueMatches)) {
-                $values = [];
-                for ($i = 1; $i < count($valueMatches); $i++) {
-                    $values[] = $valueMatches[$i][0];
-                }
-                $routeParams = array_combine($routeNames, $values);
-
-                $this->request->setParameters($routeParams);
-                return $callback;
-            }
-        }
-
-        return false;
+        $this->currentRoute['middleware'][] = $middleware;
+        return $this;
     }
 
     public function resolve()
     {
-        $method = $this->request->method();
-        $url = $this->request->getPath();
-        $callback = $this->routeMap[$method][$url] ?? false;
-        if (!$callback) {
-
-            $callback = $this->getCallback();
-
-            if ($callback === false) {
-                throw new BoltException("Callback - [ Method: {$method}, Path: {$url} ] - Not Found", 404, 'info');
+        foreach ($this->routes as $route) {
+            if ($this->matchRoute($route)) {
+                return $this->runRoute($route);
             }
         }
-        if (is_string($callback)) {
-            // Split the string based on the "@" symbol
-            $callbackParts = explode('@', $callback);
 
-            // Ensure we have both controller and action parts
-            if (count($callbackParts) === 2) {
-                $controllerName = $callbackParts[0];
-                $actionName = $callbackParts[1];
+        throw new BoltException('Route not found');
+    }
 
-                if (!method_exists($controllerName, $actionName)) {
-                    throw new BoltException("[{$controllerName}] - [{$actionName}] Method Not Found", 404, "error");
-                }
+    protected function matchRoute($route)
+    {
+        $pattern = "@^" . $route['path'] . "$@D";
+        return preg_match($pattern, $this->request->getPath(), $matches) && 
+               $this->request->getMethod() === $route['method'];
+    }
 
-                // Create the controller instance
-                $controllerClass = "\\PhpStrike\\controllers\\$controllerName";
-                $controller = new $controllerClass();
-                $controller->action = $actionName;
+    protected function runRoute($route)
+    {
+        foreach ($route['middleware'] as $middleware) {
+            $middlewareInstance = new $middleware();
+            $middlewareInstance->handle($this->request, $this->response);
+        }
 
-                // Set the controller in your application (you'll need to modify this according to your application's structure)
-                Bolt::$bolt->controller = $controller;
+        $pattern = "@^" . $route['path'] . "$@D";
+        preg_match($pattern, $this->request->getPath(), $matches);
 
-                // Execute any middlewares
-                $middlewares = $controller->getMiddlewares();
-                foreach ($middlewares as $middleware) {
-                    $middleware->execute();
-                }
-
-                // Replace the $callback variable with the controller and action
-                $callback = [$controller, $actionName];
+        foreach ($matches as $key => $value) {
+            if (is_int($key)) {
+                unset($matches[$key]);
             }
         }
-        if (is_array($callback)) {
-            /**
-             * @var $controller \Bolt\Bolt\Controller
-             */
-            $controller = new $callback[0];
-            $controller->action = $callback[1];
-            Bolt::$bolt->controller = $controller;
-            $middlewares = $controller->getMiddlewares();
-            foreach ($middlewares as $middleware) {
-                $middleware->execute();
-            }
-            $callback[0] = $controller;
+
+        if (is_callable($route['action'])) {
+            return call_user_func_array($route['action'], array_merge([$this->request, $this->response], array_values($matches)));
+        } elseif (is_array($route['action']) && count($route['action']) === 2) {
+            return $this->runControllerAction($route['action'], array_values($matches));
         }
-        return call_user_func($callback, $this->request, $this->response);
+
+        throw new BoltException('Invalid route action');
+    }
+
+    protected function runControllerAction($action, $parameters)
+    {
+        list($controller, $method) = $action;
+        $controllerInstance = new $controller();
+        if (!method_exists($controllerInstance, $method)) {
+            throw new BoltException('Controller method not found');
+        }
+        return call_user_func_array([$controllerInstance, $method], array_merge([$this->request, $this->response], $parameters));
     }
 }

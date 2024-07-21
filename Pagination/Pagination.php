@@ -10,278 +10,174 @@ declare(strict_types=1);
 
 namespace celionatti\Bolt\Pagination;
 
-use celionatti\Bolt\Config;
-use celionatti\Bolt\BoltException\BoltException;
 
 class Pagination
 {
-    private int $totalItems;
-    private int $itemsPerPage;
-    private int $currentPage;
+    protected $totalItems;
+    protected $currentPage;
+    protected $itemsPerPage;
+    protected $totalPages;
+    protected $urlPattern;
+    protected $customClasses;
 
-    /**
-     * Pagination constructor.
-     *
-     * @param int $totalItems
-     * @param int $itemsPerPage
-     * @param int $currentPage
-     */
-    public function __construct(int $totalItems, int $itemsPerPage, int $currentPage)
+    public function __construct(array $paginationData, string $urlPattern = '/page/(:num)', array $customClasses = [])
     {
-        if ($totalItems < 0 || $itemsPerPage <= 0 || $currentPage <= 0) {
-            throw new \InvalidArgumentException('Invalid pagination parameters.');
+        $this->totalItems = $paginationData['total_items'];
+        $this->currentPage = $paginationData['current_page'];
+        $this->itemsPerPage = $paginationData['items_per_page'];
+        $this->totalPages = $paginationData['total_pages'];
+        $this->urlPattern = $urlPattern;
+        $this->customClasses = $customClasses;
+    }
+
+    protected function createPageUrl(int $pageNumber): string
+    {
+        return str_replace('(:num)', (string)$pageNumber, $this->urlPattern);
+    }
+
+    public function render(string $style = 'default')
+    {
+        if ($this->totalPages <= 1) {
+            return '';
         }
 
-        $this->totalItems = $totalItems;
-        $this->itemsPerPage = $itemsPerPage;
-        $this->currentPage = $currentPage;
-    }
+        $paginationHtml = '';
 
-    /**
-     * Get total number of pages.
-     *
-     * @return int
-     */
-    public function getTotalPages(): int
-    {
-        return (int)ceil($this->totalItems / $this->itemsPerPage);
-    }
-
-    /**
-     * Get the start item number for the current page.
-     *
-     * @return int
-     */
-    public function getStartItem(): int
-    {
-        return ($this->currentPage - 1) * $this->itemsPerPage + 1;
-    }
-
-    /**
-     * Get the end item number for the current page.
-     *
-     * @return int
-     */
-    public function getEndItem(): int
-    {
-        $endItem = $this->currentPage * $this->itemsPerPage;
-        return ($endItem > $this->totalItems) ? $this->totalItems : $endItem;
-    }
-
-    /**
-     * Check if there is a previous page.
-     *
-     * @return bool
-     */
-    public function hasPreviousPage(): bool
-    {
-        return $this->currentPage > 1;
-    }
-
-    /**
-     * Get the previous page number.
-     *
-     * @return ?int
-     */
-    public function getPreviousPage(): ?int
-    {
-        return $this->hasPreviousPage() ? $this->currentPage - 1 : null;
-    }
-
-    /**
-     * Check if there is a next page.
-     *
-     * @return bool
-     */
-    public function hasNextPage(): bool
-    {
-        return $this->currentPage < $this->getTotalPages();
-    }
-
-    /**
-     * Get the next page number.
-     *
-     * @return ?int
-     */
-    public function getNextPage(): ?int
-    {
-        return $this->hasNextPage() ? $this->currentPage + 1 : null;
-    }
-
-    /**
-     * Generate pagination links with ellipses for Bootstrap.
-     *
-     * @param string $url
-     * @return string
-     */
-    public function generateBootstrapDotsLinks(string $url): string
-    {
-        $links = '';
-
-        if ($this->getTotalPages() > 1) {
-            $links .= '<nav aria-label="Page navigation"><ul class="pagination">';
-
-            if ($this->hasPreviousPage()) {
-                $prevUrl = $url . ((strpos($url, '?') !== false) ? '&' : '?') . 'page=' . $this->getPreviousPage();
-                $links .= '<li class="page-item"><a class="page-link" href="' . $prevUrl . '">Prev</a></li>';
-            }
-
-            $maxLinks = 5; // Maximum links to show before and after the current page
-            $halfMaxLinks = floor($maxLinks / 2);
-            $startPage = max(1, $this->currentPage - $halfMaxLinks);
-            $endPage = min($this->getTotalPages(), $startPage + $maxLinks - 1);
-
-            if ($startPage > 1) {
-                $links .= '<li class="page-item"><a class="page-link" href="' . $url . ((strpos($url, '?') !== false) ? '&' : '?') . 'page=1">1</a></li>';
-                if ($startPage > 2) {
-                    $links .= '<li class="page-item disabled"><span class="page-link">...</span></li>';
-                }
-            }
-
-            for ($i = $startPage; $i <= $endPage; $i++) {
-                $activeClass = ($i == $this->currentPage) ? 'active' : '';
-                $pageUrl = $url . ((strpos($url, '?') !== false) ? '&' : '?') . 'page=' . $i;
-                $links .= '<li class="page-item ' . $activeClass . '"><a class="page-link" href="' . $pageUrl . '">' . $i . '</a></li>';
-            }
-
-            if ($endPage < $this->getTotalPages()) {
-                if ($endPage < $this->getTotalPages() - 1) {
-                    $links .= '<li class="page-item disabled"><span class="page-link">...</span></li>';
-                }
-                $links .= '<li class="page-item"><a class="page-link" href="' . $url . ((strpos($url, '?') !== false) ? '&' : '?') . 'page=' . $this->getTotalPages() . '">' . $this->getTotalPages() . '</a></li>';
-            }
-
-            if ($this->hasNextPage()) {
-                $nextUrl = $url . ((strpos($url, '?') !== false) ? '&' : '?') . 'page=' . $this->getNextPage();
-                $links .= '<li class="page-item"><a class="page-link" href="' . $nextUrl . '">Next</a></li>';
-            }
-
-            $links .= '</ul></nav>';
+        switch ($style) {
+            case 'previous_next':
+                $paginationHtml = $this->renderPreviousNext();
+                break;
+            case 'ellipses':
+                $paginationHtml = $this->renderEllipses();
+                break;
+            case 'load_more':
+                $paginationHtml = $this->renderLoadMore();
+                break;
+            case 'bootstrap':
+                $paginationHtml = $this->renderBootstrap();
+                break;
+            case 'tailwind':
+                $paginationHtml = $this->renderTailwind();
+                break;
+            default:
+                $paginationHtml = $this->renderDefault();
+                break;
         }
 
-        return $links;
+        return $paginationHtml;
     }
 
-    /**
-     * Generate default Bootstrap pagination links.
-     *
-     * @param string $url
-     * @return string
-     */
-    public function generateBootstrapDefLinks(string $url): string
+    protected function renderDefault()
     {
-        $links = '';
+        $ulClass = $this->customClasses['ul'] ?? 'pagination';
+        $liClass = $this->customClasses['li'] ?? '';
+        $aClass = $this->customClasses['a'] ?? '';
 
-        if ($this->getTotalPages() > 1) {
-            $links .= '<ul class="pagination justify-content-center">';
+        $html = '<ul class="' . $ulClass . '">';
 
-            if ($this->hasPreviousPage()) {
-                $prevUrl = $url . ((strpos($url, '?') !== false) ? '&' : '?') . 'page=' . $this->getPreviousPage();
-                $links .= '<li class="page-item"><a href="' . $prevUrl . '" class="page-link">&laquo;</a></li>';
-            }
-
-            $maxLinks = 5; // Maximum links to show before and after the current page
-            $halfMaxLinks = floor($maxLinks / 2);
-            $startPage = max(1, $this->currentPage - $halfMaxLinks);
-            $endPage = min($this->getTotalPages(), $startPage + $maxLinks - 1);
-
-            for ($i = $startPage; $i <= $endPage; $i++) {
-                $activeClass = ($i == $this->currentPage) ? 'active' : '';
-                $pageUrl = $url . ((strpos($url, '?') !== false) ? '&' : '?') . 'page=' . $i;
-                $links .= '<li class="page-item ' . $activeClass . '"><a href="' . $pageUrl . '" class="page-link">' . $i . '</a></li>';
-            }
-
-            if ($this->hasNextPage()) {
-                $nextUrl = $url . ((strpos($url, '?') !== false) ? '&' : '?') . 'page=' . $this->getNextPage();
-                $links .= '<li class="page-item"><a href="' . $nextUrl . '" class="page-link">&raquo;</a></li>';
-            }
-
-            $links .= '</ul>';
+        for ($i = 1; $i <= $this->totalPages; $i++) {
+            $activeClass = ($i == $this->currentPage) ? 'active' : '';
+            $html .= '<li class="' . $liClass . ' ' . $activeClass . '"><a class="' . $aClass . '" href="' . $this->createPageUrl($i) . '">' . $i . '</a></li>';
         }
 
-        return $links;
+        $html .= '</ul>';
+        return $html;
     }
 
-    /**
-     * Generate pagination links with only "Next" and "Previous" buttons for Bootstrap.
-     *
-     * @param string $url
-     * @return string
-     */
-    public function generateNextPrevLinks(string $url): string
+    protected function renderBootstrap()
     {
-        $links = '';
+        $ulClass = $this->customClasses['ul'] ?? 'pagination';
+        $liClass = $this->customClasses['li'] ?? 'page-item';
+        $aClass = $this->customClasses['a'] ?? 'page-link';
 
-        if ($this->getTotalPages() > 1) {
-            $links .= '<nav aria-label="Page navigation"><ul class="pagination justify-content-center">';
+        $html = '<ul class="' . $ulClass . '">';
 
-            if ($this->hasPreviousPage()) {
-                $prevUrl = $url . ((strpos($url, '?') !== false) ? '&' : '?') . 'page=' . $this->getPreviousPage();
-                $links .= '<li class="page-item"><a class="page-link" href="' . $prevUrl . '">Previous</a></li>';
-            }
-
-            if ($this->hasNextPage()) {
-                $nextUrl = $url . ((strpos($url, '?') !== false) ? '&' : '?') . 'page=' . $this->getNextPage();
-                $links .= '<li class="page-item"><a class="page-link" href="' . $nextUrl . '">Next</a></li>';
-            }
-
-            $links .= '</ul></nav>';
+        for ($i = 1; $i <= $this->totalPages; $i++) {
+            $activeClass = ($i == $this->currentPage) ? 'active' : '';
+            $html .= '<li class="' . $liClass . ' ' . $activeClass . '"><a class="' . $aClass . '" href="' . $this->createPageUrl($i) . '">' . $i . '</a></li>';
         }
 
-        return $links;
+        $html .= '</ul>';
+        return $html;
     }
 
-    /**
-     * Generate pagination links with ellipses between for Bootstrap.
-     *
-     * @param string $url
-     * @return string
-     */
-    public function generateEllipsesLinks(string $url): string
+    protected function renderTailwind()
     {
-        $links = '';
+        $ulClass = $this->customClasses['ul'] ?? 'flex justify-center';
+        $liClass = $this->customClasses['li'] ?? '';
+        $aClass = $this->customClasses['a'] ?? 'px-3 py-2 border border-blue-500';
 
-        if ($this->getTotalPages() > 1) {
-            $links .= '<nav aria-label="Page navigation"><ul class="pagination justify-content-center">';
+        $html = '<ul class="' . $ulClass . '">';
 
-            if ($this->hasPreviousPage()) {
-                $prevUrl = $url . ((strpos($url, '?') !== false) ? '&' : '?') . 'page=' . $this->getPreviousPage();
-                $links .= '<li class="page-item"><a class="page-link" href="' . $prevUrl . '">Previous</a></li>';
-            }
-
-            $maxLinks = 5; // Maximum links to show before and after the current page
-            $halfMaxLinks = floor($maxLinks / 2);
-            $startPage = max(1, $this->currentPage - $halfMaxLinks);
-            $endPage = min($this->getTotalPages(), $startPage + $maxLinks - 1);
-
-            if ($startPage > 1) {
-                $links .= '<li class="page-item"><a class="page-link" href="' . $url . ((strpos($url, '?') !== false) ? '&' : '?') . 'page=1">1</a></li>';
-                if ($startPage > 2) {
-                    $links .= '<li class="page-item disabled"><span class="page-link">...</span></li>';
-                }
-            }
-
-            for ($i = $startPage; $i <= $endPage; $i++) {
-                $activeClass = ($i == $this->currentPage) ? 'active' : '';
-                $pageUrl = $url . ((strpos($url, '?') !== false) ? '&' : '?') . 'page=' . $i;
-                $links .= '<li class="page-item ' . $activeClass . '"><a class="page-link" href="' . $pageUrl . '">' . $i . '</a></li>';
-            }
-
-            if ($endPage < $this->getTotalPages()) {
-                if ($endPage < $this->getTotalPages() - 1) {
-                    $links .= '<li class="page-item disabled"><span class="page-link">...</span></li>';
-                }
-                $links .= '<li class="page-item"><a class="page-link" href="' . $url . ((strpos($url, '?') !== false) ? '&' : '?') . 'page=' . $this->getTotalPages() . '">' . $this->getTotalPages() . '</a></li>';
-            }
-
-            if ($this->hasNextPage()) {
-                $nextUrl = $url . ((strpos($url, '?') !== false) ? '&' : '?') . 'page=' . $this->getNextPage();
-                $links .= '<li class="page-item"><a class="page-link" href="' . $nextUrl . '">Next</a></li>';
-            }
-
-            $links .= '</ul></nav>';
+        for ($i = 1; $i <= $this->totalPages; $i++) {
+            $activeClass = ($i == $this->currentPage) ? 'bg-blue-500 text-white' : 'bg-white text-blue-500';
+            $html .= '<li class="' . $liClass . '"><a class="' . $aClass . ' ' . $activeClass . '" href="' . $this->createPageUrl($i) . '">' . $i . '</a></li>';
         }
 
-        return $links;
+        $html .= '</ul>';
+        return $html;
+    }
+
+    protected function renderPreviousNext()
+    {
+        $ulClass = $this->customClasses['ul'] ?? 'pagination';
+        $liClass = $this->customClasses['li'] ?? '';
+        $aClass = $this->customClasses['a'] ?? '';
+
+        $html = '<ul class="' . $ulClass . '">';
+
+        if ($this->currentPage > 1) {
+            $html .= '<li class="' . $liClass . '"><a class="' . $aClass . '" href="' . $this->createPageUrl($this->currentPage - 1) . '">Previous</a></li>';
+        }
+
+        if ($this->currentPage < $this->totalPages) {
+            $html .= '<li class="' . $liClass . '"><a class="' . $aClass . '" href="' . $this->createPageUrl($this->currentPage + 1) . '">Next</a></li>';
+        }
+
+        $html .= '</ul>';
+        return $html;
+    }
+
+    protected function renderEllipses()
+    {
+        $ulClass = $this->customClasses['ul'] ?? 'pagination';
+        $liClass = $this->customClasses['li'] ?? '';
+        $aClass = $this->customClasses['a'] ?? '';
+
+        $html = '<ul class="' . $ulClass . '">';
+        $html .= '<li class="' . $liClass . '"><a class="' . $aClass . '" href="' . $this->createPageUrl(1) . '">1</a></li>';
+
+        if ($this->currentPage > 3) {
+            $html .= '<li class="' . $liClass . '">...</li>';
+        }
+
+        for ($i = max(2, $this->currentPage - 1); $i <= min($this->totalPages - 1, $this->currentPage + 1); $i++) {
+            $activeClass = ($i == $this->currentPage) ? 'active' : '';
+            $html .= '<li class="' . $liClass . ' ' . $activeClass . '"><a class="' . $aClass . '" href="' . $this->createPageUrl($i) . '">' . $i . '</a></li>';
+        }
+
+        if ($this->currentPage < $this->totalPages - 2) {
+            $html .= '<li class="' . $liClass . '">...</li>';
+        }
+
+        $html .= '<li class="' . $liClass . '"><a class="' . $aClass . '" href="' . $this->createPageUrl($this->totalPages) . '">' . $this->totalPages . '</a></li>';
+        $html .= '</ul>';
+        return $html;
+    }
+
+    protected function renderLoadMore()
+    {
+        $divClass = $this->customClasses['div'] ?? 'load-more';
+        $aClass = $this->customClasses['a'] ?? '';
+
+        $html = '';
+
+        if ($this->currentPage < $this->totalPages) {
+            $html .= '<div class="' . $divClass . '">';
+            $html .= '<a class="' . $aClass . '" href="' . $this->createPageUrl($this->currentPage + 1) . '">Load More</a>';
+            $html .= '</div>';
+        }
+
+        return $html;
     }
 }

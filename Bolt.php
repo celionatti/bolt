@@ -33,37 +33,41 @@ class Bolt
     public Database $database;
     public ?Controller $controller;
     public ExtensionCheck $extensionCheck;
-
-    public static Bolt $bolt;
-
     public PathResolver $pathResolver;
     public AssetManager $assetManager;
 
+    public static Bolt $bolt;
+
     public function __construct()
     {
+        $this->initialize();
+    }
+
+    private function initialize()
+    {
+        self::$bolt = $this;
+
         $this->require_files();
 
-        $this->bolt_run();
-
-        self::$bolt = $this;
         $this->extensionCheck = new ExtensionCheck();
         $this->extensionCheck->checkExtensions();
+
         $this->pathResolver = new PathResolver(get_root_dir());
         $this->assetManager = new AssetManager(URL_ROOT);
 
         $this->session = new Session();
         $this->config = new Config();
         $this->config::load($this->pathResolver->base_path(CONFIG_ROOT));
+
         $this->container = new Container();
         $this->request = new Request();
         $this->response = new Response();
         $this->router = new Router($this->request, $this->response);
 
-        $this->container->singleton("Database", function () {
-            return new Database();
-        });
+        $this->container->singleton('Database', fn () => new Database());
+        $this->database = $this->container->make('Database');
 
-        $this->database = $this->container->make("Database");
+        $this->verifyApplicationKey();
     }
 
     public function run()
@@ -87,13 +91,20 @@ class Bolt
         ];
     }
 
-    private function bolt_run()
+    private function verifyApplicationKey(): void
     {
-        // Check if both results are not empty and equal
-        if (!empty(BOLT_APP_KEY)) {
-            return true; // Both expressions are not empty and equal
+        if (empty(BOLT_APP_KEY)) {
+            $this->dieWithError('Bolt Application Key is Missing, Kindly run the generate key command, to get a valid key', 'BOLT KEY', 'BOLT KEY ERROR - Generate New Key');
         }
+    }
 
-        return bolt_die("Bolt Application Key is Missing, Kindly run the generate key command, to get a valid key", "BOLT KEY", "BOLT KEY ERROR - Generate New Key"); // Expressions are empty or not equal
+    private function dieWithError(string $message, string $title, string $error): void
+    {
+        throw new BoltException("[$title]:  $error - $message");
+    }
+
+    private function getRootDir(): string
+    {
+        return get_root_dir();
     }
 }

@@ -12,12 +12,12 @@ declare(strict_types=1);
 
 namespace celionatti\Bolt\View;
 
-use Exception;
 use Twig\Environment;
 use celionatti\Bolt\Bolt;
 use Jenssegers\Blade\Blade;
 use Twig\Loader\FilesystemLoader;
 use celionatti\Bolt\Helpers\Logger;
+use celionatti\Bolt\BoltException\BoltException;
 
 
 class BoltView
@@ -76,7 +76,7 @@ class BoltView
     public function start($key): void
     {
         if (empty($key)) {
-            throw new Exception("Your start method requires a valid key.");
+            throw new BoltException("Your start method requires a valid key.");
         }
         $this->_buffer = $key;
         ob_start();
@@ -85,7 +85,7 @@ class BoltView
     public function end(): void
     {
         if (empty($this->_buffer)) {
-            throw new Exception("You must first run the start method.");
+            throw new BoltException("You must first run the start method.");
         }
         $this->_content[$this->_buffer] = ob_get_clean();
         $this->_buffer = null;
@@ -133,7 +133,7 @@ class BoltView
             else {
                 $output = $this->renderBoltTemplate($path, $params);
             }
-        } catch (Exception $e) {
+        } catch (BoltException $e) {
             $this->logError('Rendering Error: ' . $e->getMessage());
             if (!$returnOutput) {
                 echo 'Rendering Error: ' . $e->getMessage();
@@ -188,10 +188,10 @@ class BoltView
         $fullPath = Bolt::$bolt->pathResolver->template_path(DIRECTORY_SEPARATOR . $path . '.php');
 
         if (!file_exists($fullPath)) {
-            throw new Exception("The view \"{$path}\" does not exist.");
+            throw new BoltException("The view \"{$path}\" does not exist.");
         }
         if (!file_exists($layoutPath)) {
-            throw new Exception("The layout \"{$this->_layout}\" does not exist.");
+            throw new BoltException("The layout \"{$this->_layout}\" does not exist.");
         }
 
         // Read and parse the template file
@@ -247,7 +247,7 @@ class BoltView
             eval("?>{$parsedTemplate}");
         } catch (\Throwable $e) {
             ob_end_clean();
-            throw new Exception("Error rendering template: " . $e->getMessage());
+            throw new BoltException("Error rendering template: " . $e->getMessage());
         }
 
         // Get the content from the buffer

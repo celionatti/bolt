@@ -77,7 +77,10 @@ class BoltException extends Exception
 
         $style = $styles[$this->errorLevel] ?? 'background-color: #000; color: #FFF;';
         $errorLevel = strtoupper($this->errorLevel);
-        $trace = nl2br($this->getTraceAsString());
+        $trace = $this->getTrace();
+        $className = $trace[0]['class'] ?? 'N/A';
+        $methodName = $trace[0]['function'] ?? 'N/A';
+        $traceHtml = $this->formatTrace($trace);
 
         $serverInfo = [
             'Request URI' => $_SERVER['REQUEST_URI'] ?? 'N/A',
@@ -89,6 +92,8 @@ class BoltException extends Exception
         foreach ($serverInfo as $key => $value) {
             $serverInfoHtml .= "<p><strong>{$key}:</strong> {$value}</p>";
         }
+
+        $messageParts = $this->splitMessage($this->getMessage());
 
         $html = <<<HTML
         <!DOCTYPE html>
@@ -138,25 +143,47 @@ class BoltException extends Exception
                 }
                 .error-main {
                     display: flex; 
-                    flex-direction: column; 
-                    align-items: center; 
+                    flex-direction: row; /* Change to row to split cards side by side */
+                    justify-content: space-between;
+                    gap: 20px;
+                    width: 100%;
                 }
-                .error-main h5 { 
-                    font-size: .8em; 
-                    margin-bottom: 9px;
+                .error-card {
+                    width: 48%; 
+                    background-color: #333; 
+                    border: 1px solid #444; 
+                    border-radius: 8px; 
+                    padding: 20px;
+                    box-sizing: border-box;
+                }
+                .error-card h5 { 
+                    font-size: 1.1em; 
+                    margin-bottom: 10px; 
                     word-wrap: break-word;
                     overflow-wrap: break-word;
-                    max-width: 100%; 
+                    max-width: 100%;
                 }
-                .error-main p { 
-                    font-size: 1.1em; 
+                .error-card p { 
+                    font-size: 1em; 
                     margin: 5px 0; 
                 }
-                .error-main .home-link {
+                .error-card small {
+                    display: block;
+                    margin-top: 5px;
+                    font-size: 0.9em;
+                }
+                .error-card a {
+                    display: block;
                     color: #007BFF;
                     text-decoration: none;
                     font-weight: bold;
                     margin-top: 20px;
+                }
+                .error-main .details {
+                    flex: 2;
+                }
+                .error-main .server-info {
+                    flex: 1;
                 }
                 .error-content {
                     display: flex;
@@ -165,7 +192,7 @@ class BoltException extends Exception
                     gap: 20px;
                     overflow: hidden;
                 }
-                .trace, .server-info {
+                .trace {
                     background-color: #333;
                     padding: 15px;
                     border-radius: 5px;
@@ -179,10 +206,7 @@ class BoltException extends Exception
                 .trace {
                     flex: 2;
                 }
-                .server-info {
-                    flex: 1;
-                }
-                .trace pre, .server-info pre {
+                .trace pre {
                     white-space: pre-wrap;
                 }
                 ::-webkit-scrollbar {
@@ -205,20 +229,24 @@ class BoltException extends Exception
             <div class="error-container">
                 <div class="error-header">{$errorLevel}</div>
                 <div class="error-main">
-                    <h5>{$this->getMessage()}</h5>
-                    <p>Error Code: {$this->getCode()}</p>
-                    <p>File: {$this->getFile()}</p>
-                    <p>Line: {$this->getLine()}</p>
-                    <a href="/" class="home-link">Go to Homepage</a>
+                    <div class="error-card details">
+                        <h5>{$messageParts[0]}</h5>
+                        <p>Error Code: {$this->getCode()}</p>
+                        <small>File: {$this->getFile()}</small>
+                        <p>Line: {$this->getLine()}</p>
+                        <p>Class: {$className}</p>
+                        <p>Method: {$methodName}</p>
+                        <a href="/" class="home-link">Go to Homepage</a>
+                    </div>
+                    <div class="error-card server-info">
+                        <h5>Server Information</h5>
+                        {$serverInfoHtml}
+                    </div>
                 </div>
                 <div class="error-content">
                     <div class="trace">
                         <h3>Stack Trace:</h3>
-                        <pre>{$trace}</pre>
-                    </div>
-                    <div class="server-info">
-                        <h3>Server Information:</h3>
-                        {$serverInfoHtml}
+                        <pre>{$traceHtml}</pre>
                     </div>
                 </div>
             </div>
@@ -228,5 +256,30 @@ class BoltException extends Exception
 
         echo $html;
         exit;
+    }
+
+    private function formatTrace(array $trace): string
+    {
+        $traceHtml = '';
+        foreach ($trace as $i => $frame) {
+            $class = $frame['class'] ?? 'N/A';
+            $method = $frame['function'] ?? 'N/A';
+            $file = $frame['file'] ?? 'N/A';
+            $line = $frame['line'] ?? 'N/A';
+            $traceHtml .= sprintf(
+                "#%d %s::%s in %s on line %d\n",
+                $i,
+                $class,
+                $method,
+                $file,
+                $line
+            );
+        }
+        return nl2br($traceHtml);
+    }
+
+    private function splitMessage(string $message): array
+    {
+        return explode("\n", $message);
     }
 }

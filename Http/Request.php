@@ -35,34 +35,34 @@ class Request
         return substr($path, 0, $position);
     }
 
-    public function method(): string
+    public function getMethod(): string
     {
         return $_POST['_method'] ?? strtoupper($_SERVER['REQUEST_METHOD']);
     }
 
     public function isGet(): bool
     {
-        return $this->method() === 'GET';
+        return $this->getMethod() === 'GET';
     }
 
     public function isPost(): bool
     {
-        return $this->method() === 'POST';
+        return $this->getMethod() === 'POST';
     }
 
     public function isPut(): bool
     {
-        return $this->method() === 'PUT';
+        return $this->getMethod() === 'PUT';
     }
 
     public function isPatch(): bool
     {
-        return $this->method() === 'PATCH';
+        return $this->getMethod() === 'PATCH';
     }
 
     public function isDelete(): bool
     {
-        return $this->method() === 'DELETE';
+        return $this->getMethod() === 'DELETE';
     }
 
     public function getBody(): array

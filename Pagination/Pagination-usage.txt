@@ -1,0 +1,45 @@
+$paginationData = YourModel::paginate($currentPage, $itemsPerPage);
+$customClasses = [
+    'ul' => 'my-custom-ul',
+    'li' => 'my-custom-li',
+    'a' => 'my-custom-a'
+];
+$pagination = new Pagination($paginationData['pagination'], '/your-route/page/(:num)', $customClasses);
+
+echo $pagination->render('default');
+
+
+======================================================
+
+$paginationData = YourModel::paginate($currentPage, $itemsPerPage);
+$customClasses = [
+    'ul' => 'my-custom-ul',
+    'li' => 'my-custom-li',
+    'a' => 'my-custom-a'
+];
+$pagination = new Pagination($paginationData['pagination'], '/your-route/page/(:num)', $customClasses);
+
+echo $pagination->render('previous_next');
+
+============================================================
+
+$paginationData = YourModel::paginate($currentPage, $itemsPerPage);
+$customClasses = [
+    'ul' => 'my-custom-ul',
+    'li' => 'my-custom-li',
+    'a' => 'my-custom-a'
+];
+$pagination = new Pagination($paginationData['pagination'], '/your-route/page/(:num)', $customClasses);
+
+echo $pagination->render('ellipses');
+
+=======================================================================
+
+$paginationData = YourModel::paginate($currentPage, $itemsPerPage);
+$customClasses = [
+    'div' => 'my-custom-div',
+    'a' => 'my-custom-a'
+];
+$pagination = new Pagination($paginationData['pagination'], '/your-route/page/(:num)', $customClasses);
+
+echo $pagination->render('load_more');

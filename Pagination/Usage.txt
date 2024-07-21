@@ -1,15 +1,14 @@
-<?php
 
-    $totalItems = 100;
-    $itemsPerPage = 10;
-    $currentPage = 5;
+$totalItems = 100;
+$itemsPerPage = 10;
+$currentPage = 5;
 
-    $pagination = new Pagination($totalItems, $itemsPerPage, $currentPage);
+$pagination = new Pagination($totalItems, $itemsPerPage, $currentPage);
 
-    $url = 'http://example.com/page';
+$url = 'http://example.com/page';
 
-    echo $pagination->generateNextPrevLinks($url);
-    echo $pagination->generateEllipsesLinks($url);
+echo $pagination->generateNextPrevLinks($url);
+echo $pagination->generateEllipsesLinks($url);
 
 
 public function findAllByWithPagination(array $conditions, $page = null, $perPage, $orderByColumn, $orderDirection = 'asc')
