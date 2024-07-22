@@ -90,7 +90,7 @@ class BoltException extends Exception
 
         $serverInfoHtml = '';
         foreach ($serverInfo as $key => $value) {
-            $serverInfoHtml .= "<p><strong>{$key}:</strong> {$value}</p>";
+            $serverInfoHtml .= "<p><strong>{$key}:</strong> {$value}</p><hr>";
         }
 
         $messageParts = $this->splitMessage($this->getMessage());
@@ -114,6 +114,9 @@ class BoltException extends Exception
                     margin: 0; 
                     padding: 20px;
                     box-sizing: border-box;
+                }
+                hr {
+                    border-color: lightblue;
                 }
                 .error-container { 
                     width: 90%; 
@@ -231,21 +234,29 @@ class BoltException extends Exception
                 <div class="error-main">
                     <div class="error-card details">
                         <h5>{$messageParts[0]}</h5>
+                        <hr>
                         <p>Error Code: {$this->getCode()}</p>
+                        <hr>
                         <small>File: {$this->getFile()}</small>
+                        <hr>
                         <p>Line: {$this->getLine()}</p>
+                        <hr>
                         <p>Class: {$className}</p>
+                        <hr>
                         <p>Method: {$methodName}</p>
+                        <hr>
                         <a href="/" class="home-link">Go to Homepage</a>
                     </div>
                     <div class="error-card server-info">
-                        <h5>Server Information</h5>
+                        <h5>Server Information:</h5>
+                        <hr>
                         {$serverInfoHtml}
                     </div>
                 </div>
                 <div class="error-content">
                     <div class="trace">
                         <h3>Stack Trace:</h3>
+                        <hr>
                         <pre>{$traceHtml}</pre>
                     </div>
                 </div>

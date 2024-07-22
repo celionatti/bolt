@@ -10,130 +10,186 @@ declare(strict_types=1);
 
 namespace celionatti\Bolt\View;
 
-use Exception;
 use celionatti\Bolt\Bolt;
 
 class View
 {
-    private string $_title = '';
-    private string $_header = 'Dashboard';
-    private string $_metaTitle = '';
-    private string $_metaDescription = '';
-    private string $_metaKeywords = '';
-    private string $_author = '';
-    private array $_content = [];
-    private $_currentContent;
-    private $_buffer;
-    private string $_layout;
-    private string $_defaultViewPath;
+    protected $viewsPath;
+    protected $cachePath;
+    protected $cacheEnabled;
+    protected $directives = [];
+    protected $components = [];
+    protected $data = [];
+    protected $sections = [];
+    protected $sectionStack = [];
+    protected $extends;
 
-    public function __construct($path = '')
+    public function __construct($viewsPath, $cachePath = null, $cacheEnabled = false)
     {
-        $this->_defaultViewPath = $path;
+        $this->viewsPath = $viewsPath;
+        $this->cachePath = $cachePath;
+        $this->cacheEnabled = $cacheEnabled;
+
+        // Register default directives
+        $this->registerDefaultDirectives();
     }
 
-    public function setLayout($layout): void
+    protected function registerDefaultDirectives()
     {
-        $this->_layout = $layout;
+        // Echo directive
+        $this->directives['{{'] = function ($expression) {
+            return '<?= htmlspecialchars(' . $expression . '); ?>';
+        };
+
+        // If directive
+        $this->directives['@if'] = function ($expression) {
+            return '<?php if(' . $expression . '): ?>';
+        };
+
+        // Else directive
+        $this->directives['@else'] = function () {
+            return '<?php else: ?>';
+        };
+
+        // Elseif directive
+        $this->directives['@elseif'] = function ($expression) {
+            return '<?php elseif(' . $expression . '): ?>';
+        };
+
+        // Endif directive
+        $this->directives['@endif'] = function () {
+            return '<?php endif; ?>';
+        };
+
+        // CSRF directive
+        $this->directives['@csrf'] = function () {
+            return '<input type="hidden" name="csrf_token" value="<?= csrf_token(); ?>">';
+        };
+
+        // Extends directive
+        $this->directives['@extends'] = function ($expression) {
+            $this->extends = trim($expression, '\'"');
+            return '';
+        };
+
+        // Section directive
+        $this->directives['@section'] = function ($expression) {
+            return '<?php $this->startSection(' . $expression . '); ?>';
+        };
+
+        // Endsection directive
+        $this->directives['@endsection'] = function () {
+            return '<?php $this->endSection(); ?>';
+        };
+
+        // Yield directive
+        $this->directives['@yield'] = function ($expression) {
+            return '<?= $this->yieldContent(' . $expression . '); ?>';
+        };
     }
 
-    public function setTitle($title): void
+    public function registerDirective($name, callable $handler)
     {
-        $this->_title = $title;
+        $this->directives[$name] = $handler;
     }
 
-    public function getTitle()
+    public function render($view, $data = [])
     {
-        return $this->_title;
-    }
+        $this->data = array_merge($this->data, $data);
+        $this->sections = [];
+        $this->sectionStack = [];
+        $this->extends = null;
 
-    public function setMetaTitle($metaTitle): void
-    {
-        $this->_metaTitle = $metaTitle;
-    }
-
-    public function setMetaDescription($metaDescription): void
-    {
-        $this->_metaDescription = $metaDescription;
-    }
-
-    public function setMetaKeywords($metaKeywords): void
-    {
-        $this->_metaKeywords = $metaKeywords;
-    }
-
-    public function setAuthor($author): void
-    {
-        $this->_author = $author;
-    }
-
-    public function getHeader()
-    {
-        return $this->_header;
-    }
-
-    public function setHeader($_header)
-    {
-        $this->_header = $_header;
-    }
-
-    public function start($key): void
-    {
-        if (empty($key)) {
-            throw new Exception("Your start method requires a valid key.");
+        $viewPath = $this->viewsPath . '/' . str_replace('.', '/', $view) . '.php';
+        if (!file_exists($viewPath)) {
+            throw new \Exception("View [$view] not found.");
         }
-        $this->_buffer = $key;
-        ob_start();
-    }
 
-    public function end(): void
-    {
-        if (empty($this->_buffer)) {
-            throw new Exception("You must first run the start method.");
+        $compiledView = $this->compileView($viewPath);
+
+        if ($this->extends) {
+            $layoutPath = $this->viewsPath . '/' . str_replace('.', '/', $this->extends) . '.php';
+            if (!file_exists($layoutPath)) {
+                throw new \Exception("Layout [$this->extends] not found.");
+            }
+            $compiledLayout = $this->compileView($layoutPath);
+            $compiledView = $compiledLayout;
         }
-        $this->_content[$this->_buffer] = ob_get_clean();
-        $this->_buffer = null;
-    }
 
-    public function content($key): void
-    {
-        if (array_key_exists($key, $this->_content)) {
-            echo $this->_content[$key];
+        if ($this->cacheEnabled) {
+            $cacheFile = $this->cachePath . '/' . md5($view) . '.php';
+            if (!file_exists($cacheFile) || filemtime($cacheFile) < filemtime($viewPath)) {
+                file_put_contents($cacheFile, $compiledView);
+            }
+            $this->evaluateView($cacheFile, $this->data);
         } else {
-            echo '';
+            $this->evaluateViewString($compiledView, $this->data);
         }
     }
 
-    public function partial($path, $params = []): void
+    protected function compileView($viewPath)
     {
-        $fullPath = Bolt::$bolt->pathResolver->template_path(DIRECTORY_SEPARATOR . 'partials' . DIRECTORY_SEPARATOR . $path . '.php');
-        if (file_exists($fullPath)) {
-            extract($params); // Extract data array into variables
-            include($fullPath);
+        $content = file_get_contents($viewPath);
+
+        // Handle directives
+        foreach ($this->directives as $directive => $handler) {
+            $content = preg_replace_callback('/' . preg_quote($directive) . '\s*(\(.*?\))?/', function ($matches) use ($handler) {
+                return $handler(isset($matches[1]) ? trim($matches[1], '()') : null);
+            }, $content);
+        }
+
+        return $content;
+    }
+
+    protected function evaluateView($file, $data)
+    {
+        extract($data, EXTR_SKIP);
+        include $file;
+    }
+
+    protected function evaluateViewString($viewString, $data)
+    {
+        extract($data, EXTR_SKIP);
+        eval('?>' . $viewString);
+    }
+
+    // Methods for handling components and partials
+    public function component($name, $componentPath)
+    {
+        $this->components[$name] = $componentPath;
+    }
+
+    public function renderComponent($name, $data = [])
+    {
+        if (!isset($this->components[$name])) {
+            throw new \Exception("Component [$name] not found.");
+        }
+
+        $componentPath = $this->components[$name];
+        return $this->render($componentPath, $data);
+    }
+
+    public function partial($view, $data = [])
+    {
+        return $this->render($view, $data);
+    }
+
+    // Methods for handling sections and layout
+    protected function startSection($name)
+    {
+        if (ob_start()) {
+            $this->sectionStack[] = $name;
         }
     }
 
-    public function render($path = '', $params = []): void
+    protected function endSection()
     {
-        if (empty($path)) {
-            $path = $this->_defaultViewPath;
-        }
+        $last = array_pop($this->sectionStack);
+        $this->sections[$last] = ob_get_clean();
+    }
 
-        foreach ($params as $key => $value) {
-            $$key = $value;
-        }
-
-        $layoutPath = Bolt::$bolt->pathResolver->template_path(DIRECTORY_SEPARATOR . 'layouts/' . $this->_layout . '.php');
-        $fullPath = Bolt::$bolt->pathResolver->template_path(DIRECTORY_SEPARATOR . $path . '.php');
-
-        if (!file_exists($fullPath)) {
-            throw new Exception("The view \"{$path}\" does not exist.");
-        }
-        if (!file_exists($layoutPath)) {
-            throw new Exception("The layout \"{$this->_layout}\" does not exist.");
-        }
-
-        require($fullPath);
-        require($layoutPath);
+    protected function yieldContent($name)
+    {
+        return $this->sections[$name] ?? '';
     }
 }
