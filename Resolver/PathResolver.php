@@ -52,7 +52,7 @@ class PathResolver
 
     public function template_path($path = ''): string
     {
-        $templatePath = $this->basePath . DIRECTORY_SEPARATOR . 'resources' . DIRECTORY_SEPARATOR . 'templates';
+        $templatePath = $this->basePath . DIRECTORY_SEPARATOR . 'resources' . DIRECTORY_SEPARATOR . 'view';
         $path = ltrim($path, '/'); // Remove leading slashes from the path
         return $templatePath . DIRECTORY_SEPARATOR . $path;
     }

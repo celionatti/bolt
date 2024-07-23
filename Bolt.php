@@ -73,7 +73,8 @@ class Bolt
 
         $this->verifyApplicationKey();
 
-        $this->loadProviders(get_root_dir() . "/configs/providers.php");
+        $this->loadProviders(get_root_dir() . "/bootstrap/providers.php");
+        $this->loadProviders(__DIR__ . "/bolt-providers.php");
         $this->bootProviders();
     }
 

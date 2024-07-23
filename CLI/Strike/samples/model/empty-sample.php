@@ -10,7 +10,7 @@ declare(strict_types=1);
  * ======================================
  */
 
-namespace PhpStrike\models;
+namespace PhpStrike\app\models;
 
 use celionatti\Bolt\Database\DatabaseModel;
 

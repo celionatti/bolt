@@ -10,7 +10,8 @@ declare(strict_types=1);
  * ===============================================
  */
 
-namespace PhpStrike\controllers;
+namespace PhpStrike\app\controllers;
+
 use celionatti\Bolt\Http\Request;
 
 use celionatti\Bolt\Controller;

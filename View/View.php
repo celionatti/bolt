@@ -81,7 +81,7 @@ class View
 
     public function partial($path, $params = []): void
     {
-        $fullPath = Bolt::$bolt->pathResolver->template_path(DIRECTORY_SEPARATOR . 'partials' . DIRECTORY_SEPARATOR . $path . '.php');
+        $fullPath = Bolt::$bolt->pathResolver->template_path('partials' . DIRECTORY_SEPARATOR . $path . '.php');
         if (file_exists($fullPath)) {
             extract($params);
             include $fullPath;
@@ -124,8 +124,8 @@ class View
             $$key = $value;
         }
 
-        $layoutPath = Bolt::$bolt->pathResolver->template_path(DIRECTORY_SEPARATOR . 'layouts' . DIRECTORY_SEPARATOR . $this->_layout . '.php');
-        $fullPath = Bolt::$bolt->pathResolver->template_path(DIRECTORY_SEPARATOR . $path . '.php');
+        $layoutPath = Bolt::$bolt->pathResolver->template_path('layouts' . DIRECTORY_SEPARATOR . $this->_layout . '.php');
+        $fullPath = Bolt::$bolt->pathResolver->template_path("{$path}.php");
 
         if (!file_exists($fullPath)) {
             throw new BoltException("The view \"{$path}\" does not exist.");

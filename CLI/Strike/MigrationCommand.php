@@ -77,7 +77,7 @@ class MigrationCommand extends CliActions implements CommandInterface
 
     private function migrate()
     {
-        $migrationDir = $this->basePath . DIRECTORY_SEPARATOR . "migrations" . DIRECTORY_SEPARATOR;
+        $migrationDir = $this->basePath . DIRECTORY_SEPARATOR . "database" . DIRECTORY_SEPARATOR . "migrations" . DIRECTORY_SEPARATOR;
 
         if (!is_dir($migrationDir)) {
             $this->message("Error: Migrations directory not found.", true, true, "error");
@@ -105,7 +105,7 @@ class MigrationCommand extends CliActions implements CommandInterface
 
     private function rollback()
     {
-        $migrationDir = $this->basePath . DIRECTORY_SEPARATOR . "migrations" . DIRECTORY_SEPARATOR;
+        $migrationDir = $this->basePath . DIRECTORY_SEPARATOR . "database" . DIRECTORY_SEPARATOR . "migrations" . DIRECTORY_SEPARATOR;
 
         if (!is_dir($migrationDir)) {
             $this->message("Error: Migrations directory not found.", true, true, "error");
@@ -132,7 +132,7 @@ class MigrationCommand extends CliActions implements CommandInterface
 
     private function refresh()
     {
-        $migrationDir = $this->basePath . DIRECTORY_SEPARATOR . "migrations" . DIRECTORY_SEPARATOR;
+        $migrationDir = $this->basePath . DIRECTORY_SEPARATOR . "database" . DIRECTORY_SEPARATOR . "migrations" . DIRECTORY_SEPARATOR;
 
         if (!is_dir($migrationDir)) {
             $this->message("Error: Migrations directory not found.", true, true, "error");
@@ -179,7 +179,7 @@ class MigrationCommand extends CliActions implements CommandInterface
             return;
         }
 
-        $migrationDir = $this->basePath . DIRECTORY_SEPARATOR . "migrations" . DIRECTORY_SEPARATOR;
+        $migrationDir = $this->basePath . DIRECTORY_SEPARATOR . "database" . DIRECTORY_SEPARATOR . "migrations" . DIRECTORY_SEPARATOR;
 
         if (!is_dir($migrationDir)) {
             if (!mkdir($migrationDir, 0755, true)) {

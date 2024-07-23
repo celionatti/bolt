@@ -105,7 +105,7 @@ class MakeCommand extends CliActions implements CommandInterface
             return;
         }
 
-        $controllerDir = $this->basePath . DIRECTORY_SEPARATOR . "controllers" . DIRECTORY_SEPARATOR;
+        $controllerDir = $this->basePath . DIRECTORY_SEPARATOR . "app" . DIRECTORY_SEPARATOR . "controllers" . DIRECTORY_SEPARATOR;
 
         if (!is_dir($controllerDir)) {
             if (!mkdir($controllerDir, 0755, true)) {
@@ -163,7 +163,7 @@ class MakeCommand extends CliActions implements CommandInterface
         $choice = $this->promptOptions("Choose a model to create:", $modelOptions, '1');
 
         // Check if the model directory already exists
-        $modelDir = $this->basePath . DIRECTORY_SEPARATOR . "models" . DIRECTORY_SEPARATOR;
+        $modelDir = $this->basePath . DIRECTORY_SEPARATOR . "app" . DIRECTORY_SEPARATOR . "models" . DIRECTORY_SEPARATOR;
 
         if (!is_dir($modelDir)) {
             // Create the model directory
@@ -222,7 +222,7 @@ class MakeCommand extends CliActions implements CommandInterface
     private function migrationFile($modelName)
     {
         // Check if the model directory already exists
-        $migrationDir = $this->basePath . DIRECTORY_SEPARATOR . "migrations" . DIRECTORY_SEPARATOR;
+        $migrationDir = $this->basePath . DIRECTORY_SEPARATOR . "database" . DIRECTORY_SEPARATOR . "migrations" . DIRECTORY_SEPARATOR;
 
         if (!is_dir($migrationDir)) {
             // Create the model directory
@@ -303,11 +303,11 @@ class MakeCommand extends CliActions implements CommandInterface
 
         // Determine where to create folders based on the extension
         if ($extension === ".blade.php") {
-            $viewDir = $this->basePath . DIRECTORY_SEPARATOR . "templates" . DIRECTORY_SEPARATOR . "blade-views" . DIRECTORY_SEPARATOR . $folders;
+            $viewDir = $this->basePath . DIRECTORY_SEPARATOR . "resources" . DIRECTORY_SEPARATOR . "view" . DIRECTORY_SEPARATOR . "blade-views" . DIRECTORY_SEPARATOR . $folders;
         } elseif ($extension === ".twig") {
-            $viewDir = $this->basePath . DIRECTORY_SEPARATOR . "templates" . DIRECTORY_SEPARATOR . "twig-views" . DIRECTORY_SEPARATOR . $folders;
+            $viewDir = $this->basePath . DIRECTORY_SEPARATOR . "resources" . DIRECTORY_SEPARATOR . "view" . DIRECTORY_SEPARATOR . "twig-views" . DIRECTORY_SEPARATOR . $folders;
         } else {
-            $viewDir = $this->basePath . DIRECTORY_SEPARATOR . "templates" . DIRECTORY_SEPARATOR . $folders;
+            $viewDir = $this->basePath . DIRECTORY_SEPARATOR . "resources" . DIRECTORY_SEPARATOR . "view" . DIRECTORY_SEPARATOR . $folders;
         }
 
         if (!is_dir($viewDir)) {
@@ -383,11 +383,11 @@ class MakeCommand extends CliActions implements CommandInterface
 
         // Determine where to create folders based on the extension
         if ($extension === ".blade.php") {
-            $layoutDir = $this->basePath . DIRECTORY_SEPARATOR . "templates" . DIRECTORY_SEPARATOR . "layouts" . DIRECTORY_SEPARATOR . "blade-views" . DIRECTORY_SEPARATOR . $folders;
+            $layoutDir = $this->basePath . DIRECTORY_SEPARATOR . "resources" . DIRECTORY_SEPARATOR . "view" . DIRECTORY_SEPARATOR . "layouts" . DIRECTORY_SEPARATOR . "blade-views" . DIRECTORY_SEPARATOR . $folders;
         } elseif ($extension === ".twig") {
-            $layoutDir = $this->basePath . DIRECTORY_SEPARATOR . "templates" . DIRECTORY_SEPARATOR . "layouts" . DIRECTORY_SEPARATOR . "twig-views" . DIRECTORY_SEPARATOR . $folders;
+            $layoutDir = $this->basePath . DIRECTORY_SEPARATOR . "resources" . DIRECTORY_SEPARATOR . "view" . DIRECTORY_SEPARATOR . "layouts" . DIRECTORY_SEPARATOR . "twig-views" . DIRECTORY_SEPARATOR . $folders;
         } else {
-            $layoutDir = $this->basePath . DIRECTORY_SEPARATOR . "templates" . DIRECTORY_SEPARATOR . "layouts" . DIRECTORY_SEPARATOR . $folders;
+            $layoutDir = $this->basePath . DIRECTORY_SEPARATOR . "resources" . DIRECTORY_SEPARATOR . "view" . DIRECTORY_SEPARATOR . "layouts" . DIRECTORY_SEPARATOR . $folders;
         }
 
         if (!is_dir($layoutDir)) {
@@ -432,7 +432,7 @@ class MakeCommand extends CliActions implements CommandInterface
             return;
         }
 
-        $middlewareDir = $this->basePath . DIRECTORY_SEPARATOR . "middleware" . DIRECTORY_SEPARATOR;
+        $middlewareDir = $this->basePath . DIRECTORY_SEPARATOR . "app" . DIRECTORY_SEPARATOR . "middlewares";
 
         if (!is_dir($middlewareDir)) {
             if (!mkdir($middlewareDir, 0755, true)) {
@@ -522,7 +522,7 @@ class MakeCommand extends CliActions implements CommandInterface
             return;
         }
 
-        $componentDir = $this->basePath . DIRECTORY_SEPARATOR . "components" . DIRECTORY_SEPARATOR;
+        $componentDir = $this->basePath . DIRECTORY_SEPARATOR . "app" . DIRECTORY_SEPARATOR . "components";
 
         if (!is_dir($componentDir)) {
             if (!mkdir($componentDir, 0755, true)) {
