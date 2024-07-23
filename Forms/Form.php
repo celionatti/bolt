@@ -10,7 +10,8 @@ declare(strict_types=1);
 
 namespace celionatti\Bolt\Forms;
 
-use celionatti\Bolt\Helpers\Csrf;
+use celionatti\Bolt\Helpers\CSRF\Csrf;
+
 
 class Form
 {
@@ -32,7 +33,7 @@ class Form
     public static function csrfField(): string
     {
         $csrf = new Csrf();
-        $token = $csrf->getToken() ?? "";
+        $token = $csrf->generateToken() ?? "";
 
         return "<input type='hidden' name='_csrf_token' value='{$token}'>";
     }

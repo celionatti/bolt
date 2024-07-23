@@ -12,11 +12,12 @@ declare(strict_types=1);
 
 namespace celionatti\Bolt\Authentication;
 
-use celionatti\Bolt\Cookie;
-use celionatti\Bolt\Session;
+
 use PhpStrike\models\UserSessions;
 use celionatti\Bolt\Database\Database;
-use celionatti\Bolt\Database\DatabaseModel;
+use Illuminate\Support\Facades\Cookie;
+use celionatti\Bolt\Illuminate\Support\Session;
+use celionatti\Bolt\Database\Model\DatabaseModel;
 use celionatti\Bolt\Helpers\FlashMessages\FlashMessage;
 
 class BoltAuthentication extends DatabaseModel

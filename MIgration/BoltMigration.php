@@ -19,6 +19,7 @@ class BoltMigration extends Database
     private $indexes = [];
     private $foreignKeys = [];
     public $dataType = "mysql";
+    protected $error;
 
     private $connection;
 

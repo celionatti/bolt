@@ -8,7 +8,7 @@ declare(strict_types=1);
  * ================================
  */
 
-namespace celionatti\Bolt\Helpers\Utils;
+namespace celionatti\Bolt\Illuminate\Utils;
 
 class DeviceInfo
 {

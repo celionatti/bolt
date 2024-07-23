@@ -24,9 +24,7 @@ abstract class BoltValidator
     public bool $success = true;
     protected $_obj;
 
-    /**
-     * @throws Exception
-     */
+
     public function __construct($obj, $params)
     {
         $this->_obj = $obj;

@@ -12,7 +12,7 @@ namespace celionatti\Bolt\BoltQueryBuilder;
 
 use PDO;
 use PDOException;
-use celionatti\Bolt\Database\DatabaseException;
+use celionatti\Bolt\Database\Exception\DatabaseException;
 
 
 class BoltQueryBuilder

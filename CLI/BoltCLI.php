@@ -12,15 +12,12 @@ namespace celionatti\Bolt\CLI;
 
 use celionatti\Bolt\CLI\CommandInterface;
 use celionatti\Bolt\CLI\Strike\MakeCommand;
-use celionatti\Bolt\CLI\Strike\ViewCommand;
 use celionatti\Bolt\CLI\Strike\GreetCommand;
-use celionatti\Bolt\CLI\Strike\ModelCommand;
 use celionatti\Bolt\CLI\Strike\LayoutCommand;
 use celionatti\Bolt\CLI\Strike\SeederCommand;
 use celionatti\Bolt\CLI\Strike\ServerCommand;
 use celionatti\Bolt\CLI\Strike\GenerateCommand;
 use celionatti\Bolt\CLI\Strike\MigrationCommand;
-use celionatti\Bolt\CLI\Strike\ControllerCommand;
 use celionatti\Bolt\CLI\Strike\AuthenticationCommand;
 
 class BoltCLI

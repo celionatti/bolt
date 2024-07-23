@@ -10,8 +10,6 @@ declare(strict_types=1);
 
 namespace celionatti\Bolt\Pagination;
 
-use celionatti\Bolt\Config;
-use celionatti\Bolt\BoltException\BoltException;
 
 class Paginate
 {

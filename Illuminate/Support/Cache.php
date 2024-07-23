@@ -8,7 +8,7 @@ declare(strict_types=1);
  * ================================
  */
 
-namespace celionatti\Bolt\Helpers;
+namespace celionatti\Bolt\Illuminate\Support;
 
 class Cache
 {

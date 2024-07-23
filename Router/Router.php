@@ -10,7 +10,6 @@ declare(strict_types=1);
 
 namespace celionatti\Bolt\Router;
 
-use celionatti\Bolt\Bolt;
 use celionatti\Bolt\Http\Request;
 use celionatti\Bolt\Http\Response;
 use celionatti\Bolt\BoltException\BoltException;

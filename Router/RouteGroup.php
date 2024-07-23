@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 /**
  * =================================
- * Bolt - Router Class ===========
+ * Bolt - RouterGroup Class ========
  * =================================
  */
 
@@ -15,7 +15,7 @@ use celionatti\Bolt\Http\Request;
 use celionatti\Bolt\Http\Response;
 use celionatti\Bolt\BoltException\BoltException;
 
-class Router
+class RouterGroup
 {
     public Request $request;
     public Response $response;
@@ -128,7 +128,7 @@ class Router
 
     private function getCallback()
     {
-        $method = $this->request->method();
+        $method = $this->request->getMethod();
         $url = trim($this->request->getPath(), '/');
         $routes = $this->getRouteMap($method);
         $routeParams = false;
@@ -164,7 +164,7 @@ class Router
 
     public function resolve()
     {
-        $method = $this->request->method();
+        $method = $this->request->getMethod();
         $url = $this->request->getPath();
         $routeInfo = $this->routeMap[$method][$url] ?? $this->getCallback();
 
