@@ -8,7 +8,7 @@ declare(strict_types=1);
  * =====================================
  */
 
-namespace celionatti\Bolt;
+namespace celionatti\Bolt\Container;
 
 use Closure;
 use celionatti\Bolt\BoltException\BoltException;
@@ -106,5 +106,9 @@ class Container
             return $instance;
         });
     }
-}
 
+    public function __get($name)
+    {
+        return $this->make($name);
+    }
+}

@@ -11,13 +11,14 @@ declare(strict_types=1);
 
 namespace celionatti\Bolt;
 
-use celionatti\Bolt\BoltException\BoltException;
-use celionatti\Bolt\Database\Database;
 use celionatti\Bolt\Http\Request;
 use celionatti\Bolt\Http\Response;
-use celionatti\Bolt\Resolver\AssetManager;
 use celionatti\Bolt\Router\Router;
+use celionatti\Bolt\Database\Database;
+use celionatti\Bolt\Container\Container;
+use celionatti\Bolt\Resolver\AssetManager;
 use celionatti\Bolt\Resolver\PathResolver;
+use celionatti\Bolt\BoltException\BoltException;
 
 
 
@@ -37,6 +38,7 @@ class Bolt
     public AssetManager $assetManager;
 
     public static Bolt $bolt;
+    protected $providers = [];
 
     public function __construct()
     {
@@ -68,6 +70,9 @@ class Bolt
         $this->database = $this->container->make('Database');
 
         $this->verifyApplicationKey();
+
+        $this->loadProviders(get_root_dir() . "/configs/providers.php");
+        $this->bootProviders();
     }
 
     public function run()
@@ -77,6 +82,34 @@ class Bolt
         } catch (BoltException $e) {
             throw new BoltException($e->getMessage(), $e->getCode(), "error");
         }
+    }
+
+    public function loadProviders($configPath)
+    {
+        $providers = require $configPath;
+
+        foreach ($providers as $provider) {
+            $this->registerProvider($provider);
+        }
+    }
+
+    public function registerProvider($provider)
+    {
+        $providerInstance = new $provider($this->container);
+        $this->providers[] = $providerInstance;
+        $providerInstance->register();
+    }
+
+    public function bootProviders()
+    {
+        foreach ($this->providers as $provider) {
+            $provider->boot();
+        }
+    }
+
+    public function __get($name)
+    {
+        return $this->container->$name;
     }
 
     private function require_files()

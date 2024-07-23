@@ -470,14 +470,14 @@ class MakeCommand extends CliActions implements CommandInterface
 
     private function createService()
     {
-        $serviceName = $this->prompt("Enter the service name");
+        $serviceName = $this->prompt("Enter service provider name");
 
         if (empty($serviceName)) {
             $this->message("Error: Service name cannot be empty.", true, true, "error");
             return;
         }
 
-        $serviceDir = $this->basePath . DIRECTORY_SEPARATOR . "services" . DIRECTORY_SEPARATOR;
+        $serviceDir = $this->basePath . DIRECTORY_SEPARATOR . "app" . DIRECTORY_SEPARATOR . "providers" . DIRECTORY_SEPARATOR;
 
         if (!is_dir($serviceDir)) {
             if (!mkdir($serviceDir, 0755, true)) {
@@ -486,21 +486,21 @@ class MakeCommand extends CliActions implements CommandInterface
             }
         }
 
-        $serviceFile = $serviceDir . ucfirst($serviceName) . 'Service.php';
+        $serviceFile = $serviceDir . ucfirst($serviceName) . 'ServiceProvider.php';
 
         if (file_exists($serviceFile)) {
             $this->message("Error: Service file already exists.", true, true, "warning");
             return;
         }
 
-        $sampleFile = __DIR__ . "/samples/service-sample.php";
+        $sampleFile = __DIR__ . "/samples/service/service-sample.php";
 
         if (!file_exists($sampleFile)) {
             $this->message("Error: Service sample file not found.", true, true, "error");
             return;
         }
 
-        $className = ucfirst($serviceName) . 'Service';
+        $className = ucfirst($serviceName) . 'ServiceProvider';
 
         $content = file_get_contents($sampleFile);
         $content = str_replace("{CLASSNAME}", $className, $content);

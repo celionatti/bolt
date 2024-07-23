@@ -13,12 +13,12 @@ declare(strict_types=1);
 namespace celionatti\Bolt;
 
 use celionatti\Bolt\Http\Response;
-use celionatti\Bolt\View\BoltView;
+use celionatti\Bolt\View\View;
 use celionatti\Bolt\Middleware\Middleware;
 
 class Controller
 {
-    public BoltView $view;
+    public View $view;
     public string $action = '';
     protected $currentUser;
 
@@ -29,7 +29,8 @@ class Controller
 
     public function __construct()
     {
-        $this->view = new BoltView('', ENABLE_BLADE ?? false, ENABLE_TWIG ?? false);
+        $this->view = new View();
+        // $this->view = new BoltView('', ENABLE_BLADE ?? false, ENABLE_TWIG ?? false);
         $this->view->setLayout("default");
         $this->onConstruct();
     }
