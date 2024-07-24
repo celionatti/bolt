@@ -13,6 +13,8 @@ namespace celionatti\Bolt\CLI;
 
 class CliActions
 {
+    protected $basePath;
+    
     protected function simplePrompt(string $prompt): string
     {
         echo $prompt;
@@ -158,5 +160,25 @@ class CliActions
         }
 
         return $value;
+    }
+
+    protected function configure()
+    {
+        // Get the current file's directory
+        $currentDirectory = __DIR__;
+
+        // Navigate up the directory tree until you reach the project's root
+        while (!file_exists("{$currentDirectory}/vendor")) {
+            // Go up one level
+            $currentDirectory = dirname($currentDirectory);
+
+            // Check if you have reached the filesystem root (to prevent infinite loop)
+            if ($currentDirectory === '/') {
+                $this->message("Error: Could not find project root. Please ensure you are running this command from within a Bolt project.", true, true, "error");
+                return;
+            }
+        }
+
+        $this->basePath = $currentDirectory;
     }
 }

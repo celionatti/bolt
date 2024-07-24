@@ -15,8 +15,6 @@ use celionatti\Bolt\CLI\CommandInterface;
 
 class GenerateCommand extends CliActions implements CommandInterface
 {
-    private $basePath;
-
     public function __construct()
     {
         $this->configure();
@@ -334,25 +332,5 @@ class GenerateCommand extends CliActions implements CommandInterface
         $this->output("  \033[0;37mmodel\033[0m: \033[0;36mGenerate a new model class\033[0m", 1);
         $this->output("  \033[0;37mmigration\033[0m: \033[0;36mGenerate a new migration file\033[0m", 1);
         $this->output("  \033[0;37mview\033[0m: \033[0;36mGenerate a new view file\033[0m", 1);
-    }
-
-    private function configure()
-    {
-        // Get the current file's directory
-        $currentDirectory = __DIR__;
-
-        // Navigate up the directory tree until you reach the project's root
-        while (!file_exists($currentDirectory . '/vendor')) {
-            // Go up one level
-            $currentDirectory = dirname($currentDirectory);
-
-            // Check if you have reached the filesystem root (to prevent infinite loop)
-            if ($currentDirectory === '/') {
-                $this->message("Error: Project root not found.", true, true, "error");
-                return;
-            }
-        }
-
-        $this->basePath = $currentDirectory;
     }
 }

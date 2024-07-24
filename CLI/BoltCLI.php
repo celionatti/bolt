@@ -13,11 +13,11 @@ namespace celionatti\Bolt\CLI;
 use celionatti\Bolt\CLI\CommandInterface;
 use celionatti\Bolt\CLI\Strike\MakeCommand;
 use celionatti\Bolt\CLI\Strike\GreetCommand;
-use celionatti\Bolt\CLI\Strike\LayoutCommand;
 use celionatti\Bolt\CLI\Strike\SeederCommand;
 use celionatti\Bolt\CLI\Strike\ServerCommand;
 use celionatti\Bolt\CLI\Strike\GenerateCommand;
 use celionatti\Bolt\CLI\Strike\MigrationCommand;
+use celionatti\Bolt\CLI\Strike\SchedulerCommand;
 use celionatti\Bolt\CLI\Strike\AuthenticationCommand;
 
 class BoltCLI
@@ -242,7 +242,7 @@ class BoltCLI
         $strike->registerCommand('migration', 'Create a migration file, migrate, rollback, refresh, create', new MigrationCommand);
         $strike->registerCommand('make', 'Make Command is for creating complete Package, commands like Resource,', new MakeCommand);
         $strike->registerCommand('serve', 'Serve Bolt Framework with the PHP web server,', new ServerCommand);
-        $strike->registerCommand('layout', 'Create new Layout file', new LayoutCommand);
+        $strike->registerCommand('schedule', 'Create new Schedule file', new SchedulerCommand);
         $strike->registerCommand('generate', 'Generate Command is for , commands like app key,', new GenerateCommand);
         $strike->registerCommand('seeder', 'Create a seeder file, generate, drop', new SeederCommand);
         $strike->registerCommand('authentication', 'Create an authentication Resources. For the users Model, User Sessions, Migrations - users, login_attempts, and user_sessions. Also auth controller, view - login and signup page.', new AuthenticationCommand);

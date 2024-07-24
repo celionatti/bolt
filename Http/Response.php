@@ -36,11 +36,12 @@ class Response
         503 => 'Service Unavailable',
     ];
 
-    public function __construct()
+    public function __construct(string $body = '', int $statusCode = 200, array $headers = [])
     {
-        $this->headers = [];
+        $this->body = $body;
+        $this->setStatusCode($statusCode);
+        $this->headers = $headers;
         $this->cookies = [];
-        $this->body = '';
     }
 
     public function setHeader(string $name, string $value): self
@@ -101,6 +102,12 @@ class Response
         return $this;
     }
 
+    public function appendBody(string $content): self
+    {
+        $this->body .= $content;
+        return $this;
+    }
+
     public function getBody(): string
     {
         return $this->body;
@@ -156,6 +163,49 @@ class Response
     {
         $this->setStatusCode($status);
         $this->setHeader('Location', $url);
+        return $this;
+    }
+
+    public function file(string $filePath, string $fileName = '', string $mimeType = 'application/octet-stream'): self
+    {
+        if (!file_exists($filePath)) {
+            throw new \Exception('File not found.');
+        }
+
+        if (empty($fileName)) {
+            $fileName = basename($filePath);
+        }
+
+        $this->setHeader('Content-Description', 'File Transfer');
+        $this->setHeader('Content-Type', $mimeType);
+        $this->setHeader('Content-Disposition', 'attachment; filename="' . $fileName . '"');
+        $this->setHeader('Expires', '0');
+        $this->setHeader('Cache-Control', 'must-revalidate');
+        $this->setHeader('Pragma', 'public');
+        $this->setBody(file_get_contents($filePath));
+
+        return $this;
+    }
+
+    public function html(string $html, int $status = 200): self
+    {
+        $this->setHeader('Content-Type', 'text/html');
+        $this->setStatusCode($status);
+        $this->setBody($html);
+        return $this;
+    }
+
+    public function clearHeaders(): self
+    {
+        $this->headers = [];
+        return $this;
+    }
+
+    public function setMultipleHeaders(array $headers): self
+    {
+        foreach ($headers as $name => $value) {
+            $this->setHeader($name, $value);
+        }
         return $this;
     }
 }

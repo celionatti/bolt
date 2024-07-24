@@ -15,8 +15,6 @@ use celionatti\Bolt\CLI\CommandInterface;
 
 class MigrationCommand extends CliActions implements CommandInterface
 {
-    public $basePath;
-
     private const MIGRATE = 'migrate';
     private const ROLLBACK = 'rollback';
     private const REFRESH = 'refresh';
@@ -218,25 +216,5 @@ class MigrationCommand extends CliActions implements CommandInterface
         foreach (self::ACTIONS as $action => $description) {
             $this->output("  \033[0;37m{$action}\033[0m: \033[0;36m{$description}\033[0m", 1);
         }
-    }
-
-    private function configure()
-    {
-        // Get the current file's directory
-        $currentDirectory = __DIR__;
-
-        // Navigate up the directory tree until you reach the project's root
-        while (!file_exists($currentDirectory . '/vendor')) {
-            // Go up one level
-            $currentDirectory = dirname($currentDirectory);
-
-            // Check if you have reached the filesystem root (to prevent infinite loop)
-            if ($currentDirectory === '/') {
-                $this->message("Error: Project root not found.", true, true, "error");
-                return;
-            }
-        }
-
-        $this->basePath = $currentDirectory;
     }
 }

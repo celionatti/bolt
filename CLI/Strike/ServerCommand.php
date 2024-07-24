@@ -15,8 +15,6 @@ use celionatti\Bolt\CLI\CommandInterface;
 
 class ServerCommand extends CliActions implements CommandInterface
 {
-    private $basePath;
-
     public function __construct()
     {
         $this->configure();
@@ -105,25 +103,5 @@ class ServerCommand extends CliActions implements CommandInterface
         $this->output("  \033[0;37mstart\033[0m: \033[0;36mStart the PHP development server\033[0m", 1);
         $this->output("  \033[0;37mstop\033[0m: \033[0;36mStop the PHP development server\033[0m", 1);
         $this->output("  \033[0;37mrestart\033[0m: \033[0;36mRestart the PHP development server\033[0m", 1);
-    }
-
-    private function configure()
-    {
-        // Get the current file's directory
-        $currentDirectory = __DIR__;
-
-        // Navigate up the directory tree until you reach the project's root
-        while (!file_exists($currentDirectory . '/vendor')) {
-            // Go up one level
-            $currentDirectory = dirname($currentDirectory);
-
-            // Check if you have reached the filesystem root (to prevent infinite loop)
-            if ($currentDirectory === '/') {
-                $this->message("Error: Project root not found.", true, true, "error");
-                return;
-            }
-        }
-
-        $this->basePath = $currentDirectory;
     }
 }

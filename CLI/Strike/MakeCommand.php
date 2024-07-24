@@ -15,8 +15,6 @@ use celionatti\Bolt\CLI\CommandInterface;
 
 class MakeCommand extends CliActions implements CommandInterface
 {
-    public $basePath;
-
     private const CONTROLLER = 'controller';
     private const MODEL = 'model';
     private const MIGRATION = 'migration';
@@ -448,7 +446,7 @@ class MakeCommand extends CliActions implements CommandInterface
             return;
         }
 
-        $sampleFile = __DIR__ . "/samples/middleware-sample.php";
+        $sampleFile = __DIR__ . "/samples/middleware/middleware-sample.php";
 
         if (!file_exists($sampleFile)) {
             $this->message("Error: Middleware sample file not found.", true, true, "error");
@@ -564,25 +562,5 @@ class MakeCommand extends CliActions implements CommandInterface
         foreach (self::ACTIONS as $action => $description) {
             $this->output("  \033[0;37m{$action}\033[0m: \033[0;36m{$description}\033[0m", 1);
         }
-    }
-
-    private function configure()
-    {
-        // Get the current file's directory
-        $currentDirectory = __DIR__;
-
-        // Navigate up the directory tree until you reach the project's root
-        while (!file_exists($currentDirectory . '/vendor')) {
-            // Go up one level
-            $currentDirectory = dirname($currentDirectory);
-
-            // Check if you have reached the filesystem root (to prevent infinite loop)
-            if ($currentDirectory === '/') {
-                $this->message("Error: Project root not found.", true, true, "error");
-                return;
-            }
-        }
-
-        $this->basePath = $currentDirectory;
     }
 }
