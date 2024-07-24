@@ -20,7 +20,7 @@ class Router
     protected $request;
     protected $response;
     protected $currentRoute = [];
-    
+
     public function __construct(Request $request, Response $response)
     {
         $this->request = $request;
@@ -61,6 +61,16 @@ class Router
         return $this->addRoute('DELETE', $path, $action);
     }
 
+    public function patch($path, $action)
+    {
+        return $this->addRoute('PATCH', $path, $action);
+    }
+
+    public function head($path, $action)
+    {
+        return $this->addRoute('HEAD', $path, $action);
+    }
+
     public function name($name)
     {
         $this->currentRoute['name'] = $name;
@@ -87,17 +97,29 @@ class Router
     protected function matchRoute($route)
     {
         $pattern = "@^" . $route['path'] . "$@D";
-        return preg_match($pattern, $this->request->getPath(), $matches) && 
-               $this->request->getMethod() === $route['method'];
+        return preg_match($pattern, $this->request->getPath(), $matches) &&
+            $this->request->getMethod() === $route['method'];
     }
 
     protected function runRoute($route)
     {
-        foreach ($route['middleware'] as $middleware) {
-            $middlewareInstance = new $middleware();
-            $middlewareInstance->handle($this->request, $this->response);
-        }
+        $middlewareQueue = array_reverse($route['middleware']);
+        $controllerAction = function () use ($route) {
+            return $this->executeAction($route);
+        };
 
+        $next = array_reduce($middlewareQueue, function ($next, $middleware) {
+            return function () use ($middleware, $next) {
+                $middlewareInstance = new $middleware();
+                return $middlewareInstance->handle($this->request, $next);
+            };
+        }, $controllerAction);
+
+        return $next();
+    }
+
+    protected function executeAction($route)
+    {
         $pattern = "@^" . $route['path'] . "$@D";
         preg_match($pattern, $this->request->getPath(), $matches);
 

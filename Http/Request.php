@@ -8,180 +8,165 @@ declare(strict_types=1);
  * =================================
  */
 
- namespace celionatti\Bolt\Http;
+namespace celionatti\Bolt\Http;
 
 class Request
 {
-    protected $_request;
-    protected $_method;
-    protected $_headers;
-
-    private array $parameters = [];
+    protected $headers = [];
+    protected $queryParams = [];
+    protected $bodyParams = [];
+    protected $serverParams = [];
+    protected $cookies = [];
+    protected $files = [];
+    protected $method;
+    protected $path;
+    protected $body;
 
     public function __construct()
     {
-        $this->_request = $_REQUEST; // You can use $_GET, $_POST, or other specific superglobals as needed
-        $this->_method = $_SERVER['REQUEST_METHOD'];
-        $this->_headers = getallheaders();
+        $this->headers = $this->parseHeaders();
+        $this->queryParams = $this->sanitizeArray($_GET);
+        $this->body = file_get_contents('php://input') ?: '';
+        $this->bodyParams = $this->sanitizeArray($this->parseBody());
+        $this->serverParams = $_SERVER;
+        $this->cookies = $this->sanitizeArray($_COOKIE);
+        $this->files = $_FILES;
+        $this->method = $this->detectMethod();
+        $this->path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+    }
+
+    protected function parseHeaders()
+    {
+        $headers = [];
+        foreach ($_SERVER as $key => $value) {
+            if (substr($key, 0, 5) === 'HTTP_') {
+                $header = str_replace(' ', '-', ucwords(strtolower(str_replace('_', ' ', substr($key, 5)))));
+                $headers[$header] = $value;
+            }
+        }
+        return $headers;
+    }
+
+    protected function parseBody()
+    {
+        if (in_array($this->getMethod(), ['POST', 'PUT', 'PATCH', 'DELETE']) && $this->isFormData()) {
+            parse_str($this->body, $bodyParams);
+            return $bodyParams;
+        }
+        if ($this->isJson()) {
+            return json_decode($this->body, true);
+        }
+        return [];
+    }
+
+    protected function detectMethod()
+    {
+        $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
+        if ($method === 'POST' && isset($_SERVER['HTTP_X_HTTP_METHOD_OVERRIDE'])) {
+            $overrideMethod = strtoupper($_SERVER['HTTP_X_HTTP_METHOD_OVERRIDE']);
+            if (in_array($overrideMethod, ['PUT', 'DELETE', 'PATCH'])) {
+                return $overrideMethod;
+            }
+        }
+        return $method;
+    }
+
+    public function isJson()
+    {
+        return isset($this->headers['Content-Type']) && strpos($this->headers['Content-Type'], 'application/json') !== false;
+    }
+
+    public function isFormData()
+    {
+        return isset($this->headers['Content-Type']) && strpos($this->headers['Content-Type'], 'application/x-www-form-urlencoded') !== false;
+    }
+
+    public function getHeader($name)
+    {
+        return $this->headers[$name] ?? null;
+    }
+
+    public function getQueryParam($name, $default = null)
+    {
+        return $this->sanitize($this->queryParams[$name] ?? $default);
+    }
+
+    public function getBodyParam($name, $default = null)
+    {
+        return $this->sanitize($this->bodyParams[$name] ?? $default);
+    }
+
+    public function getServerParam($name, $default = null)
+    {
+        return $this->serverParams[$name] ?? $default;
+    }
+
+    public function getCookie($name, $default = null)
+    {
+        return $this->sanitize($this->cookies[$name] ?? $default);
+    }
+
+    public function getFile($name)
+    {
+        return $this->files[$name] ?? null;
+    }
+
+    public function getMethod()
+    {
+        return $this->method;
     }
 
     public function getPath()
     {
-        $path = $_SERVER['REQUEST_URI'] ?? '/';
-        $position = strpos($path, '?');
-        if ($position === false) {
-            return $path;
-        }
-        return substr($path, 0, $position);
+        return $this->path;
     }
 
-    public function getMethod(): string
+    public function getBody()
     {
-        return $_POST['_method'] ?? strtoupper($_SERVER['REQUEST_METHOD']);
+        return $this->body;
     }
 
-    public function isGet(): bool
+    public function isAjax()
     {
-        return $this->getMethod() === 'GET';
+        return $this->getHeader('X-Requested-With') === 'XMLHttpRequest';
     }
 
-    public function isPost(): bool
+    public function isSecure()
     {
-        return $this->getMethod() === 'POST';
+        return (!empty($this->serverParams['HTTPS']) && $this->serverParams['HTTPS'] !== 'off')
+            || $this->serverParams['SERVER_PORT'] == 443;
     }
 
-    public function isPut(): bool
+    public function getIp()
     {
-        return $this->getMethod() === 'PUT';
+        return $this->serverParams['REMOTE_ADDR'] ?? null;
     }
 
-    public function isPatch(): bool
+    public function getUserAgent()
     {
-        return $this->getMethod() === 'PATCH';
+        return $this->getHeader('User-Agent');
     }
 
-    public function isDelete(): bool
+    public function getReferer()
     {
-        return $this->getMethod() === 'DELETE';
+        return $this->getHeader('Referer');
     }
 
-    public function getBody(): array
+    protected function sanitize($data)
     {
-        $body = [];
-        if ($this->isGet() || $this->isDelete()) {
-            foreach ($this->_request as $key => $value) {
-                $body[$key] = filter_input(INPUT_GET, $key, FILTER_SANITIZE_SPECIAL_CHARS);
-            }
-        }
-        if ($this->isPost() || $this->isPatch() || $this->isPut() || $this->isDelete()) {
-            foreach ($this->_request as $key => $value) {
-                $body[$key] = filter_input(INPUT_POST, $key, FILTER_SANITIZE_SPECIAL_CHARS);
-            }
-        }
-        return $body;
-    }
-
-    public function getData($input = false): false|array|string
-    {
-        if (!$input) {
-            $data = [];
-            foreach ($this->_request as $field => $value) {
-                $data[$field] = self::sanitize($value);
-            }
-            return $data;
-        }
-        return array_key_exists($input, $this->_request) ? self::sanitize($this->_request[$input]) : false;
-    }
-
-    /**
-     * Check if the current path matches the given pattern.
-     *
-     * @param string $pattern
-     * @return bool
-     */
-    public function is(string $pattern): bool
-    {
-        $path = $this->getPath();
-
-        // Perform a simple string comparison to check if the path matches the pattern
-        return trim($path, '/') === $pattern;
-    }
-
-    /**
-     * get a value from the GET variable
-     *
-     */
-    public function get(string $key = '', mixed $default = ''): mixed
-    {
-
-        if (empty($key)) {
-            return $this->esc($_GET);
-        } elseif (isset($_GET[$key])) {
-            return $this->esc($_GET[$key]);
+        if (is_array($data)) {
+            return array_map([$this, 'sanitize'], $data);
         }
 
-        return $this->esc($default);
+        return htmlspecialchars(strip_tags($data), ENT_QUOTES, 'UTF-8');
     }
 
-    /**
-     * get a value from the POST variable
-     *
-     */
-    public function post(string $key = '', mixed $default = ''): mixed
+    protected function sanitizeArray(array $data)
     {
-
-        if (empty($key)) {
-            return $this->esc($_POST);
-        } elseif (isset($_POST[$key])) {
-            return $this->esc($_POST[$key]);
+        foreach ($data as $key => $value) {
+            $data[$key] = $this->sanitize($value);
         }
 
-        return $this->esc($default);
-    }
-
-    /**
-     * get a value from the FILES variable
-     *
-     */
-    public function files(string $key = '', mixed $default = ''): mixed
-    {
-
-        if (empty($key)) {
-            return $_FILES;
-        } elseif (isset($_FILES[$key])) {
-            return $_FILES[$key];
-        }
-
-        return $default;
-    }
-
-    public static function sanitize($dirty): string
-    {
-        return htmlspecialchars($dirty);
-    }
-
-    protected function esc($str): string
-    {
-        return htmlspecialchars($str);
-    }
-
-    /**
-     * @param $params
-     * @return self
-     */
-    public function setParameters($parameters): Request
-    {
-        $this->parameters = $parameters;
-        return $this;
-    }
-
-    public function parameters(): array
-    {
-        return $this->parameters;
-    }
-
-    public function getParameter($parameter, $default = null)
-    {
-        return $this->parameters[$parameter] ?? $default;
+        return $data;
     }
 }

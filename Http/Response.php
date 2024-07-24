@@ -12,124 +12,150 @@ namespace celionatti\Bolt\Http;
 
 class Response
 {
-    const CONTINUE = 101;
-    const OK = 200;
-    const CREATED = 201;
-    const ACCEPTED = 202;
-    const NO_CONTENT = 204;
-    const FOUND = 302;
-    const NOT_MODIFIED = 304;
-    const TEMPORARY_REDIRECT = 307;
-    const PERMANENT_REDIRECT = 308;
-    const BAD_REQUEST = 400;
-    const UNAUTHORIZED = 401;
-    const PAYMENT_REQUIRED = 402;
-    const FORBIDDEN = 403;
-    const NOT_FOUND = 404;
-    const METHOD_NOT_ALLOWED = 405;
-    const NOT_ACCEPTABLE = 406;
-    const REQUEST_TIMEOUT = 408;
-    const INTERNAL_SERVER_ERROR = 500;
-    const BAD_GATEWAY = 502;
-    const GATEWAY_TIMEOUT = 504;
+    protected $headers = [];
+    protected $cookies = [];
+    protected $statusCode = 200;
+    protected $statusText = 'OK';
+    protected $body;
 
-    public $statusCode;
-    public $statusText;
-    public $headers = [];
-    public $content;
+    protected static $statusTexts = [
+        200 => 'OK',
+        201 => 'Created',
+        202 => 'Accepted',
+        204 => 'No Content',
+        301 => 'Moved Permanently',
+        302 => 'Found',
+        304 => 'Not Modified',
+        400 => 'Bad Request',
+        401 => 'Unauthorized',
+        403 => 'Forbidden',
+        404 => 'Not Found',
+        405 => 'Method Not Allowed',
+        500 => 'Internal Server Error',
+        502 => 'Bad Gateway',
+        503 => 'Service Unavailable',
+    ];
 
-    public function setContent($content)
+    public function __construct()
     {
-        $this->content = $content;
+        $this->headers = [];
+        $this->cookies = [];
+        $this->body = '';
     }
 
-    public function setStatusCode($statusCode)
-    {
-        $this->statusCode = $statusCode;
-    }
-
-    public static function getStatusText($statusCode)
-    {
-        $statusTexts = [
-            self::CONTINUE => 'Continue',
-            self::OK => 'OK',
-            self::CREATED => 'Created',
-            self::ACCEPTED => 'Accepted',
-            self::NO_CONTENT => 'No Content',
-            self::FOUND => 'Found',
-            self::NOT_MODIFIED => 'Not Modified',
-            self::TEMPORARY_REDIRECT => 'Temporary Redirect',
-            self::PERMANENT_REDIRECT => 'Permanent Redirect',
-            self::BAD_REQUEST => 'Bad Request',
-            self::UNAUTHORIZED => 'Unauthorized',
-            self::PAYMENT_REQUIRED => 'Payment Required',
-            self::FORBIDDEN => 'Forbidden',
-            self::NOT_FOUND => 'Not Found',
-            self::METHOD_NOT_ALLOWED => 'Method Not Allowed',
-            self::NOT_ACCEPTABLE => 'Not Acceptable',
-            self::REQUEST_TIMEOUT => 'Request Timeout',
-            self::INTERNAL_SERVER_ERROR => 'Internal Server Error',
-            self::BAD_GATEWAY => 'Bad Gateway',
-            self::GATEWAY_TIMEOUT => 'Gateway Timeout',
-            // Add more status codes and texts as needed
-        ];
-
-        return $statusTexts[$statusCode] ?? 'Unknown Status';
-    }
-
-    public function setHeader($name, $value)
+    public function setHeader(string $name, string $value): self
     {
         $this->headers[$name] = $value;
+        return $this;
     }
 
-    public function setHeaders(array $headers)
+    public function addHeader(string $name, string $value): self
     {
+        if (!isset($this->headers[$name])) {
+            $this->headers[$name] = [];
+        }
+        $this->headers[$name][] = $value;
+        return $this;
+    }
+
+    public function removeHeader(string $name): self
+    {
+        unset($this->headers[$name]);
+        return $this;
+    }
+
+    public function getHeader(string $name)
+    {
+        return $this->headers[$name] ?? null;
+    }
+
+    public function setCookie(string $name, string $value, int $expire = 0, string $path = '', string $domain = '', bool $secure = false, bool $httponly = false): self
+    {
+        $this->cookies[] = [
+            'name' => $name,
+            'value' => $value,
+            'expire' => $expire,
+            'path' => $path,
+            'domain' => $domain,
+            'secure' => $secure,
+            'httponly' => $httponly,
+        ];
+        return $this;
+    }
+
+    public function setStatusCode(int $code, string $text = null): self
+    {
+        $this->statusCode = $code;
+        $this->statusText = $text ?? (self::$statusTexts[$code] ?? 'unknown status');
+        return $this;
+    }
+
+    public function getStatusCode(): int
+    {
+        return $this->statusCode;
+    }
+
+    public function setBody(string $body): self
+    {
+        $this->body = $body;
+        return $this;
+    }
+
+    public function getBody(): string
+    {
+        return $this->body;
+    }
+
+    public function send(): void
+    {
+        // Send headers
+        if (!headers_sent()) {
+            header(sprintf('HTTP/1.1 %d %s', $this->statusCode, $this->statusText));
+
+            foreach ($this->headers as $name => $values) {
+                if (is_array($values)) {
+                    foreach ($values as $value) {
+                        header(sprintf('%s: %s', $name, $value), false);
+                    }
+                } else {
+                    header(sprintf('%s: %s', $name, $values));
+                }
+            }
+
+            foreach ($this->cookies as $cookie) {
+                setcookie(
+                    $cookie['name'],
+                    $cookie['value'],
+                    $cookie['expire'],
+                    $cookie['path'],
+                    $cookie['domain'],
+                    $cookie['secure'],
+                    $cookie['httponly']
+                );
+            }
+        }
+
+        // Send body
+        echo $this->body;
+    }
+
+    public function json($data, int $status = 200, array $headers = []): self
+    {
+        $this->setHeader('Content-Type', 'application/json');
+        $this->setStatusCode($status);
+        $this->setBody(json_encode($data));
+
         foreach ($headers as $name => $value) {
             $this->setHeader($name, $value);
         }
+
+        return $this;
     }
 
-    public function redirect($url, $statusCode = self::FOUND)
+    public function redirect(string $url, int $status = 302): self
     {
-        $this->setStatusCode($statusCode);
+        $this->setStatusCode($status);
         $this->setHeader('Location', $url);
-        $this->send();
-    }
-
-    public function setJsonContent(array $data)
-    {
-        $this->setHeader('Content-Type', 'application/json');
-        $this->setContent(json_encode($data));
-    }
-
-    public function setPlainTextContent($text)
-    {
-        $this->setHeader('Content-Type', 'text/plain');
-        $this->setContent($text);
-    }
-
-    public function setFileContent($filePath)
-    {
-        if (file_exists($filePath)) {
-            $this->setContent(file_get_contents($filePath));
-        } else {
-            // Handle file not found error
-            $this->setStatusCode(self::NOT_FOUND);
-            $this->setContent('File not found');
-        }
-    }
-
-    public function send()
-    {
-        // Send HTTP headers
-        foreach ($this->headers as $name => $value) {
-            header("$name: $value");
-        }
-
-        // Set the HTTP response code and status text
-        header("HTTP/1.1 {$this->statusCode} {$this->statusText}");
-
-        // Output the response content
-        echo $this->content;
+        return $this;
     }
 }
