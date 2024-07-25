@@ -14,7 +14,7 @@ namespace celionatti\Bolt\CLI;
 class CliActions
 {
     protected $basePath;
-    
+
     protected function simplePrompt(string $prompt): string
     {
         echo $prompt;
@@ -105,7 +105,7 @@ class CliActions
         echo str_repeat(' ', $indentation * 2) . $message . PHP_EOL;
     }
 
-    public function message(string $message, bool $die = false, bool $timestamp = true, string $level = 'info'): void
+    public function message(string $message, bool $die = false, bool $timestamp = true, string $title = ''): void
     {
         // Initialize output string
         $output = '';
@@ -116,6 +116,15 @@ class CliActions
         // Calculate total message length for padding and borders
         $messageLength = strlen($formattedMessage);
         $borderLength = $messageLength + 6; // Borders on both sides
+
+        // Create the title section with light blue background color and padding
+        $title = strtoupper($title);
+        if ($title) {
+            $titlePadding = str_repeat(' ', 2);
+            $titleSection = "\033[1;37;46m{$titlePadding}{$title}{$titlePadding}\033[0m ";
+        } else {
+            $titleSection = '';
+        }
 
         // Create the timestamp with a more friendly format
         $friendlyTimestamp = $timestamp ? "[" . date("M d, Y - H:i:s") . "] - " : '';
@@ -135,8 +144,8 @@ class CliActions
         // Colorize output to light blue
         $output .= "\033[1;36m"; // Light blue color
 
-        // Concatenate all parts: top border, timestamp, middle content, bottom border
-        $output .= "{$topBorder}{$friendlyTimestamp}{$middleContent}{$bottomBorder}";
+        // Concatenate all parts: top border, title section, timestamp, middle content, bottom border
+        $output .= "{$topBorder}{$titleSection}\033[1;36m{$friendlyTimestamp}{$middleContent}{$bottomBorder}";
 
         // Reset color after the message
         $output .= "\033[0m";
