@@ -74,7 +74,7 @@ class SchedulerCommand extends CliActions implements CommandInterface
         $taskName = $this->prompt("Enter the task name");
 
         if (empty($taskName)) {
-            $this->message("Error: Task name cannot be empty.", true, true, "error");
+            $this->message("Task name cannot be empty.", true, true, "error");
             return;
         }
 
@@ -82,7 +82,7 @@ class SchedulerCommand extends CliActions implements CommandInterface
 
         if (!is_dir($taskDir)) {
             if (!mkdir($taskDir, 0755, true)) {
-                $this->message("Error: Unable to create the task directory.", true, true, "error");
+                $this->message("Unable to create the task directory.", true, true, "error");
                 return;
             }
         }
@@ -90,14 +90,14 @@ class SchedulerCommand extends CliActions implements CommandInterface
         $taskFile = $taskDir . DIRECTORY_SEPARATOR . ucfirst($taskName) . 'Task.php';
 
         if (file_exists($taskFile)) {
-            $this->message("Error: Task file already exists.", true, true, "warning");
+            $this->message("Task file already exists.", true, true, "warning");
             return;
         }
 
         $sampleFile = __DIR__ . "/samples/task/task-sample.php";
 
         if (!file_exists($sampleFile)) {
-            $this->message("Error: Task sample file not found.", true, true, "error");
+            $this->message("Task sample file not found.", true, true, "error");
             return;
         }
 
@@ -107,11 +107,11 @@ class SchedulerCommand extends CliActions implements CommandInterface
         $content = str_replace("{CLASSNAME}", $className, $content);
 
         if (file_put_contents($taskFile, $content) === false) {
-            $this->message("Error: Unable to create the task file.", true, true, "error");
+            $this->message("Unable to create the task file.", true, true, "error");
             return;
         }
 
-        $this->message("Task file created successfully: '$taskFile'", false, true, "info");
+        $this->message("Task file {$className} created successfully", false, true, "created");
     }
 
     private function createJob()
@@ -119,7 +119,7 @@ class SchedulerCommand extends CliActions implements CommandInterface
         $jobName = $this->prompt("Enter the job name");
 
         if (empty($jobName)) {
-            $this->message("Error: Job name cannot be empty.", true, true, "error");
+            $this->message("Job name cannot be empty.", true, true, "error");
             return;
         }
 
@@ -127,7 +127,7 @@ class SchedulerCommand extends CliActions implements CommandInterface
 
         if (!is_dir($jobDir)) {
             if (!mkdir($jobDir, 0755, true)) {
-                $this->message("Error: Unable to create the job directory.", true, true, "error");
+                $this->message("Unable to create the job directory.", true, true, "error");
                 return;
             }
         }
@@ -135,14 +135,14 @@ class SchedulerCommand extends CliActions implements CommandInterface
         $jobFile = $jobDir . DIRECTORY_SEPARATOR . ucfirst($jobName) . 'Job.php';
 
         if (file_exists($jobFile)) {
-            $this->message("Error: Job file already exists.", true, true, "warning");
+            $this->message("Job file already exists.", true, true, "warning");
             return;
         }
 
         $sampleFile = __DIR__ . "/samples/job/job-sample.php";
 
         if (!file_exists($sampleFile)) {
-            $this->message("Error: Job sample file not found.", true, true, "error");
+            $this->message("Job sample file not found.", true, true, "error");
             return;
         }
 
@@ -152,11 +152,11 @@ class SchedulerCommand extends CliActions implements CommandInterface
         $content = str_replace("{CLASSNAME}", $className, $content);
 
         if (file_put_contents($jobFile, $content) === false) {
-            $this->message("Error: Unable to create the job file.", true, true, "error");
+            $this->message("Unable to create the job file.", true, true, "error");
             return;
         }
 
-        $this->message("Job file created successfully: '$jobFile'", false, true, "info");
+        $this->message("Job file {$className} created successfully", false, true, "created");
     }
 
     private function createEvent()
@@ -164,7 +164,7 @@ class SchedulerCommand extends CliActions implements CommandInterface
         $eventName = $this->prompt("Enter the event name");
 
         if (empty($eventName)) {
-            $this->message("Error: Event name cannot be empty.", true, true, "error");
+            $this->message("Event name cannot be empty.", true, true, "error");
             return;
         }
 
@@ -172,7 +172,7 @@ class SchedulerCommand extends CliActions implements CommandInterface
 
         if (!is_dir($eventDir)) {
             if (!mkdir($eventDir, 0755, true)) {
-                $this->message("Error: Unable to create the event directory.", true, true, "error");
+                $this->message("Unable to create the event directory.", true, true, "error");
                 return;
             }
         }
@@ -180,14 +180,14 @@ class SchedulerCommand extends CliActions implements CommandInterface
         $eventFile = $eventDir . DIRECTORY_SEPARATOR . ucfirst($eventName) . 'Event.php';
 
         if (file_exists($eventFile)) {
-            $this->message("Error: Event file already exists.", true, true, "warning");
+            $this->message("Event file already exists.", true, true, "warning");
             return;
         }
 
         $sampleFile = __DIR__ . "/samples/event/event-sample.php";
 
         if (!file_exists($sampleFile)) {
-            $this->message("Error: Event sample file not found.", true, true, "error");
+            $this->message("Event sample file not found.", true, true, "error");
             return;
         }
 
@@ -197,11 +197,11 @@ class SchedulerCommand extends CliActions implements CommandInterface
         $content = str_replace("{CLASSNAME}", $className, $content);
 
         if (file_put_contents($eventFile, $content) === false) {
-            $this->message("Error: Unable to create the event file.", true, true, "error");
+            $this->message("Unable to create the event file.", true, true, "error");
             return;
         }
 
-        $this->message("Event file created successfully: '$eventFile'", false, true, "info");
+        $this->message("Event file {$className} created successfully", false, true, "created");
     }
 
     private function listAvailableActions()

@@ -78,7 +78,7 @@ class MigrationCommand extends CliActions implements CommandInterface
         $migrationDir = $this->basePath . DIRECTORY_SEPARATOR . "database" . DIRECTORY_SEPARATOR . "migrations" . DIRECTORY_SEPARATOR;
 
         if (!is_dir($migrationDir)) {
-            $this->message("Error: Migrations directory not found.", true, true, "error");
+            $this->message("Migrations directory not found.", true, true, "error");
             return;
         }
 
@@ -106,7 +106,7 @@ class MigrationCommand extends CliActions implements CommandInterface
         $migrationDir = $this->basePath . DIRECTORY_SEPARATOR . "database" . DIRECTORY_SEPARATOR . "migrations" . DIRECTORY_SEPARATOR;
 
         if (!is_dir($migrationDir)) {
-            $this->message("Error: Migrations directory not found.", true, true, "error");
+            $this->message("Migrations directory not found.", true, true, "error");
             return;
         }
 
@@ -133,7 +133,7 @@ class MigrationCommand extends CliActions implements CommandInterface
         $migrationDir = $this->basePath . DIRECTORY_SEPARATOR . "database" . DIRECTORY_SEPARATOR . "migrations" . DIRECTORY_SEPARATOR;
 
         if (!is_dir($migrationDir)) {
-            $this->message("Error: Migrations directory not found.", true, true, "error");
+            $this->message("Migrations directory not found.", true, true, "error");
             return;
         }
 
@@ -173,7 +173,7 @@ class MigrationCommand extends CliActions implements CommandInterface
         $migrationName = $this->prompt("Enter the migration name (e.g., users)");
 
         if (empty($migrationName)) {
-            $this->message("Error: Migration name cannot be empty.", true, true, "error");
+            $this->message("Migration name cannot be empty.", true, true, "error");
             return;
         }
 
@@ -181,7 +181,7 @@ class MigrationCommand extends CliActions implements CommandInterface
 
         if (!is_dir($migrationDir)) {
             if (!mkdir($migrationDir, 0755, true)) {
-                $this->message("Error: Unable to create the migrations directory.", true, true, "error");
+                $this->message("Unable to create the migrations directory.", true, true, "error");
                 return;
             }
         }
@@ -191,7 +191,7 @@ class MigrationCommand extends CliActions implements CommandInterface
         $sampleFile = __DIR__ . "/samples/migration/migration-sample.php";
 
         if (!file_exists($sampleFile)) {
-            $this->message("Error: Migration sample file not found.", true, true, "error");
+            $this->message("Migration sample file not found.", true, true, "error");
             return;
         }
 
@@ -203,11 +203,11 @@ class MigrationCommand extends CliActions implements CommandInterface
         $content = str_replace("{CLASSNAME}", $className, $content);
 
         if (file_put_contents($migrationFile, $content) === false) {
-            $this->message("Error: Unable to create the migration file.", true, true, "error");
+            $this->message("Unable to create the migration file.", true, true, "error");
             return;
         }
 
-        $this->message("Migration file created successfully: '$migrationFile'", false, true, "info");
+        $this->message("Migration file {$className} created successfully", false, true, "created");
     }
 
     private function listAvailableActions()

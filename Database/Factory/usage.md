@@ -1,6 +1,5 @@
-<?php
 
-namespace App\Factories;
+# namespace App\Factories
 
 use App\Models\User;
 
@@ -20,6 +19,15 @@ class UserFactory extends Factory
         ];
     }
 
+    public function definition()
+    {
+        return [
+            'name' => $this->faker->name,
+            'email' => $this->faker->unique()->safeEmail,
+            'password' => password_hash('password', PASSWORD_BCRYPT),
+        ];
+    }
+
     public function make(array $attributes = [])
     {
         $attributes = array_merge($this->definition(), $attributes);
@@ -27,9 +35,7 @@ class UserFactory extends Factory
     }
 }
 
-
-
-======================================================================================
+## Also you can use like this
 
 <?php
 
@@ -40,11 +46,6 @@ $user = (new UserFactory())->make();
 
 // Create a User instance and save it to the database
 $createdUser = (new UserFactory())->create();
-
-
-========================================================================================
-
-<?php
 
 use App\Factories\UserFactory;
 

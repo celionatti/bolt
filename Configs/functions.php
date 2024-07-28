@@ -527,52 +527,6 @@ function get_date(?string $date = null, string $format = "jS M, Y", string $time
     return $dateTime->format($format);
 }
 
-function csrf_token(string $name = 'csrf_token', int|float $expiration = 3600, int|float $tokenLength = 32)
-{
-    // Generate a CSRF token if one doesn't exist
-    if (!isset($_SESSION[$name])) {
-        $_SESSION[$name] = bin2hex(random_bytes($tokenLength));
-        $_SESSION["{$name}_timestamp"] = time();
-    }
-
-    // Check if the token has expired
-    if (time() - $_SESSION["{$name}_timestamp"] > $expiration) {
-        unset($_SESSION[$name]);
-        unset($_SESSION["{$name}_timestamp"]);
-        return false;
-    }
-
-    return $_SESSION[$name];
-}
-
-function check_csrf_token(string $name = 'csrf_token', int|float $expiration = 3600)
-{
-    if (!isset($_SESSION[$name]) || !isset($_SESSION["{$name}_timestamp"])) {
-        throw new Exception("CSRF token is missing or expired.");
-    }
-
-    // Check if the token has expired
-    if (time() - $_SESSION["{$name}_timestamp"] > $expiration) {
-        unset($_SESSION[$name]);
-        unset($_SESSION["{$name}_timestamp"]);
-        throw new Exception("CSRF token has expired.");
-    }
-}
-
-function verify_csrf_token($token, string $name = 'csrf_token', int|float $expiration = 3600)
-{
-    check_csrf_token($name, $expiration);
-
-    if ($token === $_SESSION[$name]) {
-        // Remove the token to prevent reuse
-        unset($_SESSION[$name]);
-        unset($_SESSION["{$name}_timestamp"]);
-        return true;
-    }
-
-    throw new Exception("CSRF token verification failed.");
-}
-
 function validate_csrf_token($data, $toast = true)
 {
     // Assuming that the Csrf class is defined and instantiated somewhere
@@ -603,38 +557,58 @@ function validate_csrf_token($data, $toast = true)
  * @param string $message
  * @param boolean $die
  * @param boolean $timestamp
- * @param string $level
+ * @param string $title
  * @return void
  */
-function console_logger(string $message, bool $die = false, bool $timestamp = true, string $level = 'info'): void
+function console_logger(string $message, bool $die = false, bool $timestamp = true, string $title = ''): void
 {
+    // Initialize output string
     $output = '';
 
-    if ($timestamp) {
-        $output .= "[" . date("Y-m-d H:i:s") . "] - ";
+    // Format the message with initial uppercase
+    $formattedMessage = ucfirst($message);
+
+    // Calculate total message length for padding and borders
+    $messageLength = strlen($formattedMessage);
+    $borderLength = $messageLength + 6; // Borders on both sides
+
+    // Create the title section with light blue background color and padding
+    $title = strtoupper($title);
+    if ($title) {
+        $titlePadding = str_repeat(' ', 2);
+        $titleSection = "\033[1;37;46m{$titlePadding}{$title}{$titlePadding}\033[0m ";
+    } else {
+        $titleSection = '';
     }
 
-    $output .= ucfirst($message) . PHP_EOL;
+    // Create the timestamp with a more friendly format
+    $friendlyTimestamp = $timestamp ? "[" . date("M d, Y - H:i:s") . "] - " : '';
 
-    switch ($level) {
-        case 'info':
-            $output = "\033[0;32m" . $output; // Green color for info
-            break;
-        case 'warning':
-            $output = "\033[0;33m" . $output; // Yellow color for warning
-            break;
-        case 'error':
-            $output = "\033[0;31m" . $output; // Red color for error
-            break;
-        default:
-            break;
-    }
+    // Build the top border with asterisks
+    $topBorder = str_repeat('*', $borderLength) . PHP_EOL;
 
-    $output .= "\033[0m"; // Reset color
+    // Calculate padding for centering the message
+    $padding = str_repeat(' ', intval(floor(($borderLength - $messageLength) / 2))); // Ensure integer value
 
+    // Build the middle content with borders and padding
+    $middleContent = "*{$padding}{$formattedMessage}{$padding}*" . PHP_EOL;
+
+    // Build the bottom border with asterisks
+    $bottomBorder = str_repeat('*', $borderLength) . PHP_EOL;
+
+    // Colorize output to light blue
+    $output .= "\033[1;36m"; // Light blue color
+
+    // Concatenate all parts: top border, title section, timestamp, middle content, bottom border
+    $output .= "{$topBorder}{$titleSection}\033[1;36m{$friendlyTimestamp}{$middleContent}{$bottomBorder}";
+
+    // Reset color after the message
+    $output .= "\033[0m";
+
+    // Output the formatted message
     echo $output . PHP_EOL;
-    ob_flush();
 
+    // Exit script if die flag is set
     if ($die) {
         die();
     }

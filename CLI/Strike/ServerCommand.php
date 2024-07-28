@@ -49,12 +49,12 @@ class ServerCommand extends CliActions implements CommandInterface
         $port = $this->prompt("Enter port number (default: 8000):");
         $port = !empty($port) ? (int)$port : 8000;
 
-        $this->message("Starting PHP development server on http://localhost:$port", false, true, 'info');
+        $this->message("Starting PHP development server on http://localhost:$port", false, true, 'start');
 
         // Verify if the public directory exists
         $publicDir = "{$this->basePath}/public";
         if (!is_dir($publicDir)) {
-            $this->message("Error: 'public' directory does not exist in the project root.", true, true, 'error');
+            $this->message("public directory does not exist in the project root.", true, true, 'error');
             return;
         }
 
@@ -63,7 +63,7 @@ class ServerCommand extends CliActions implements CommandInterface
         $cmd = "php -S localhost:$port";
 
         // Add debug message for the command
-        $this->message("Executing command: $cmd", false, true, 'info');
+        $this->message("Executing command: $cmd", false, true, 'execute');
 
         // Execute server command
         $this->executeCommandInBackground($cmd, $port);
@@ -81,7 +81,7 @@ class ServerCommand extends CliActions implements CommandInterface
             exec("pkill -f 'php -S'");
         }
 
-        $this->message("Server stopped successfully", false, true, 'info');
+        $this->message("Server stopped successfully", false, true, 'close');
     }
 
     private function restartServer()
@@ -92,7 +92,7 @@ class ServerCommand extends CliActions implements CommandInterface
 
     private function executeCommandInBackground(string $cmd, $port)
     {
-        $this->message("Server Started on http://localhost:$port . Press Ctrl+C to stop.", false, true, 'info');
+        $this->message("Server Started on http://localhost:$port . Press Ctrl+C to stop.", false, true, 'running');
         //Execute command in background
         exec($cmd);
     }

@@ -10,15 +10,18 @@ declare(strict_types=1);
 
 namespace celionatti\Bolt\Database\Factory;
 
+use Faker\Factory as FakerFactory;
 
 abstract class Factory
 {
     protected $model;
     protected $count = 1;
+    protected $faker;
 
     public function __construct()
     {
         $this->model = $this->getModelInstance();
+        $this->faker = FakerFactory::create();
     }
 
     abstract protected function getModelInstance();
@@ -38,11 +41,22 @@ abstract class Factory
 
     public function create(array $attributes = [])
     {
-        $models = $this->make($attributes);
-        foreach ((array) $models as $model) {
-            $model->save();
+        $data = array_merge($this->definition(), $attributes);
+        return $this->model->create($data);
+    }
+
+    public function createMany(array $attributes = [])
+    {
+        $models = [];
+        for ($i = 0; $i < $this->count; $i++) {
+            $models[] = $this->create($attributes);
         }
         return $models;
+    }
+
+    public function definition()
+    {
+        return [];
     }
 
     public function count(int $count)
@@ -50,4 +64,13 @@ abstract class Factory
         $this->count = $count;
         return $this;
     }
+
+    // public function create(array $attributes = [])
+    // {
+    //     $models = $this->make($attributes);
+    //     foreach ((array) $models as $model) {
+    //         $model->save();
+    //     }
+    //     return $models;
+    // }
 }

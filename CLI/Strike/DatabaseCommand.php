@@ -68,7 +68,7 @@ class DatabaseCommand extends CliActions implements CommandInterface
 
     private function seedDatabase()
     {
-        $seederDir = $this->basePath . DIRECTORY_SEPARATOR . "database" . DIRECTORY_SEPARATOR . "seeds";
+        $seederDir = $this->basePath . DIRECTORY_SEPARATOR . "database" . DIRECTORY_SEPARATOR . "seeders";
 
         if (!is_dir($seederDir)) {
             $this->message("Error: Seeder directory does not exist.", true, true, "error");
@@ -146,7 +146,7 @@ class DatabaseCommand extends CliActions implements CommandInterface
             return;
         }
 
-        $this->message("Seeder file {$seederName} successfully Created", false, true, "created");
+        $this->message("Seeder file {$className} successfully Created", false, true, "created");
     }
 
     private function createFactoryFile($params)
@@ -191,9 +191,8 @@ class DatabaseCommand extends CliActions implements CommandInterface
             return;
         }
 
-        $this->message("Factory file {$factoryName} successfully Created", false, true, "created");
+        $this->message("Factory file {$className} successfully Created", false, true, "created");
     }
-
 
     private function listAvailableActions()
     {

@@ -99,7 +99,7 @@ class MakeCommand extends CliActions implements CommandInterface
         $controllerName = $this->prompt("Enter the controller name");
 
         if (empty($controllerName)) {
-            $this->message("Error: Controller name cannot be empty.", true, true, "error");
+            $this->message("Controller name cannot be empty.", true, true, "warning");
             return;
         }
 
@@ -107,7 +107,7 @@ class MakeCommand extends CliActions implements CommandInterface
 
         if (!is_dir($controllerDir)) {
             if (!mkdir($controllerDir, 0755, true)) {
-                $this->message("Error: Unable to create the controller directory.", true, true, "error");
+                $this->message("Unable to create the controller directory.", true, true, "error");
                 return;
             }
         }
@@ -115,14 +115,14 @@ class MakeCommand extends CliActions implements CommandInterface
         $controllerFile = $controllerDir . ucfirst($controllerName) . 'Controller.php';
 
         if (file_exists($controllerFile)) {
-            $this->message("Error: Controller file already exists.", true, true, "warning");
+            $this->message("Controller file already exists.", true, true, "warning");
             return;
         }
 
         $sampleFile = __DIR__ . "/samples/controller/controller-sample.php";
 
         if (!file_exists($sampleFile)) {
-            $this->message("Error: Controller sample file not found.", true, true, "error");
+            $this->message("Controller sample file not found.", true, true, "error");
             return;
         }
 
@@ -132,11 +132,11 @@ class MakeCommand extends CliActions implements CommandInterface
         $content = str_replace("{CLASSNAME}", $className, $content);
 
         if (file_put_contents($controllerFile, $content) === false) {
-            $this->message("Error: Unable to create the controller file.", true, true, "error");
+            $this->message("Unable to create the controller file.", true, true, "error");
             return;
         }
 
-        $this->message("Controller file created successfully: '$controllerFile'", false, true, "info");
+        $this->message("Controller file {$className} created successfully", false, true, "created");
     }
 
     private function createModel($migration = false)
@@ -154,7 +154,7 @@ class MakeCommand extends CliActions implements CommandInterface
         $modelName = $this->prompt("Enter the model name");
 
         if (empty($modelName)) {
-            $this->message("Error: Model name cannot be empty.", true, true, "error");
+            $this->message("Model name cannot be empty.", true, true, "error");
             return;
         }
 
@@ -166,7 +166,7 @@ class MakeCommand extends CliActions implements CommandInterface
         if (!is_dir($modelDir)) {
             // Create the model directory
             if (!mkdir($modelDir, 0755, true)) {
-                $this->message("Error: Unable to create the model directory.", true, true, "error");
+                $this->message("Unable to create the model directory.", true, true, "error");
                 return;
             }
         }
@@ -190,7 +190,7 @@ class MakeCommand extends CliActions implements CommandInterface
         }
 
         if (!file_exists($sample_file)) {
-            $this->message("Error: Model Sample file not found in: {$sample_file}", true, true, "error");
+            $this->message("Model Sample file not found in: {$sample_file}", true, true, "error");
             return;
         }
 
@@ -203,7 +203,7 @@ class MakeCommand extends CliActions implements CommandInterface
         $content = str_replace("{CLASSNAME}", $class_name, $content);
 
         if (file_put_contents($modelFile, $content) === false) {
-            $this->message("Error: Unable to create the model file.", true, true, "error");
+            $this->message("Unable to create the model file.", true, true, "error");
             return;
         }
 
@@ -214,7 +214,7 @@ class MakeCommand extends CliActions implements CommandInterface
             $this->migrationFile($modelName);
         }
 
-        $this->message("Model file created successfully: '$modelName'", false, true, "info");
+        $this->message("Model file {$class_name} created successfully", false, true, "info");
     }
 
     private function migrationFile($modelName)
@@ -225,7 +225,7 @@ class MakeCommand extends CliActions implements CommandInterface
         if (!is_dir($migrationDir)) {
             // Create the model directory
             if (!mkdir($migrationDir, 0755, true)) {
-                $this->message("Error: Unable to create the migration directory.", true, true, "error");
+                $this->message("Unable to create the migration directory.", true, true, "error");
                 return;
             }
         }
@@ -240,7 +240,7 @@ class MakeCommand extends CliActions implements CommandInterface
 
         // Create the migration file
         if (!touch($migrationFile)) {
-            $this->message("Error: Unable to create the migration file.", true, true, "error");
+            $this->message("Unable to create the migration file.", true, true, "error");
             return;
         }
 
@@ -248,7 +248,7 @@ class MakeCommand extends CliActions implements CommandInterface
         $sample_file = __DIR__ . "/samples/migration/migration-sample.php";
 
         if (!file_exists($sample_file)) {
-            $this->message("Error: Migration Sample file not found in: {$sample_file}", true, true, "error");
+            $this->message("Migration Sample file not found in: {$sample_file}", true, true, "error");
             return;
         }
 
@@ -260,11 +260,11 @@ class MakeCommand extends CliActions implements CommandInterface
         $content = str_replace("{CLASSNAME}", $class_name, $content);
 
         if (file_put_contents($migrationFile, $content) === false) {
-            $this->message("Error: Unable to write content to the migration file.", true, true, "error");
+            $this->message("Unable to write content to the migration file.", true, true, "error");
             return;
         }
 
-        $this->message("Migration file created successfully: '$migrationFile'", false, true, "info");
+        $this->message("Migration file {$table_name} created successfully", false, true, "info");
     }
 
     private function createView()
@@ -272,7 +272,7 @@ class MakeCommand extends CliActions implements CommandInterface
         $filename = $this->prompt("Enter the view filename");
 
         if (empty($filename)) {
-            $this->message("Error: Filename cannot be empty.", true, true, "error");
+            $this->message("Filename cannot be empty.", true, true, "error");
             return;
         }
 
@@ -310,7 +310,7 @@ class MakeCommand extends CliActions implements CommandInterface
 
         if (!is_dir($viewDir)) {
             if (!mkdir($viewDir, 0755, true)) {
-                $this->message("Error: Unable to create the view directory.", true, true, "error");
+                $this->message("Unable to create the view directory.", true, true, "error");
                 return;
             }
         }
@@ -333,18 +333,18 @@ class MakeCommand extends CliActions implements CommandInterface
         }
 
         if (!file_exists($sampleFile)) {
-            $this->message("Error: View Sample file not found in: {$sampleFile}", true, true, "error");
+            $this->message("View Sample file not found in: {$sampleFile}", true, true, "error");
             return;
         }
 
         $content = file_get_contents($sampleFile);
 
         if (file_put_contents($viewFile, $content) === false) {
-            $this->message("Error: Unable to create the view file.", true, true, "error");
+            $this->message("Unable to create the view file.", true, true, "error");
             return;
         }
 
-        $this->message("View file created successfully: '$viewFile'", false, true, "info");
+        $this->message("View file {$filename} created successfully", false, true, "info");
     }
 
     private function createLayout()
@@ -352,7 +352,7 @@ class MakeCommand extends CliActions implements CommandInterface
         $filename = $this->prompt("Enter the layout filename");
 
         if (empty($filename)) {
-            $this->message("Error: Filename cannot be empty.", true, true, "error");
+            $this->message("Filename cannot be empty.", true, true, "error");
             return;
         }
 
@@ -390,7 +390,7 @@ class MakeCommand extends CliActions implements CommandInterface
 
         if (!is_dir($layoutDir)) {
             if (!mkdir($layoutDir, 0755, true)) {
-                $this->message("Error: Unable to create the layout directory.", true, true, "error");
+                $this->message("Unable to create the layout directory.", true, true, "error");
                 return;
             }
         }
@@ -407,18 +407,18 @@ class MakeCommand extends CliActions implements CommandInterface
         $sampleFile = __DIR__ . "/samples/view/layout-sample.php";
 
         if (!file_exists($sampleFile)) {
-            $this->message("Error: Layout Sample file not found in: {$sampleFile}", true, true, "error");
+            $this->message("Layout Sample file not found in: {$sampleFile}", true, true, "error");
             return;
         }
 
         $content = file_get_contents($sampleFile);
 
         if (file_put_contents($layoutFile, $content) === false) {
-            $this->message("Error: Unable to create the layout file.", true, true, "error");
+            $this->message("Unable to create the layout file.", true, true, "error");
             return;
         }
 
-        $this->message("Layout file created successfully: '$layoutFile'", false, true, "info");
+        $this->message("Layout file {$filename} created successfully", false, true, "info");
     }
 
     private function createMiddleware()
@@ -426,7 +426,7 @@ class MakeCommand extends CliActions implements CommandInterface
         $middlewareName = $this->prompt("Enter the middleware name");
 
         if (empty($middlewareName)) {
-            $this->message("Error: Middleware name cannot be empty.", true, true, "error");
+            $this->message("Middleware name cannot be empty.", true, true, "error");
             return;
         }
 
@@ -434,7 +434,7 @@ class MakeCommand extends CliActions implements CommandInterface
 
         if (!is_dir($middlewareDir)) {
             if (!mkdir($middlewareDir, 0755, true)) {
-                $this->message("Error: Unable to create the middleware directory.", true, true, "error");
+                $this->message("Unable to create the middleware directory.", true, true, "error");
                 return;
             }
         }
@@ -442,14 +442,14 @@ class MakeCommand extends CliActions implements CommandInterface
         $middlewareFile = $middlewareDir . ucfirst($middlewareName) . 'Middleware.php';
 
         if (file_exists($middlewareFile)) {
-            $this->message("Error: Middleware file already exists.", true, true, "warning");
+            $this->message("Middleware file already exists.", true, true, "warning");
             return;
         }
 
         $sampleFile = __DIR__ . "/samples/middleware/middleware-sample.php";
 
         if (!file_exists($sampleFile)) {
-            $this->message("Error: Middleware sample file not found.", true, true, "error");
+            $this->message("Middleware sample file not found.", true, true, "error");
             return;
         }
 
@@ -459,11 +459,11 @@ class MakeCommand extends CliActions implements CommandInterface
         $content = str_replace("{CLASSNAME}", $className, $content);
 
         if (file_put_contents($middlewareFile, $content) === false) {
-            $this->message("Error: Unable to create the middleware file.", true, true, "error");
+            $this->message("Unable to create the middleware file.", true, true, "error");
             return;
         }
 
-        $this->message("Middleware file created successfully: '$middlewareFile'", false, true, "info");
+        $this->message("Middleware file {$middlewareName} created successfully", false, true, "info");
     }
 
     private function createService()
@@ -471,7 +471,7 @@ class MakeCommand extends CliActions implements CommandInterface
         $serviceName = $this->prompt("Enter service provider name");
 
         if (empty($serviceName)) {
-            $this->message("Error: Service name cannot be empty.", true, true, "error");
+            $this->message("Service name cannot be empty.", true, true, "error");
             return;
         }
 
@@ -479,7 +479,7 @@ class MakeCommand extends CliActions implements CommandInterface
 
         if (!is_dir($serviceDir)) {
             if (!mkdir($serviceDir, 0755, true)) {
-                $this->message("Error: Unable to create the services directory.", true, true, "error");
+                $this->message("Unable to create the services directory.", true, true, "error");
                 return;
             }
         }
@@ -487,14 +487,14 @@ class MakeCommand extends CliActions implements CommandInterface
         $serviceFile = $serviceDir . ucfirst($serviceName) . 'ServiceProvider.php';
 
         if (file_exists($serviceFile)) {
-            $this->message("Error: Service file already exists.", true, true, "warning");
+            $this->message("Service file already exists.", true, true, "warning");
             return;
         }
 
         $sampleFile = __DIR__ . "/samples/service/service-sample.php";
 
         if (!file_exists($sampleFile)) {
-            $this->message("Error: Service sample file not found.", true, true, "error");
+            $this->message("Service sample file not found.", true, true, "error");
             return;
         }
 
@@ -504,11 +504,11 @@ class MakeCommand extends CliActions implements CommandInterface
         $content = str_replace("{CLASSNAME}", $className, $content);
 
         if (file_put_contents($serviceFile, $content) === false) {
-            $this->message("Error: Unable to create the service file.", true, true, "error");
+            $this->message("Unable to create the service file.", true, true, "error");
             return;
         }
 
-        $this->message("Service file created successfully: '$serviceFile'", false, true, "info");
+        $this->message("Service file {$className} created successfully", false, true, "info");
     }
 
     private function createComponent()
@@ -516,7 +516,7 @@ class MakeCommand extends CliActions implements CommandInterface
         $componentName = $this->prompt("Enter the component name");
 
         if (empty($componentName)) {
-            $this->message("Error: Component name cannot be empty.", true, true, "error");
+            $this->message("Component name cannot be empty.", true, true, "error");
             return;
         }
 
@@ -524,7 +524,7 @@ class MakeCommand extends CliActions implements CommandInterface
 
         if (!is_dir($componentDir)) {
             if (!mkdir($componentDir, 0755, true)) {
-                $this->message("Error: Unable to create the components directory.", true, true, "error");
+                $this->message("Unable to create the components directory.", true, true, "error");
                 return;
             }
         }
@@ -532,14 +532,14 @@ class MakeCommand extends CliActions implements CommandInterface
         $componentFile = $componentDir . ucfirst($componentName) . 'Component.php';
 
         if (file_exists($componentFile)) {
-            $this->message("Error: Component file already exists.", true, true, "warning");
+            $this->message("Component file already exists.", true, true, "warning");
             return;
         }
 
         $sampleFile = __DIR__ . "/samples/component-sample.php";
 
         if (!file_exists($sampleFile)) {
-            $this->message("Error: Component sample file not found.", true, true, "error");
+            $this->message("Component sample file not found.", true, true, "error");
             return;
         }
 
@@ -549,11 +549,11 @@ class MakeCommand extends CliActions implements CommandInterface
         $content = str_replace("{CLASSNAME}", $className, $content);
 
         if (file_put_contents($componentFile, $content) === false) {
-            $this->message("Error: Unable to create the component file.", true, true, "error");
+            $this->message("Unable to create the component file.", true, true, "error");
             return;
         }
 
-        $this->message("Component file created successfully: '$componentFile'", false, true, "info");
+        $this->message("Component file {$className} created successfully", false, true, "info");
     }
 
     private function listAvailableActions()

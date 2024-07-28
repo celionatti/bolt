@@ -94,7 +94,7 @@ class GenerateCommand extends CliActions implements CommandInterface
         }
 
         if (file_exists($filePath)) {
-            $this->message("Error: Class file already exists.", true, true, 'error');
+            $this->message("Class file already exists.", true, true, 'error');
             return;
         }
 
@@ -134,13 +134,13 @@ class GenerateCommand extends CliActions implements CommandInterface
         }
 
         if (file_exists($filePath)) {
-            $this->message("Error: Factory file already exists.", true, true, 'error');
+            $this->message("Factory file already exists.", true, true, 'error');
             return;
         }
 
         file_put_contents($filePath, $classContent);
 
-        $this->message("Factory file created successfully at $filePath", false, true, 'info');
+        $this->message("Factory file {$factoryName} created successfully", false, true, 'created');
     }
 
     private function generateKey()
@@ -151,7 +151,7 @@ class GenerateCommand extends CliActions implements CommandInterface
         if (!is_dir($BoltConfigDir)) {
             // Create the configs directory
             if (!mkdir($BoltConfigDir, 0755, true)) {
-                $this->message("Error: Unable to create the configs directory.", false, true, 'error');
+                $this->message("Unable to create the configs directory.", false, true, 'error');
             }
         }
 
@@ -176,7 +176,7 @@ class GenerateCommand extends CliActions implements CommandInterface
         $bolt_sample_file = __DIR__ . "/samples/bolt-load-sample.php";
 
         if (!file_exists($bolt_sample_file))
-            $this->message("Error: Bolt Config load Sample file not found in: {$bolt_sample_file}", true, true, 'warning');
+            $this->message("Bolt Config load Sample file not found in: {$bolt_sample_file}", true, true, 'warning');
 
 
         $key = $this->create_random_key();
@@ -186,10 +186,10 @@ class GenerateCommand extends CliActions implements CommandInterface
         $boltcontent = str_replace("{KEY}", $key, $boltcontent);
 
         if (file_put_contents($BlotLoadFile, $boltcontent) === false) {
-            $this->message("Error: Unable to create the bolt load file.", true, true, 'error');
+            $this->message("Unable to create the bolt load file.", true, true, 'error');
         }
 
-        $this->message("Config file created successfully, FileName: '$m'!");
+        $this->message("Config file {$m} created successfully", false, true, "created");
     }
 
     private function generateController()
@@ -216,13 +216,13 @@ class GenerateCommand extends CliActions implements CommandInterface
         }
 
         if (file_exists($filePath)) {
-            $this->message("Error: Controller file already exists.", true, true, 'error');
+            $this->message("Controller file already exists.", true, true, 'error');
             return;
         }
 
         file_put_contents($filePath, $classContent);
 
-        $this->message("Controller file created successfully at $filePath", false, true, 'info');
+        $this->message("Controller file {$controllerName} created successfully", false, true, 'created');
     }
 
     private function generateModel()
@@ -247,13 +247,13 @@ class GenerateCommand extends CliActions implements CommandInterface
         }
 
         if (file_exists($filePath)) {
-            $this->message("Error: Model file already exists.", true, true, 'error');
+            $this->message("Model file already exists.", true, true, 'error');
             return;
         }
 
         file_put_contents($filePath, $classContent);
 
-        $this->message("Model file created successfully at $filePath", false, true, 'info');
+        $this->message("Model file {$modelName} created successfully", false, true, 'created');
     }
 
     private function generateMigration()
@@ -285,19 +285,19 @@ class GenerateCommand extends CliActions implements CommandInterface
         }
 
         if (file_exists($filePath)) {
-            $this->message("Error: Migration file already exists.", true, true, 'error');
+            $this->message("Migration file already exists.", true, true, 'error');
             return;
         }
 
         file_put_contents($filePath, $classContent);
 
-        $this->message("Migration file created successfully at $filePath", false, true, 'info');
+        $this->message("Migration file {$migrationName} created successfully", false, true, 'created');
     }
 
     private function generateView()
     {
         $viewName = $this->prompt("Enter view name:");
-        $directory = "{$this->basePath}/resources/templates";
+        $directory = "{$this->basePath}/resources/view";
 
         $filePath = "$directory/$viewName.php";
 
