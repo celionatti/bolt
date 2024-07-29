@@ -554,6 +554,38 @@ class MakeCommand extends CliActions implements CommandInterface
         }
 
         $this->message("Component: [{$componentFile}] created successfully", false, true, "created");
+
+        /** View Component */
+
+        $viewDir = $this->basePath . DIRECTORY_SEPARATOR . "resources" . DIRECTORY_SEPARATOR . "view" . DIRECTORY_SEPARATOR . "components";
+
+    if (!is_dir($viewDir)) {
+        if (!mkdir($viewDir, 0755, true)) {
+            $this->message("Unable to create the view directory.", true, true, "error");
+            return;
+        }
+    }
+
+    $viewFile = $viewDir . DIRECTORY_SEPARATOR . strtolower($componentName) . "-component.php";
+
+    if (file_exists($viewFile)) {
+        $this->message("Component view file already exists.", true, true, "warning");
+        return;
+    }
+
+    $viewSampleFile = __DIR__ . "/samples/component/component-view-sample.php";
+    if (!file_exists($viewSampleFile)) {
+        $this->message("Component view sample file not found.", true, true, "error");
+        return;
+    }
+
+    $viewContent = file_get_contents($viewSampleFile);
+    if (file_put_contents($viewFile, $viewContent) === false) {
+        $this->message("Unable to create the component view file.", true, true, "error");
+        return;
+    }
+
+    $this->message("Component view: [{$viewFile}] created successfully", false, true, "created");
     }
 
     private function listAvailableActions()

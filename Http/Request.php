@@ -152,6 +152,20 @@ class Request
         return $this->getHeader('Referer');
     }
 
+    public function is($pattern)
+    {
+        $path = $this->getPath();
+        $pattern = '/' . trim($pattern, '/');
+
+        // Handle wildcard matching for simplicity
+        if (strpos($pattern, '*') !== false) {
+            $regex = str_replace('\*', '.*', preg_quote($pattern, '/'));
+            return preg_match('/^' . $regex . '$/', $path);
+        }
+
+        return $path === $pattern;
+    }
+
     protected function sanitize($data)
     {
         if (is_array($data)) {
@@ -168,5 +182,14 @@ class Request
         }
 
         return $data;
+    }
+
+    public static function instance()
+    {
+        static $instance = null;
+        if ($instance === null) {
+            $instance = new self();
+        }
+        return $instance;
     }
 }

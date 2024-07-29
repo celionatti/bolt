@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 use celionatti\Bolt\Bolt;
-use celionatti\Bolt\Helpers\Csrf;
 use celionatti\Bolt\View\BoltView;
+use celionatti\Bolt\Helpers\CSRF\Csrf;
 use celionatti\Bolt\Illuminate\Collection;
 use celionatti\Bolt\BoltException\BoltException;
 use celionatti\Bolt\Authentication\BoltAuthentication;
@@ -1047,5 +1047,5 @@ function compressToZip($source, $destination)
 
 function request()
 {
-    return new \celionatti\Bolt\Http\Request();
+    return \celionatti\Bolt\Http\Request::instance();
 }

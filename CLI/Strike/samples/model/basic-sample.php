@@ -12,9 +12,9 @@ declare(strict_types=1);
 
 namespace PhpStrike\app\models;
 
-use celionatti\Bolt\Database\DatabaseModel;
+use celionatti\Bolt\Model\Model;
 
-class {CLASSNAME} extends DatabaseModel
+class {CLASSNAME} extends Model
 {
     private $scenario = 'create'; // Default scenario is 'create'
 
