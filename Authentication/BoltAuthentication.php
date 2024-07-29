@@ -87,12 +87,12 @@ class BoltAuthentication extends DatabaseModel
 
     private function getUserValidEmail($email)
     {
-        return $this->findOne(['email' => $email], ['email']);
+        return $this->findBy(['email' => $email])->email;
     }
 
     private function getUserBlockedStatus($email)
     {
-        return $this->findOne(['email' => $email], ['is_blocked']);
+        return $this->findBy(['email' => $email])->is_blocked;
     }
 
     private function authenticate($email, $password)
@@ -109,7 +109,7 @@ class BoltAuthentication extends DatabaseModel
 
     private function getUserByCredentials($email, $password)
     {
-        return $this->findOne(['email' => $email], ['user_id', 'password', 'is_blocked']);
+        return $this->findBy(['email' => $email]);
     }
 
     private function resetLoginAttempts($email)
@@ -163,7 +163,7 @@ class BoltAuthentication extends DatabaseModel
     {
         if (!$this->_currentUser && $this->session->has("auth_user")) {
             $userId = $this->session->get("auth_user");
-            $this->_currentUser = $this->findOne(['user_id' => $userId]);
+            $this->_currentUser = $this->findBy(['user_id' => $userId]);
         }
 
         if (!$this->_currentUser) {

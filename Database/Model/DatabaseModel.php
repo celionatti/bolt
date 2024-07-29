@@ -11,6 +11,8 @@ declare(strict_types=1);
 namespace celionatti\Bolt\Database\Model;
 
 use celionatti\Bolt\Database\Database;
+use celionatti\Bolt\Validation\Validator;
+use celionatti\Bolt\BoltException\BoltException;
 use celionatti\Bolt\BoltQueryBuilder\QueryBuilder;
 use celionatti\Bolt\Database\Relationships\HasOne;
 use celionatti\Bolt\Database\Relationships\HasMany;
@@ -28,6 +30,7 @@ abstract class DatabaseModel
     protected $hidden = [];
     protected $casts = [];
     protected $attributes = [];
+    protected $rules = [];
     protected $exists = false;
 
     public function __construct()
@@ -221,15 +224,29 @@ abstract class DatabaseModel
         return $attributes;
     }
 
+    public function validate()
+    {
+        $validator = new Validator($this->attributes, $this->rules);
+        if ($validator->fails()) {
+            return $validator->errors();
+        }
+        return true;
+    }
+
     public function save()
     {
-        // Cast attributes before saving
-        $this->attributes = $this->castAttributes($this->attributes);
+        if ($this->validate() === true) {
+            // Cast attributes before saving
+            $this->attributes = $this->castAttributes($this->attributes);
 
-        if ($this->exists) {
-            return $this->update($this->attributes[$this->primaryKey], $this->attributes);
+            if ($this->exists) {
+                return $this->update($this->attributes[$this->primaryKey], $this->attributes);
+            }
+            return $this->create($this->attributes);
+        } else {
+            // Handle validation errors
+            throw new BoltException('Validation failed.');
         }
-        return $this->create($this->attributes);
     }
 
     public function where($column, $operator = '=', $value)
