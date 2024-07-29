@@ -536,7 +536,7 @@ class MakeCommand extends CliActions implements CommandInterface
             return;
         }
 
-        $sampleFile = __DIR__ . "/samples/component-sample.php";
+        $sampleFile = __DIR__ . "/samples/component/component-controller-sample.php";
 
         if (!file_exists($sampleFile)) {
             $this->message("Component sample file not found.", true, true, "error");
@@ -553,39 +553,39 @@ class MakeCommand extends CliActions implements CommandInterface
             return;
         }
 
-        $this->message("Component: [{$componentFile}] created successfully", false, true, "created");
+        $this->message("Component Controller: [{$componentFile}] created successfully", false, true, "created");
 
         /** View Component */
 
         $viewDir = $this->basePath . DIRECTORY_SEPARATOR . "resources" . DIRECTORY_SEPARATOR . "view" . DIRECTORY_SEPARATOR . "components";
 
-    if (!is_dir($viewDir)) {
-        if (!mkdir($viewDir, 0755, true)) {
-            $this->message("Unable to create the view directory.", true, true, "error");
+        if (!is_dir($viewDir)) {
+            if (!mkdir($viewDir, 0755, true)) {
+                $this->message("Unable to create the view directory.", true, true, "error");
+                return;
+            }
+        }
+
+        $viewFile = $viewDir . DIRECTORY_SEPARATOR . strtolower($componentName) . "-component.php";
+
+        if (file_exists($viewFile)) {
+            $this->message("Component view file already exists.", true, true, "warning");
             return;
         }
-    }
 
-    $viewFile = $viewDir . DIRECTORY_SEPARATOR . strtolower($componentName) . "-component.php";
+        $viewSampleFile = __DIR__ . "/samples/component/component-view-sample.php";
+        if (!file_exists($viewSampleFile)) {
+            $this->message("Component view sample file not found.", true, true, "error");
+            return;
+        }
 
-    if (file_exists($viewFile)) {
-        $this->message("Component view file already exists.", true, true, "warning");
-        return;
-    }
+        $viewContent = file_get_contents($viewSampleFile);
+        if (file_put_contents($viewFile, $viewContent) === false) {
+            $this->message("Unable to create the component view file.", true, true, "error");
+            return;
+        }
 
-    $viewSampleFile = __DIR__ . "/samples/component/component-view-sample.php";
-    if (!file_exists($viewSampleFile)) {
-        $this->message("Component view sample file not found.", true, true, "error");
-        return;
-    }
-
-    $viewContent = file_get_contents($viewSampleFile);
-    if (file_put_contents($viewFile, $viewContent) === false) {
-        $this->message("Unable to create the component view file.", true, true, "error");
-        return;
-    }
-
-    $this->message("Component view: [{$viewFile}] created successfully", false, true, "created");
+        $this->message("Component View: [{$viewFile}] created successfully", false, true, "created");
     }
 
     private function listAvailableActions()
