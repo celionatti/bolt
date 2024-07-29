@@ -136,7 +136,7 @@ class MakeCommand extends CliActions implements CommandInterface
             return;
         }
 
-        $this->message("Controller file {$className} created successfully", false, true, "created");
+        $this->message("Controller [{$controllerFile}] created successfully", false, true, "created");
     }
 
     private function createModel($migration = false)
@@ -214,7 +214,7 @@ class MakeCommand extends CliActions implements CommandInterface
             $this->migrationFile($modelName);
         }
 
-        $this->message("Model file {$class_name} created successfully", false, true, "info");
+        $this->message("Model: [{$modelFile}] created successfully", false, true, "created");
     }
 
     private function migrationFile($modelName)
@@ -264,7 +264,7 @@ class MakeCommand extends CliActions implements CommandInterface
             return;
         }
 
-        $this->message("Migration file {$table_name} created successfully", false, true, "info");
+        $this->message("Migration: [{$migrationFile}] created successfully", false, true, "created");
     }
 
     private function createView()
@@ -344,7 +344,7 @@ class MakeCommand extends CliActions implements CommandInterface
             return;
         }
 
-        $this->message("View file {$filename} created successfully", false, true, "info");
+        $this->message("View: [{$viewFile}] created successfully", false, true, "created");
     }
 
     private function createLayout()
@@ -418,7 +418,7 @@ class MakeCommand extends CliActions implements CommandInterface
             return;
         }
 
-        $this->message("Layout file {$filename} created successfully", false, true, "info");
+        $this->message("Layout: [{$layoutFile}] created successfully", false, true, "created");
     }
 
     private function createMiddleware()
@@ -463,7 +463,7 @@ class MakeCommand extends CliActions implements CommandInterface
             return;
         }
 
-        $this->message("Middleware file {$middlewareName} created successfully", false, true, "info");
+        $this->message("Middleware: [{$middlewareFile}] created successfully", false, true, "created");
     }
 
     private function createService()
@@ -508,7 +508,7 @@ class MakeCommand extends CliActions implements CommandInterface
             return;
         }
 
-        $this->message("Service file {$className} created successfully", false, true, "info");
+        $this->message("Service: [{$serviceFile}] created successfully", false, true, "created");
     }
 
     private function createComponent()
@@ -553,7 +553,7 @@ class MakeCommand extends CliActions implements CommandInterface
             return;
         }
 
-        $this->message("Component file {$className} created successfully", false, true, "info");
+        $this->message("Component: [{$componentFile}] created successfully", false, true, "created");
     }
 
     private function listAvailableActions()

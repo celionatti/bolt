@@ -207,7 +207,7 @@ class MigrationCommand extends CliActions implements CommandInterface
             return;
         }
 
-        $this->message("Migration file {$className} created successfully", false, true, "created");
+        $this->message("Migration: [{$migrationFile}] created successfully", false, true, "created");
     }
 
     private function listAvailableActions()

@@ -10,7 +10,7 @@ declare(strict_types=1);
  * ==================================================
  */
 
-namespace celionatti\Bolt;
+namespace celionatti\Bolt\Model;
 
 use celionatti\Bolt\BoltException\BoltException;
 

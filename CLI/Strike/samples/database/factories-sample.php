@@ -6,6 +6,8 @@ use celionatti\Bolt\Database\Factories\Factory;
 
 class {CLASSNAME} extends Factory
 {
+    protected $model = User::class;
+
     /**
      * The current password being used by the factory.
      */
@@ -16,14 +18,13 @@ class {CLASSNAME} extends Factory
      *
      * @return array<string, mixed>
      */
-    public function definition(): array
+    protected function definition(): array
     {
         return [
-            'name' => fake()->name(),
-            'email' => fake()->unique()->safeEmail(),
-            'email_verified_at' => now(),
-            'password' => static::$password ??= Hash::make('password'),
-            'remember_token' => Str::random(10),
+            'name' => $this->faker->name,
+            'email' => $this->faker->unique()->safeEmail,
+            'password' => password_hash('password', PASSWORD_BCRYPT),
+            'remember_token' => RadndomString(64),
         ];
     }
 

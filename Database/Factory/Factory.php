@@ -20,11 +20,8 @@ abstract class Factory
 
     public function __construct()
     {
-        $this->model = $this->getModelInstance();
         $this->faker = FakerFactory::create();
     }
-
-    abstract protected function getModelInstance();
 
     public function make(array $attributes = [])
     {
@@ -41,8 +38,9 @@ abstract class Factory
 
     public function create(array $attributes = [])
     {
-        $data = array_merge($this->definition(), $attributes);
-        return $this->model->create($data);
+        $attributes = array_merge($this->definition(), $attributes);
+        $model = new $this->model();
+        return $model->create($attributes);
     }
 
     public function createMany(array $attributes = [])
@@ -54,10 +52,7 @@ abstract class Factory
         return $models;
     }
 
-    public function definition()
-    {
-        return [];
-    }
+    abstract protected function definition(): array;
 
     public function count(int $count)
     {

@@ -10,7 +10,6 @@ declare(strict_types=1);
 
 namespace celionatti\Bolt\Database\Model;
 
-use celionatti\Bolt\Model;
 use celionatti\Bolt\Database\Database;
 use celionatti\Bolt\BoltQueryBuilder\QueryBuilder;
 use celionatti\Bolt\Database\Relationships\HasOne;
@@ -19,13 +18,15 @@ use celionatti\Bolt\Database\Relationships\BelongsTo;
 use celionatti\Bolt\Database\Exception\DatabaseException;
 use celionatti\Bolt\Database\Relationships\BelongsToMany;
 
-abstract class DatabaseModel extends Model
+abstract class DatabaseModel
 {
     protected $connection;
     protected $table;
     protected $primaryKey = 'id';
     protected $fillable = [];
     protected $guarded = [];
+    protected $hidden = [];
+    protected $casts = [];
     protected $attributes = [];
     protected $exists = false;
 
@@ -46,6 +47,7 @@ abstract class DatabaseModel extends Model
     public function create(array $attributes)
     {
         $attributes = $this->filterAttributes($attributes);
+        $attributes = $this->castAttributes($attributes);
         $queryBuilder = new QueryBuilder($this->connection);
         $queryBuilder->insert($this->table, $attributes)->execute();
         return $this->find($this->connection->lastInsertId());
@@ -54,6 +56,7 @@ abstract class DatabaseModel extends Model
     public function update($id, array $attributes)
     {
         $attributes = $this->filterAttributes($attributes);
+        $attributes = $this->castAttributes($attributes);
         $queryBuilder = new QueryBuilder($this->connection);
         $queryBuilder->update($this->table, $attributes)->where($this->primaryKey, '=', $id)->execute();
         return $this->find($id);
@@ -76,6 +79,7 @@ abstract class DatabaseModel extends Model
         $result = $queryBuilder->execute();
         if ($result) {
             $this->attributes = (array)$result[0];
+            $this->attributes = $this->castAttributes($this->attributes);
             $this->exists = true;
             return $this;
         }
@@ -95,6 +99,7 @@ abstract class DatabaseModel extends Model
         $result = $queryBuilder->select()->from($this->table)->limit(1)->execute();
         if ($result) {
             $this->attributes = (array)$result[0];
+            $this->attributes = $this->castAttributes($this->attributes);
             $this->exists = true;
             return $this;
         }
@@ -163,12 +168,64 @@ abstract class DatabaseModel extends Model
     public function __set($key, $value)
     {
         if (in_array($key, $this->fillable) && !in_array($key, $this->guarded)) {
-            $this->attributes[$key] = $value;
+            if (array_key_exists($key, $this->casts)) {
+                $this->attributes[$key] = $this->castAttributes([$key => $value])[$key];
+            } else {
+                $this->attributes[$key] = $value;
+            }
+        } else {
+            throw new DatabaseException("Attribute $key is not fillable or is guarded.");
         }
+    }
+
+    private function castAttributes(array $attributes)
+    {
+        foreach ($this->casts as $key => $type) {
+            if (isset($attributes[$key])) {
+                switch ($type) {
+                    case 'int':
+                        $attributes[$key] = (int)$attributes[$key];
+                        break;
+                    case 'float':
+                        $attributes[$key] = (float)$attributes[$key];
+                        break;
+                    case 'string':
+                        $attributes[$key] = (string)$attributes[$key];
+                        break;
+                    case 'bool':
+                        $attributes[$key] = (bool)$attributes[$key];
+                        break;
+                    case 'array':
+                        $attributes[$key] = (array)$attributes[$key];
+                        break;
+                    case 'datetime':
+                        $attributes[$key] = new \DateTime($attributes[$key]);
+                        break;
+                    case 'hash':
+                        $attributes[$key] = password_hash($attributes[$key], PASSWORD_DEFAULT, ['cost' => 12]);
+                        break;
+                }
+            }
+        }
+        return $attributes;
+    }
+
+    public function toArray()
+    {
+        $attributes = $this->attributes;
+
+        foreach ($this->hidden as $hiddenAttribute) {
+            unset($attributes[$hiddenAttribute]);
+        }
+
+        return $attributes;
     }
 
     public function save()
     {
+        // Cast attributes before saving
+        $this->attributes = $this->castAttributes($this->attributes);
+
         if ($this->exists) {
             return $this->update($this->attributes[$this->primaryKey], $this->attributes);
         }
@@ -182,11 +239,18 @@ abstract class DatabaseModel extends Model
 
         if ($result) {
             $this->attributes = (array)$result[0];
+            $this->attributes = $this->castAttributes($this->attributes);
             $this->exists = true;
             return $this;
         }
 
         throw new DatabaseException("Record not found", 404, "error");
+    }
+
+    public static function factory()
+    {
+        $factoryClass = 'PhpStrike\\Database\\Factories\\' . (new \ReflectionClass(new static))->getShortName() . 'Factory';
+        return new $factoryClass();
     }
 
 

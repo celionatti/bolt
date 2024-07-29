@@ -222,7 +222,7 @@ class GenerateCommand extends CliActions implements CommandInterface
 
         file_put_contents($filePath, $classContent);
 
-        $this->message("Controller file {$controllerName} created successfully", false, true, 'created');
+        $this->message("Controller: [{$filePath}] created successfully", false, true, 'info');
     }
 
     private function generateModel()
@@ -253,7 +253,7 @@ class GenerateCommand extends CliActions implements CommandInterface
 
         file_put_contents($filePath, $classContent);
 
-        $this->message("Model file {$modelName} created successfully", false, true, 'created');
+        $this->message("Model: [{$filePath}] created successfully", false, true, 'info');
     }
 
     private function generateMigration()
@@ -314,7 +314,7 @@ class GenerateCommand extends CliActions implements CommandInterface
 
         file_put_contents($filePath, $content);
 
-        $this->message("View file created successfully at $filePath", false, true, 'info');
+        $this->message("View: [{$filePath}] created successfully", false, true, 'info');
     }
 
     private function create_random_key(): string

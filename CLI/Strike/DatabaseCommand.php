@@ -146,7 +146,7 @@ class DatabaseCommand extends CliActions implements CommandInterface
             return;
         }
 
-        $this->message("Seeder file {$className} successfully Created", false, true, "created");
+        $this->message("Seeder: [{$seederFile}] successfully Created", false, true, "created");
     }
 
     private function createFactoryFile($params)
@@ -191,7 +191,7 @@ class DatabaseCommand extends CliActions implements CommandInterface
             return;
         }
 
-        $this->message("Factory file {$className} successfully Created", false, true, "created");
+        $this->message("Factory: [{$factoryFile}] successfully Created", false, true, "created");
     }
 
     private function listAvailableActions()

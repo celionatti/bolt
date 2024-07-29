@@ -111,7 +111,7 @@ class SchedulerCommand extends CliActions implements CommandInterface
             return;
         }
 
-        $this->message("Task file {$className} created successfully", false, true, "created");
+        $this->message("Task: [{$taskFile}] created successfully", false, true, "created");
     }
 
     private function createJob()
@@ -156,7 +156,7 @@ class SchedulerCommand extends CliActions implements CommandInterface
             return;
         }
 
-        $this->message("Job file {$className} created successfully", false, true, "created");
+        $this->message("Job: [{$jobFile}] created successfully", false, true, "created");
     }
 
     private function createEvent()
@@ -201,7 +201,7 @@ class SchedulerCommand extends CliActions implements CommandInterface
             return;
         }
 
-        $this->message("Event file {$className} created successfully", false, true, "created");
+        $this->message("Event: [{$eventFile}] created successfully", false, true, "created");
     }
 
     private function listAvailableActions()
