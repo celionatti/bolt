@@ -20,18 +20,26 @@ class BoltException extends Exception
 {
     protected string $errorLevel;
     private Logger $logger;
+    protected $errors = [];
 
     public function __construct(
         string $message,
         int $code = 0,
         string $errorLevel = 'error',
+        array $errors = [],
         Throwable $previous = null
     ) {
         $this->errorLevel = $errorLevel;
         $this->logger = new Logger('error.log');
         parent::__construct($message, $code, $previous);
+        $this->errors = $errors;
 
         $this->handleException();
+    }
+
+    public function getErrors()
+    {
+        return $this->errors;
     }
 
     private function handleException(): void

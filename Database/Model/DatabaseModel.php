@@ -47,10 +47,34 @@ abstract class DatabaseModel
         }
     }
 
+    // public function create(array $attributes)
+    // {
+    //     $attributes = $this->filterAttributes($attributes);
+    //     $attributes = $this->castAttributes($attributes);
+    //     $queryBuilder = new QueryBuilder($this->connection);
+    //     $queryBuilder->insert($this->table, $attributes)->execute();
+    //     return $this->find($this->connection->lastInsertId());
+    // }
+
+    // public function update($id, array $attributes)
+    // {
+    //     $attributes = $this->filterAttributes($attributes);
+    //     $attributes = $this->castAttributes($attributes);
+    //     $queryBuilder = new QueryBuilder($this->connection);
+    //     $queryBuilder->update($this->table, $attributes)->where($this->primaryKey, '=', $id)->execute();
+    //     return $this->find($id);
+    // }
     public function create(array $attributes)
     {
         $attributes = $this->filterAttributes($attributes);
         $attributes = $this->castAttributes($attributes);
+
+        // Validate the attributes
+        $validator = new Validator($attributes, $this->rules);
+        if ($validator->fails()) {
+            throw new BoltException("Validation failed: {$validator->errors()}");
+        }
+
         $queryBuilder = new QueryBuilder($this->connection);
         $queryBuilder->insert($this->table, $attributes)->execute();
         return $this->find($this->connection->lastInsertId());
@@ -60,6 +84,13 @@ abstract class DatabaseModel
     {
         $attributes = $this->filterAttributes($attributes);
         $attributes = $this->castAttributes($attributes);
+
+        // Validate the attributes
+        $validator = new Validator($attributes, $this->rules);
+        if ($validator->fails()) {
+            throw new BoltException('Validation failed.', 1000, 'info', $validator->errors());
+        }
+
         $queryBuilder = new QueryBuilder($this->connection);
         $queryBuilder->update($this->table, $attributes)->where($this->primaryKey, '=', $id)->execute();
         return $this->find($id);
@@ -266,7 +297,7 @@ abstract class DatabaseModel
 
     public static function factory()
     {
-        $factoryClass = 'PhpStrike\\Database\\Factories\\' . (new \ReflectionClass(new static))->getShortName() . 'Factory';
+        $factoryClass = 'PhpStrike\\database\\factories\\' . (new \ReflectionClass(new static))->getShortName() . 'Factory';
         return new $factoryClass();
     }
 
