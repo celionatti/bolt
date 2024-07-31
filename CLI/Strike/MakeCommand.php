@@ -151,7 +151,7 @@ class MakeCommand extends CliActions implements CommandInterface
             '2' => 'Create Migration'
         ];
 
-        $modelName = $this->prompt("Enter the model name");
+        $modelName = $this->prompt("Enter the model name: Post, User.");
 
         if (empty($modelName)) {
             $this->message("Model name cannot be empty.", true, true, "error");
