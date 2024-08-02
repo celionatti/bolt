@@ -47,7 +47,10 @@ class User extends Model
     // Find user by ID
     public static function findUser($id)
     {
-        return (new static())->findBy([self::$primaryKey => $id]);
+        $instance = new static();
+        $conditions = [$instance->primaryKey => $id];
+        $query = $instance->findBy($conditions);
+        return $query;
     }
 
     // Find user by email

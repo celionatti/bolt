@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use celionatti\Bolt\Bolt;
-use celionatti\Bolt\View\BoltView;
+use celionatti\Bolt\View\View;
 use celionatti\Bolt\Helpers\CSRF\Csrf;
 use celionatti\Bolt\Illuminate\Collection;
 use celionatti\Bolt\BoltException\BoltException;
@@ -23,7 +23,7 @@ function loginUser()
     return BoltAuthentication::currentUser() ?? null;
 }
 
-function generateUuidV4()
+function bolt_uuid()
 {
     // Generate 16 bytes of random data
     $data = random_bytes(16);
@@ -48,13 +48,14 @@ function generateUuidV4()
     // Format the UUID without dashes
     $uuid = vsprintf('%s%s%s%s%s%s%s%s', str_split(bin2hex($data), 4));
 
-    return $uuid;
+    return "bv_{$uuid}";
 }
 
 function findFile($dir, $targetFile)
 {
     while (true) {
-        $configPath = $dir . '/' . $targetFile;
+        // $configPath = $dir . '/' . $targetFile;
+        $configPath = "{$dir}/{$targetFile}";
 
         if (file_exists($configPath)) {
             return $configPath;
@@ -78,14 +79,14 @@ function get_root_dir()
     $currentDirectory = __DIR__;
 
     // Navigate up the directory tree until you reach the project's root
-    while (!file_exists($currentDirectory . '/vendor')) {
+    while (!file_exists("{$currentDirectory}/vendor")) {
         // Go up one level
         $currentDirectory = dirname($currentDirectory);
 
         // Check if you have reached the filesystem root (to prevent infinite loop)
         if ($currentDirectory === '/') {
             echo "Error: Project root not found.\n";
-            exit(1);
+            exit;
         }
     }
 
@@ -116,18 +117,6 @@ function esc_js($javascript)
     return json_encode($javascript, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
 }
 
-function esc_sql($sql)
-{
-    global $npdb;
-
-    if (isset($npdb)) {
-        return $npdb->prepare($sql);
-    } else {
-        // Handle the case where $npdb is not available, or customize as needed
-        return $sql;
-    }
-}
-
 function esc($data, $context = 'html', $encoding = 'UTF-8')
 {
     if (is_array($data) || is_object($data)) {
@@ -147,9 +136,6 @@ function esc($data, $context = 'html', $encoding = 'UTF-8')
             return esc_url($data);
         case 'js':
             return esc_js($data);
-        case 'sql':
-            global $wpdb;
-            return esc_sql($data);
         default:
             return $data;
     }
@@ -288,7 +274,7 @@ function dump($value, $die = true)
 {
     $frameworkDetails = [
         'Framework' => 'Bolt PHP Framework',
-        'Version' => '1.0.4',
+        'Version' => '1.0.8',
         'Environment' => 'Development',
         'PHP Version' => phpversion(),
         'Timestamp' => date('Y-m-d H:i:s')
@@ -385,7 +371,7 @@ function redirect($url, $status_code = 302, $headers = [], $query_params = [], $
 
     // Optionally exit to prevent further script execution
     if ($exit) {
-        exit();
+        exit;
     }
 }
 
@@ -616,7 +602,7 @@ function console_logger(string $message, bool $die = false, bool $timestamp = tr
 
 function load_required_files($directoryPath)
 {
-    $requiredFileExtensions = ['php', 'txt', 'html']; // Define the file extensions you consider as required
+    $requiredFileExtensions = ['php', 'txt', 'html', 'js', 'css']; // Define the file extensions you consider as required
 
     if (!is_dir($directoryPath)) {
         return []; // Return an empty array if the directory doesn't exist
@@ -648,9 +634,9 @@ function load_required_files($directoryPath)
  * @param string $layout
  * @return void
  */
-function view(string $path, array $data = [], string $layout): void
+function view(string $path, array $data = [], string $layout = 'default'): void
 {
-    $view = new BoltView('', ENABLE_BLADE, ENABLE_TWIG);
+    $view = new View();
 
     $view->setLayout($layout);
 
@@ -659,7 +645,7 @@ function view(string $path, array $data = [], string $layout): void
 
 function partials(string $path, $params = [])
 {
-    $view = new BoltView('', ENABLE_BLADE, ENABLE_TWIG);
+    $view = new View();
 
     $view->partial($path, $params);
 }
@@ -773,7 +759,7 @@ function verifyPassword(string $password, string $hashedPassword): bool
 
 function filterData($data, $filterCriteria)
 {
-    $filteredData = array();
+    $filteredData = [];
 
     foreach ($data as $row) {
         $match = true;
@@ -817,7 +803,7 @@ function toast($type, $message)
     // Validate the message type
     $validTypes = ['success', 'error', 'info', 'warning'];
     if (!in_array($type, $validTypes)) {
-        throw new \InvalidArgumentException('Invalid toastr message type');
+        throw new BoltException('Invalid toastr message type');
     }
 
     // Store the message, type, and attributes in the session
@@ -890,7 +876,7 @@ function calReadTime($text, $wordsPerMinute = 200, $contentCategory = 'generic',
         // Add more categories as needed
     ];
 
-    $categorySpeed = isset($categorySpeeds[$contentCategory]) ? $categorySpeeds[$contentCategory] : $wordsPerMinute;
+    $categorySpeed = $categorySpeeds[$contentCategory] ?? $wordsPerMinute;
 
     $wordCount = $countWords($text);
 
@@ -900,7 +886,7 @@ function calReadTime($text, $wordsPerMinute = 200, $contentCategory = 'generic',
 
     $minutes = ceil($wordCount / $categorySpeed);
 
-    return $minutes . $timeUnit;
+    return "{$minutes}{$timeUnit}";
     // return $minutes . ($minutes == 1 ? $timeUnit : $timeUnit .'s');
 }
 
@@ -924,7 +910,7 @@ function filterText($text, array $patterns)
     return false;
 }
 
-function generateRandomNumberID($existingIDs, $minID = 100000, $maxID = 999999)
+function randomizeNumber($existingIDs, $minID = 100000, $maxID = 999999)
 {
     // Helper function to generate a random number within the specified range
     function getRandomNumber($min, $max)
@@ -939,7 +925,7 @@ function generateRandomNumberID($existingIDs, $minID = 100000, $maxID = 999999)
     return $newID;
 }
 
-function generateStringsToken($length = 64)
+function stringToken($length = 64)
 {
     // Define the characters to be used in the token
     $characters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';

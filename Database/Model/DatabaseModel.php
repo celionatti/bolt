@@ -32,6 +32,7 @@ abstract class DatabaseModel
     protected $attributes = [];
     protected $rules = [];
     protected $exists = false;
+    protected $validationErrors = [];
 
     public function __construct()
     {
@@ -47,53 +48,38 @@ abstract class DatabaseModel
         }
     }
 
-    // public function create(array $attributes)
-    // {
-    //     $attributes = $this->filterAttributes($attributes);
-    //     $attributes = $this->castAttributes($attributes);
-    //     $queryBuilder = new QueryBuilder($this->connection);
-    //     $queryBuilder->insert($this->table, $attributes)->execute();
-    //     return $this->find($this->connection->lastInsertId());
-    // }
-
-    // public function update($id, array $attributes)
-    // {
-    //     $attributes = $this->filterAttributes($attributes);
-    //     $attributes = $this->castAttributes($attributes);
-    //     $queryBuilder = new QueryBuilder($this->connection);
-    //     $queryBuilder->update($this->table, $attributes)->where($this->primaryKey, '=', $id)->execute();
-    //     return $this->find($id);
-    // }
     public function create(array $attributes)
     {
-        $attributes = $this->filterAttributes($attributes);
-        $attributes = $this->castAttributes($attributes);
-
-        // Validate the attributes
-        $validator = new Validator($attributes, $this->rules);
-        if ($validator->fails()) {
-            throw new BoltException("Validation failed: {$validator->errors()}");
+        if ($this->validate($attributes)) {
+            $attributes = $this->filterAttributes($attributes);
+            $attributes = $this->castAttributes($attributes);
+            return $this->saveAttributes($attributes);
         }
 
-        $queryBuilder = new QueryBuilder($this->connection);
-        $queryBuilder->insert($this->table, $attributes)->execute();
-        return $this->find($this->connection->lastInsertId());
+        return false;
     }
 
     public function update($id, array $attributes)
     {
-        $attributes = $this->filterAttributes($attributes);
-        $attributes = $this->castAttributes($attributes);
-
-        // Validate the attributes
-        $validator = new Validator($attributes, $this->rules);
-        if ($validator->fails()) {
-            throw new BoltException('Validation failed.', 1000, 'info', $validator->errors());
+        if ($this->validate($attributes)) {
+            $attributes = $this->filterAttributes($attributes);
+            $attributes = $this->castAttributes($attributes);
+            return $this->saveAttributes($attributes, $id);
         }
 
+        return false;
+    }
+
+    private function saveAttributes(array $attributes, $id = null)
+    {
         $queryBuilder = new QueryBuilder($this->connection);
-        $queryBuilder->update($this->table, $attributes)->where($this->primaryKey, '=', $id)->execute();
-        return $this->find($id);
+        if ($id) {
+            $queryBuilder->update($this->table, $attributes)->where($this->primaryKey, '=', $id)->execute();
+            return $this->find($id);
+        } else {
+            $queryBuilder->insert($this->table, $attributes)->execute();
+            return $this->find($this->connection->lastInsertId());
+        }
     }
 
     public function find($id)
@@ -238,6 +224,9 @@ abstract class DatabaseModel
                     case 'hash':
                         $attributes[$key] = password_hash($attributes[$key], PASSWORD_DEFAULT, ['cost' => 12]);
                         break;
+                    case 'uuid':
+                        $attributes[$key] = bolt_uuid();
+                        break;
                 }
             }
         }
@@ -255,29 +244,29 @@ abstract class DatabaseModel
         return $attributes;
     }
 
-    public function validate()
+    public function validate(array $attributes = null)
     {
-        $validator = new Validator($this->attributes, $this->rules);
+        $validator = new Validator($attributes ?? $this->attributes, $this->rules);
         if ($validator->fails()) {
-            return $validator->errors();
+            $this->validationErrors = $validator->errors();
+            return false;
         }
         return true;
     }
 
     public function save()
     {
-        if ($this->validate() === true) {
-            // Cast attributes before saving
-            $this->attributes = $this->castAttributes($this->attributes);
+        $this->attributes = $this->castAttributes($this->attributes);
 
+        if ($this->validate()) {
             if ($this->exists) {
                 return $this->update($this->attributes[$this->primaryKey], $this->attributes);
+            } else {
+                return $this->create($this->attributes);
             }
-            return $this->create($this->attributes);
-        } else {
-            // Handle validation errors
-            throw new BoltException('Validation failed.');
         }
+
+        return false;
     }
 
     public function where($column, $operator = '=', $value)
@@ -297,43 +286,50 @@ abstract class DatabaseModel
 
     public static function factory()
     {
-        $factoryClass = 'PhpStrike\\database\\factories\\' . (new \ReflectionClass(new static))->getShortName() . 'Factory';
-        return new $factoryClass();
+        $factoryClass = 'PhpStrike\\database\\factories\\' . get_called_class() . 'Factory';
+        if (class_exists($factoryClass)) {
+            return new $factoryClass();
+        }
+
+        throw new \Exception('Factory class not found for ' . get_called_class());
     }
-
-
-
-    /**
-     * ==============================
-     * Relationship
-     * ==============================
-     */
 
     public function hasOne($related, $foreignKey = null, $localKey = null)
     {
         $foreignKey = $foreignKey ?? $this->primaryKey;
         $localKey = $localKey ?? $this->primaryKey;
-        return new HasOne($related, $this, $foreignKey, $localKey);
+
+        return new HasOne($this, $related, $foreignKey, $localKey);
     }
 
     public function hasMany($related, $foreignKey = null, $localKey = null)
     {
         $foreignKey = $foreignKey ?? $this->primaryKey;
         $localKey = $localKey ?? $this->primaryKey;
-        return new HasMany($related, $this, $foreignKey, $localKey);
+
+        return new HasMany($this, $related, $foreignKey, $localKey);
     }
 
     public function belongsTo($related, $foreignKey = null, $ownerKey = null)
     {
-        $foreignKey = $foreignKey ?? $this->primaryKey;
+        $foreignKey = $foreignKey ?? strtolower((new \ReflectionClass($related))->getShortName()) . '_id';
         $ownerKey = $ownerKey ?? $this->primaryKey;
-        return new BelongsTo($related, $this, $foreignKey, $ownerKey);
+
+        return new BelongsTo($this, $related, $foreignKey, $ownerKey);
     }
 
-    public function belongsToMany($related, $pivotTable, $foreignKey, $relatedKey, $localKey = null, $relatedPivotKey = null)
+    public function belongsToMany($related, $table = null, $foreignKey = null, $relatedKey = null)
     {
-        $localKey = $localKey ?? $this->primaryKey;
-        $relatedPivotKey = $relatedPivotKey ?? $this->primaryKey;
-        return new BelongsToMany($related, $this, $pivotTable, $foreignKey, $relatedKey, $localKey, $relatedPivotKey);
+        $foreignKey = $foreignKey ?? strtolower((new \ReflectionClass($this))->getShortName()) . '_id';
+        $relatedKey = $relatedKey ?? strtolower((new \ReflectionClass($related))->getShortName()) . '_id';
+
+        $table = $table ?? strtolower((new \ReflectionClass($this))->getShortName()) . '_' . strtolower((new \ReflectionClass($related))->getShortName());
+
+        return new BelongsToMany($this, $related, $table, $foreignKey, $relatedKey);
+    }
+
+    public function validationErrors()
+    {
+        return $this->validationErrors;
     }
 }

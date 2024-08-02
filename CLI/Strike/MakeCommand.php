@@ -196,7 +196,7 @@ class MakeCommand extends CliActions implements CommandInterface
 
         $class_name = $this->rename_camel_case($modelName);
 
-        $table_name = strtolower($class_name);
+        $table_name = strtolower("{$class_name}s");
 
         $content = file_get_contents($sample_file);
         $content = str_replace("{TABLENAME}", $table_name, $content);
@@ -253,7 +253,7 @@ class MakeCommand extends CliActions implements CommandInterface
         }
 
         $class_name = ucfirst($modelName);
-        $table_name = strtolower($modelName);
+        $table_name = strtolower("{$modelName}s");
 
         $content = file_get_contents($sample_file);
         $content = str_replace("{TABLENAME}", $table_name, $content);

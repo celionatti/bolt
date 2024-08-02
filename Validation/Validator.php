@@ -15,7 +15,6 @@ namespace celionatti\Bolt\Validation;
 use celionatti\Bolt\Database\Database;
 use celionatti\Bolt\BoltException\BoltException;
 
-
 class Validator
 {
     protected $data;
@@ -81,14 +80,14 @@ class Validator
 
     protected function validateMin($field, $value)
     {
-        if (strlen($this->data[$field]) < $value) {
+        if (!isset($this->data[$field]) || is_null($this->data[$field]) || strlen($this->data[$field]) < $value) {
             $this->errors[$field][] = "{$field} must be at least {$value} characters.";
         }
     }
 
     protected function validateMax($field, $value)
     {
-        if (strlen($this->data[$field]) > $value) {
+        if (!isset($this->data[$field]) || is_null($this->data[$field]) || strlen($this->data[$field]) > $value) {
             $this->errors[$field][] = "{$field} must not exceed {$value} characters.";
         }
     }
@@ -123,7 +122,9 @@ class Validator
 
     protected function validateConfirmed($field)
     {
-        if ($this->data[$field] !== $this->data["{$field}_confirm"]) {
+        $confirmationField = "{$field}_confirm";
+
+        if (!isset($this->data[$confirmationField]) || $this->data[$field] !== $this->data[$confirmationField]) {
             $this->errors[$field][] = "{$field} confirm does not match.";
         }
     }
@@ -136,9 +137,9 @@ class Validator
         $query = "SELECT COUNT(*) as count FROM {$table} WHERE {$column} = :value";
         $stmt = Database::getInstance()->getConnection()->prepare($query);
         $stmt->execute(['value' => $value]);
-        $result = $stmt->fetch();
+        $result = $stmt->fetch(\PDO::FETCH_OBJ);
 
-        if ($result['count'] > 0) {
+        if ($result->count > 0) {
             $this->errors[$field][] = "{$field} must be unique.";
         }
     }
