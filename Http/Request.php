@@ -10,6 +10,8 @@ declare(strict_types=1);
 
 namespace celionatti\Bolt\Http;
 
+use celionatti\Bolt\Validation\Validator;
+
 class Request
 {
     protected $headers = [];
@@ -21,6 +23,7 @@ class Request
     protected $method;
     protected $path;
     protected $body;
+    protected $errors = [];
 
     public function __construct()
     {
@@ -33,6 +36,22 @@ class Request
         $this->files = $_FILES;
         $this->method = $this->detectMethod();
         $this->path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+    }
+
+    public function validate(array $rules, array $data = null): bool
+    {
+        $dataToValidate = $data ?? $this->bodyParams;
+        $validator = new Validator($dataToValidate, $rules);
+        if ($validator->fails()) {
+            $this->errors = $validator->errors();
+            return false;
+        }
+        return true;
+    }
+
+    public function getErrors(): array
+    {
+        return $this->errors;
     }
 
     protected function parseHeaders()

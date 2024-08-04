@@ -19,7 +19,15 @@ class BelongsTo
     protected $foreignKey;
     protected $ownerKey;
 
-    public function __construct($related, DatabaseModel $child, $foreignKey, $ownerKey)
+    /**
+     * BelongsTo constructor.
+     *
+     * @param string $related
+     * @param DatabaseModel $child
+     * @param string $foreignKey
+     * @param string $ownerKey
+     */
+    public function __construct(string $related, DatabaseModel $child, string $foreignKey, string $ownerKey)
     {
         $this->related = new $related();
         $this->child = $child;
@@ -27,8 +35,13 @@ class BelongsTo
         $this->ownerKey = $ownerKey;
     }
 
-    public function get()
+    /**
+     * Get the related model instance.
+     *
+     * @return DatabaseModel|null
+     */
+    public function get(): ?DatabaseModel
     {
-        return $this->related->where($this->ownerKey, $this->child->{$this->foreignKey})->first();
+        return $this->related->where($this->ownerKey, '=', $this->child->{$this->foreignKey})->first();
     }
 }

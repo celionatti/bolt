@@ -19,7 +19,15 @@ class HasMany
     protected $foreignKey;
     protected $localKey;
 
-    public function __construct($related, DatabaseModel $parent, $foreignKey, $localKey)
+    /**
+     * HasMany constructor.
+     *
+     * @param string $related
+     * @param DatabaseModel $parent
+     * @param string $foreignKey
+     * @param string $localKey
+     */
+    public function __construct(string $related, DatabaseModel $parent, string $foreignKey, string $localKey)
     {
         $this->related = new $related();
         $this->parent = $parent;
@@ -27,8 +35,13 @@ class HasMany
         $this->localKey = $localKey;
     }
 
-    public function get()
+    /**
+     * Get the related model instances.
+     *
+     * @return array
+     */
+    public function get(): array
     {
-        return $this->related->where($this->foreignKey, $this->parent->{$this->localKey})->get();
+        return $this->related->where($this->foreignKey, '=', $this->parent->{$this->localKey})->get();
     }
 }

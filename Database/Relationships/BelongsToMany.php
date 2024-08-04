@@ -20,38 +20,30 @@ class BelongsToMany
     protected $pivotTable;
     protected $foreignKey;
     protected $relatedKey;
-    protected $localKey;
-    protected $relatedPivotKey;
 
-    public function __construct($related, DatabaseModel $parent, $pivotTable, $foreignKey, $relatedKey, $localKey, $relatedPivotKey)
+    public function __construct(DatabaseModel $parent, $related, $pivotTable, $foreignKey, $relatedKey)
     {
         $this->related = new $related();
         $this->parent = $parent;
         $this->pivotTable = $pivotTable;
         $this->foreignKey = $foreignKey;
         $this->relatedKey = $relatedKey;
-        $this->localKey = $localKey;
-        $this->relatedPivotKey = $relatedPivotKey;
     }
 
-    public function getPivotResults()
+    protected function getPivotResults()
     {
-        $queryBuilder = new QueryBuilder($this->parent->connection);
-        $pivotResults = $queryBuilder->select($this->pivotTable . '.*')
+        $queryBuilder = new QueryBuilder($this->parent->getConnection());
+        return $queryBuilder->select('*')
             ->from($this->pivotTable)
-            ->where($this->foreignKey, '=', $this->parent->{$this->localKey})
+            ->where($this->foreignKey, '=', $this->parent->{$this->parent->getPrimaryValue()})
             ->execute();
-
-        return $pivotResults;
     }
 
     public function get()
     {
         $pivotResults = $this->getPivotResults();
-        $relatedIds = array_map(function ($pivot) {
-            return $pivot->{$this->relatedPivotKey};
-        }, $pivotResults);
+        $relatedIds = array_column($pivotResults, $this->relatedKey);
 
-        return $this->related->whereIn($this->relatedKey, $relatedIds)->get();
+        return $this->related->whereIn($this->related->getPrimaryValue(), $relatedIds)->get();
     }
 }

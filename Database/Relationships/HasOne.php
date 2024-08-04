@@ -29,6 +29,6 @@ class HasOne
 
     public function get()
     {
-        return $this->related->where($this->foreignKey, $this->parent->{$this->localKey})->first();
+        return $this->related->where($this->foreignKey, '=', $this->parent->{$this->localKey})->first();
     }
 }

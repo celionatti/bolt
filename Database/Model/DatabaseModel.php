@@ -11,7 +11,6 @@ declare(strict_types=1);
 namespace celionatti\Bolt\Database\Model;
 
 use celionatti\Bolt\Database\Database;
-use celionatti\Bolt\Validation\Validator;
 use celionatti\Bolt\BoltException\BoltException;
 use celionatti\Bolt\BoltQueryBuilder\QueryBuilder;
 use celionatti\Bolt\Database\Relationships\HasOne;
@@ -32,7 +31,6 @@ abstract class DatabaseModel
     protected $attributes = [];
     protected $rules = [];
     protected $exists = false;
-    protected $validationErrors = [];
 
     public function __construct()
     {
@@ -48,29 +46,36 @@ abstract class DatabaseModel
         }
     }
 
-    public function create(array $attributes)
+    public function getConnection()
     {
-        if ($this->validate($attributes)) {
-            $attributes = $this->filterAttributes($attributes);
-            $attributes = $this->castAttributes($attributes);
-            return $this->saveAttributes($attributes);
-        }
-
-        return false;
+        return $this->connection;
     }
 
-    public function update($id, array $attributes)
+    public function getPrimaryValue()
     {
-        if ($this->validate($attributes)) {
-            $attributes = $this->filterAttributes($attributes);
-            $attributes = $this->castAttributes($attributes);
-            return $this->saveAttributes($attributes, $id);
-        }
-
-        return false;
+        return $this->attributes[$this->primaryKey] ?? null;
     }
 
-    private function saveAttributes(array $attributes, $id = null)
+    public function getTable(): string
+    {
+        return $this->table;
+    }
+
+    public function create(array $attributes): ?self
+    {
+        $attributes = $this->filterAttributes($attributes);
+        $attributes = $this->castAttributes($attributes);
+        return $this->saveAttributes($attributes);
+    }
+
+    public function update($id, array $attributes): ?self
+    {
+        $attributes = $this->filterAttributes($attributes);
+        $attributes = $this->castAttributes($attributes);
+        return $this->saveAttributes($attributes, $id);
+    }
+
+    private function saveAttributes(array $attributes, $id = null): ?self
     {
         $queryBuilder = new QueryBuilder($this->connection);
         if ($id) {
@@ -82,12 +87,12 @@ abstract class DatabaseModel
         }
     }
 
-    public function find($id)
+    public function find($id): ?self
     {
         return $this->findBy([$this->primaryKey => $id]);
     }
 
-    public function findBy(array $conditions)
+    public function findBy(array $conditions): ?self
     {
         $queryBuilder = new QueryBuilder($this->connection);
         $queryBuilder->select()->from($this->table);
@@ -106,14 +111,14 @@ abstract class DatabaseModel
         return null;
     }
 
-    public function get()
+    public function get(): array
     {
         $queryBuilder = new QueryBuilder($this->connection);
         $results = $queryBuilder->select()->from($this->table)->execute();
         return $results;
     }
 
-    public function first()
+    public function first(): ?self
     {
         $queryBuilder = new QueryBuilder($this->connection);
         $result = $queryBuilder->select()->from($this->table)->limit(1)->execute();
@@ -126,21 +131,21 @@ abstract class DatabaseModel
         return null;
     }
 
-    public function delete($id)
+    public function delete($id): bool
     {
         $queryBuilder = new QueryBuilder($this->connection);
         $queryBuilder->delete($this->table)->where($this->primaryKey, '=', $id)->execute();
         return true;
     }
 
-    public static function all()
+    public static function all(): array
     {
         $instance = new static();
         $queryBuilder = new QueryBuilder($instance->connection);
         return $queryBuilder->select()->from($instance->table)->execute();
     }
 
-    public static function paginate(int $page = 1, int $itemsPerPage = 15)
+    public static function paginate(int $page = 1, int $itemsPerPage = 15): array
     {
         $instance = new static();
         $queryBuilder = new QueryBuilder($instance->connection);
@@ -169,7 +174,7 @@ abstract class DatabaseModel
         ];
     }
 
-    private function filterAttributes(array $attributes)
+    private function filterAttributes(array $attributes): array
     {
         if (!empty($this->fillable)) {
             $attributes = array_intersect_key($attributes, array_flip($this->fillable));
@@ -188,52 +193,49 @@ abstract class DatabaseModel
     public function __set($key, $value)
     {
         if (in_array($key, $this->fillable) && !in_array($key, $this->guarded)) {
-            if (array_key_exists($key, $this->casts)) {
-                $this->attributes[$key] = $this->castAttributes([$key => $value])[$key];
-            } else {
-                $this->attributes[$key] = $value;
-            }
+            $this->attributes[$key] = $this->castAttribute($key, $value);
         } else {
             throw new DatabaseException("Attribute $key is not fillable or is guarded.");
         }
     }
 
-    private function castAttributes(array $attributes)
+    private function castAttributes(array $attributes): array
     {
-        foreach ($this->casts as $key => $type) {
-            if (isset($attributes[$key])) {
-                switch ($type) {
-                    case 'int':
-                        $attributes[$key] = (int)$attributes[$key];
-                        break;
-                    case 'float':
-                        $attributes[$key] = (float)$attributes[$key];
-                        break;
-                    case 'string':
-                        $attributes[$key] = (string)$attributes[$key];
-                        break;
-                    case 'bool':
-                        $attributes[$key] = (bool)$attributes[$key];
-                        break;
-                    case 'array':
-                        $attributes[$key] = (array)$attributes[$key];
-                        break;
-                    case 'datetime':
-                        $attributes[$key] = new \DateTime($attributes[$key]);
-                        break;
-                    case 'hash':
-                        $attributes[$key] = password_hash($attributes[$key], PASSWORD_DEFAULT, ['cost' => 12]);
-                        break;
-                    case 'uuid':
-                        $attributes[$key] = bolt_uuid();
-                        break;
-                }
-            }
+        foreach ($attributes as $key => $value) {
+            $attributes[$key] = $this->castAttribute($key, $value);
         }
         return $attributes;
     }
 
-    public function toArray()
+    private function castAttribute(string $key, $value)
+    {
+        if (!isset($this->casts[$key])) {
+            return $value;
+        }
+
+        switch ($this->casts[$key]) {
+            case 'int':
+                return (int)$value;
+            case 'float':
+                return (float)$value;
+            case 'string':
+                return (string)$value;
+            case 'bool':
+                return (bool)$value;
+            case 'array':
+                return (array)$value;
+            case 'datetime':
+                return new \DateTime($value);
+            case 'hash':
+                return password_hash($value, PASSWORD_DEFAULT, ['cost' => 12]);
+            case 'uuid':
+                return bolt_uuid();
+            default:
+                return $value;
+        }
+    }
+
+    public function toArray(): array
     {
         $attributes = $this->attributes;
 
@@ -244,35 +246,36 @@ abstract class DatabaseModel
         return $attributes;
     }
 
-    public function validate(array $attributes = null)
-    {
-        $validator = new Validator($attributes ?? $this->attributes, $this->rules);
-        if ($validator->fails()) {
-            $this->validationErrors = $validator->errors();
-            return false;
-        }
-        return true;
-    }
-
-    public function save()
+    public function save(): ?self
     {
         $this->attributes = $this->castAttributes($this->attributes);
 
-        if ($this->validate()) {
-            if ($this->exists) {
-                return $this->update($this->attributes[$this->primaryKey], $this->attributes);
-            } else {
-                return $this->create($this->attributes);
-            }
+        if ($this->exists) {
+            return $this->update($this->attributes[$this->primaryKey], $this->attributes);
+        } else {
+            return $this->create($this->attributes);
         }
-
-        return false;
     }
 
-    public function where($column, $operator = '=', $value)
+    public function where($column, $operator = '=', $value): ?self
     {
         $queryBuilder = new QueryBuilder($this->connection);
         $result = $queryBuilder->select()->from($this->table)->where($column, $operator, $value)->execute();
+
+        if ($result) {
+            $this->attributes = (array)$result[0];
+            $this->attributes = $this->castAttributes($this->attributes);
+            $this->exists = true;
+            return $this;
+        }
+
+        throw new DatabaseException("Record not found", 404, "error");
+    }
+
+    public function whereIn($column, $value): ?self
+    {
+        $queryBuilder = new QueryBuilder($this->connection);
+        $result = $queryBuilder->select()->from($this->table)->whereIn($column, $value)->execute();
 
         if ($result) {
             $this->attributes = (array)$result[0];
@@ -291,45 +294,53 @@ abstract class DatabaseModel
             return new $factoryClass();
         }
 
-        throw new \Exception('Factory class not found for ' . get_called_class());
+        throw new BoltException('Factory class not found for ' . get_called_class());
     }
+
+    public static function whereStatic($column, $operator = '=', $value): array
+    {
+        $instance = new static();
+        $queryBuilder = new QueryBuilder($instance->connection);
+        return $queryBuilder->select()->from($instance->table)->where($column, $operator, $value)->execute();
+    }
+
+    public function exists(): bool
+    {
+        return $this->exists;
+    }
+
+    /** Relationship Section */
 
     public function hasOne($related, $foreignKey = null, $localKey = null)
     {
-        $foreignKey = $foreignKey ?? $this->primaryKey;
-        $localKey = $localKey ?? $this->primaryKey;
+        $foreignKey = $foreignKey ?: strtolower($this->table) . '_id';
+        $localKey = $localKey ?: $this->primaryKey;
 
-        return new HasOne($this, $related, $foreignKey, $localKey);
+        return new HasOne($related, $this, $foreignKey, $localKey);
     }
 
     public function hasMany($related, $foreignKey = null, $localKey = null)
     {
-        $foreignKey = $foreignKey ?? $this->primaryKey;
-        $localKey = $localKey ?? $this->primaryKey;
+        $foreignKey = $foreignKey ?: $this->primaryKey;
+        $localKey = $localKey ?: $this->primaryKey;
 
-        return new HasMany($this, $related, $foreignKey, $localKey);
+        return new HasMany($related, $this, $foreignKey, $localKey);
     }
 
     public function belongsTo($related, $foreignKey = null, $ownerKey = null)
     {
-        $foreignKey = $foreignKey ?? strtolower((new \ReflectionClass($related))->getShortName()) . '_id';
-        $ownerKey = $ownerKey ?? $this->primaryKey;
+        $foreignKey = $foreignKey ?: strtolower($related) . '_id';
+        $ownerKey = $ownerKey ?: $this->primaryKey;
 
-        return new BelongsTo($this, $related, $foreignKey, $ownerKey);
+        return new BelongsTo($related, $this, $foreignKey, $ownerKey);
     }
 
-    public function belongsToMany($related, $table = null, $foreignKey = null, $relatedKey = null)
+    public function belongsToMany($related, $pivotTable = null, $foreignKey = null, $relatedKey = null)
     {
-        $foreignKey = $foreignKey ?? strtolower((new \ReflectionClass($this))->getShortName()) . '_id';
-        $relatedKey = $relatedKey ?? strtolower((new \ReflectionClass($related))->getShortName()) . '_id';
+        $pivotTable = $pivotTable ?: strtolower($this->table) . '_' . strtolower((new \ReflectionClass($related))->getShortName());
+        $foreignKey = $foreignKey ?: strtolower($this->table) . '_id';
+        $relatedKey = $relatedKey ?: strtolower((new \ReflectionClass($related))->getShortName()) . '_id';
 
-        $table = $table ?? strtolower((new \ReflectionClass($this))->getShortName()) . '_' . strtolower((new \ReflectionClass($related))->getShortName());
-
-        return new BelongsToMany($this, $related, $table, $foreignKey, $relatedKey);
-    }
-
-    public function validationErrors()
-    {
-        return $this->validationErrors;
+        return new BelongsToMany($this, $related, $pivotTable, $foreignKey, $relatedKey);
     }
 }
