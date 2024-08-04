@@ -11,37 +11,48 @@ declare(strict_types=1);
 namespace celionatti\Bolt\Database\Relationships;
 
 use celionatti\Bolt\Database\Model\DatabaseModel;
+use celionatti\Bolt\BoltQueryBuilder\QueryBuilder;
 
 class BelongsTo
 {
+    protected $parent;
     protected $related;
-    protected $child;
     protected $foreignKey;
     protected $ownerKey;
 
-    /**
-     * BelongsTo constructor.
-     *
-     * @param string $related
-     * @param DatabaseModel $child
-     * @param string $foreignKey
-     * @param string $ownerKey
-     */
-    public function __construct(string $related, DatabaseModel $child, string $foreignKey, string $ownerKey)
+    public function __construct(DatabaseModel $parent, $related, $foreignKey, $ownerKey)
     {
+        $this->parent = $parent;
         $this->related = new $related();
-        $this->child = $child;
         $this->foreignKey = $foreignKey;
         $this->ownerKey = $ownerKey;
     }
 
-    /**
-     * Get the related model instance.
-     *
-     * @return DatabaseModel|null
-     */
-    public function get(): ?DatabaseModel
+    public function get()
     {
-        return $this->related->where($this->ownerKey, '=', $this->child->{$this->foreignKey})->first();
+        $queryBuilder = new QueryBuilder($this->parent->getConnection());
+        return $queryBuilder->select()
+            ->from($this->related->getTable())
+            ->where($this->ownerKey, '=', $this->parent->{$this->foreignKey})
+            ->execute()[0];
+    }
+
+    public function getEagerLoadResults(array $keys)
+    {
+        $queryBuilder = new QueryBuilder($this->parent->getConnection());
+        return $queryBuilder->select()
+            ->from($this->related->getTable())
+            ->whereIn($this->ownerKey, $keys)
+            ->execute();
+    }
+
+    public function getRelatedModel()
+    {
+        return $this->related;
+    }
+
+    public function getForeignKey()
+    {
+        return $this->foreignKey;
     }
 }

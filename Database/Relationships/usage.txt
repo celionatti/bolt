@@ -1,50 +1,249 @@
+Certainly! Let's walk through examples of how to use the relationship methods in the `DatabaseModel` class, assuming you have three models: `User`, `Post`, and `Role`.
+
+### Model Definitions
+
+1. **User Model**
+
+```php
 <?php
 
-namespace celionatti\Bolt\Models;
+namespace App\Models;
 
-use celionatti\Bolt\Database\Model;
+use celionatti\Bolt\Database\Model\DatabaseModel;
 
-class User extends Model
+class User extends DatabaseModel
 {
     protected $table = 'users';
-
-    public function profile()
-    {
-        return $this->hasOne(Profile::class, 'user_id');
-    }
+    protected $fillable = ['name', 'email', 'password'];
 
     public function posts()
     {
-        return $this->hasMany(Post::class, 'user_id');
+        return $this->hasMany(Post::class, 'user_id', 'id');
     }
-}
 
-class Profile extends Model
-{
-    protected $table = 'profiles';
-
-    public function user()
+    public function role()
     {
-        return $this->belongsTo(User::class, 'user_id');
+        return $this->belongsTo(Role::class, 'role_id', 'id');
+    }
+
+    public function roles()
+    {
+        return $this->belongsToMany(Role::class, 'role_user', 'user_id', 'role_id');
     }
 }
+```
 
-class Post extends Model
+2. **Post Model**
+
+```php
+<?php
+
+namespace App\Models;
+
+use celionatti\Bolt\Database\Model\DatabaseModel;
+
+class Post extends DatabaseModel
 {
     protected $table = 'posts';
+    protected $fillable = ['title', 'content', 'user_id'];
 
     public function user()
     {
-        return $this->belongsTo(User::class, 'user_id');
+        return $this->belongsTo(User::class, 'user_id', 'id');
     }
 }
+```
 
+3. **Role Model**
 
-=================================================================================
+```php
+<?php
 
-$user = User::find(1);
-$profile = $user->profile()->get();
+namespace App\Models;
+
+use celionatti\Bolt\Database\Model\DatabaseModel;
+
+class Role extends DatabaseModel
+{
+    protected $table = 'roles';
+    protected $fillable = ['name'];
+
+    public function users()
+    {
+        return $this->belongsToMany(User::class, 'role_user', 'role_id', 'user_id');
+    }
+}
+```
+
+### Using the Relationships
+
+#### 1. Retrieve All Posts for a User
+
+```php
+<?php
+
+use App\Models\User;
+
+$user = (new User())->find(1); // Assuming the user ID is 1
 $posts = $user->posts()->get();
 
-$post = Post::find(1);
-$user = $post->user()->get();
+foreach ($posts as $post) {
+    echo $post->title . '<br>';
+}
+```
+
+#### 2. Retrieve the Role for a User
+
+```php
+<?php
+
+use App\Models\User;
+
+$user = (new User())->find(1); // Assuming the user ID is 1
+$role = $user->role()->get();
+
+echo 'User role: ' . $role->name;
+```
+
+#### 3. Retrieve All Users for a Role
+
+```php
+<?php
+
+use App\Models\Role;
+
+$role = (new Role())->find(1); // Assuming the role ID is 1
+$users = $role->users()->get();
+
+foreach ($users as $user) {
+    echo $user->name . '<br>';
+}
+```
+
+#### 4. Retrieve All Roles for a User (Many-to-Many)
+
+```php
+<?php
+
+use App\Models\User;
+
+$user = (new User())->find(1); // Assuming the user ID is 1
+$roles = $user->roles()->get();
+
+foreach ($roles as $role) {
+    echo $role->name . '<br>';
+}
+```
+
+#### 5. Create a New Post for a User
+
+```php
+<?php
+
+use App\Models\User;
+use App\Models\Post;
+
+$user = (new User())->find(1); // Assuming the user ID is 1
+$post = new Post();
+$post->title = 'New Post';
+$post->content = 'Content of the new post';
+$post->user_id = $user->id;
+$post->save();
+```
+
+### Adding Data to the Pivot Table for Many-to-Many Relationship
+
+If you want to add a role to a user in the `role_user` pivot table:
+
+```php
+<?php
+
+use App\Models\User;
+
+$user = (new User())->find(1); // Assuming the user ID is 1
+$roleId = 2; // Assuming the role ID to add is 2
+
+$user->roles()->attach($roleId);
+```
+
+Here's the `attach` method implementation in the `BelongsToMany` relationship class:
+
+```php
+public function attach($relatedId)
+{
+    $queryBuilder = new QueryBuilder($this->parent->getConnection());
+    $data = [
+        $this->foreignKey => $this->parent->getPrimaryValue(),
+        $this->relatedKey => $relatedId
+    ];
+    $queryBuilder->insert($this->pivotTable, $data)->execute();
+}
+```
+
+### Implementing `attach` Method
+
+Add the following method to the `BelongsToMany` class:
+
+```php
+public function attach($relatedId)
+{
+    $queryBuilder = new QueryBuilder($this->parent->getConnection());
+    $data = [
+        $this->foreignKey => $this->parent->getPrimaryValue(),
+        $this->relatedKey => $relatedId
+    ];
+    $queryBuilder->insert($this->pivotTable, $data)->execute();
+}
+```
+
+### Complete BelongsToMany Class with Attach Method
+
+```php
+<?php
+
+namespace celionatti\Bolt\Database\Relationships;
+
+use celionatti\Bolt\Database\Model\DatabaseModel;
+
+class BelongsToMany
+{
+    protected $parent;
+    protected $related;
+    protected $pivotTable;
+    protected $foreignKey;
+    protected $relatedKey;
+
+    public function __construct(DatabaseModel $parent, $related, $pivotTable, $foreignKey, $relatedKey)
+    {
+        $this->parent = $parent;
+        $this->related = new $related();
+        $this->pivotTable = $pivotTable;
+        $this->foreignKey = $foreignKey;
+        $this->relatedKey = $relatedKey;
+    }
+
+    public function get()
+    {
+        $queryBuilder = new QueryBuilder($this->parent->getConnection());
+        $results = $queryBuilder->select()
+            ->from($this->pivotTable)
+            ->where($this->foreignKey, '=', $this->parent->{$this->parent->getPrimaryValue()})
+            ->execute();
+
+        $relatedIds = array_column($results, $this->relatedKey);
+        return $this->related->whereIn($this->related->getPrimaryKey(), $relatedIds)->get();
+    }
+
+    public function attach($relatedId)
+    {
+        $queryBuilder = new QueryBuilder($this->parent->getConnection());
+        $data = [
+            $this->foreignKey => $this->parent->getPrimaryValue(),
+            $this->relatedKey => $relatedId
+        ];
+        $queryBuilder->insert($this->pivotTable, $data)->execute();
+    }
+}
+```
+
+These examples demonstrate how to use the relationship methods within your models to interact with related data. Ensure you have your database schema correctly set up with the appropriate foreign keys and pivot tables to support these relationships.

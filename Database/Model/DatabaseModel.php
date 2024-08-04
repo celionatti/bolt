@@ -31,6 +31,7 @@ abstract class DatabaseModel
     protected $attributes = [];
     protected $rules = [];
     protected $exists = false;
+    protected $relations = [];
 
     public function __construct()
     {
@@ -51,6 +52,11 @@ abstract class DatabaseModel
         return $this->connection;
     }
 
+    public function getPrimaryKey()
+    {
+        return $this->primaryKey;
+    }
+
     public function getPrimaryValue()
     {
         return $this->attributes[$this->primaryKey] ?? null;
@@ -59,6 +65,12 @@ abstract class DatabaseModel
     public function getTable(): string
     {
         return $this->table;
+    }
+
+    public function with(array $relations)
+    {
+        $this->relations = $relations;
+        return $this;
     }
 
     public function create(array $attributes): ?self
@@ -115,6 +127,11 @@ abstract class DatabaseModel
     {
         $queryBuilder = new QueryBuilder($this->connection);
         $results = $queryBuilder->select()->from($this->table)->execute();
+
+        if (!empty($this->relations)) {
+            $results = $this->eagerLoadRelations($results);
+        }
+
         return $results;
     }
 
@@ -173,6 +190,14 @@ abstract class DatabaseModel
             ],
         ];
     }
+
+    // public function paginate(int $perPage, int $page = 1): array
+    // {
+    //     $queryBuilder = new QueryBuilder($this->connection);
+    //     $queryBuilder->select()->from($this->table)->limit($perPage)->offset(($page - 1) * $perPage);
+    //     $results = $queryBuilder->execute();
+    //     return $results;
+    // }
 
     private function filterAttributes(array $attributes): array
     {
@@ -287,14 +312,23 @@ abstract class DatabaseModel
         throw new DatabaseException("Record not found", 404, "error");
     }
 
+    // public static function factory()
+    // {
+    //     $factoryClass = 'PhpStrike\\database\\factories\\' . get_called_class() . 'Factory';
+    //     if (class_exists($factoryClass)) {
+    //         return new $factoryClass();
+    //     }
+
+    //     throw new BoltException('Factory class not found for ' . get_called_class());
+    // }
     public static function factory()
     {
-        $factoryClass = 'PhpStrike\\database\\factories\\' . get_called_class() . 'Factory';
+        $factoryClass = 'PhpStrike\\database\\factories\\' . static::class . 'Factory';
         if (class_exists($factoryClass)) {
-            return new $factoryClass();
+            return new $factoryClass;
         }
 
-        throw new BoltException('Factory class not found for ' . get_called_class());
+        throw new BoltException('Factory class not found for ' . static::class);
     }
 
     public static function whereStatic($column, $operator = '=', $value): array
@@ -309,38 +343,64 @@ abstract class DatabaseModel
         return $this->exists;
     }
 
+    protected function eagerLoadRelations($results)
+    {
+        foreach ($this->relations as $relation) {
+            if (method_exists($this, $relation)) {
+                $relatedModel = $this->{$relation}()->getRelatedModel();
+                $relatedResults = $this->{$relation}()->getEagerLoadResults(array_column($results, $this->getPrimaryKey()));
+
+                foreach ($results as &$result) {
+                    $result->{$relation} = array_filter($relatedResults, function($related) use ($result) {
+                        return $related->{$this->{$relation}()->getForeignKey()} == $result->{$this->getPrimaryKey()};
+                    });
+                }
+            }
+        }
+
+        return $results;
+    }
+
     /** Relationship Section */
 
     public function hasOne($related, $foreignKey = null, $localKey = null)
     {
-        $foreignKey = $foreignKey ?: strtolower($this->table) . '_id';
-        $localKey = $localKey ?: $this->primaryKey;
-
-        return new HasOne($related, $this, $foreignKey, $localKey);
+        $foreignKey = $foreignKey ?? $this->primaryKey;
+        $localKey = $localKey ?? $this->getPrimaryValue();
+        return new HasOne($this, $related, $foreignKey, $localKey);
     }
 
     public function hasMany($related, $foreignKey = null, $localKey = null)
     {
-        $foreignKey = $foreignKey ?: $this->primaryKey;
-        $localKey = $localKey ?: $this->primaryKey;
-
-        return new HasMany($related, $this, $foreignKey, $localKey);
+        $foreignKey = $foreignKey ?? $this->primaryKey;
+        $localKey = $localKey ?? $this->getPrimaryValue();
+        return new HasMany($this, $related, $foreignKey, $localKey);
     }
 
     public function belongsTo($related, $foreignKey = null, $ownerKey = null)
     {
-        $foreignKey = $foreignKey ?: strtolower($related) . '_id';
-        $ownerKey = $ownerKey ?: $this->primaryKey;
-
-        return new BelongsTo($related, $this, $foreignKey, $ownerKey);
+        $foreignKey = $foreignKey ?? $this->primaryKey;
+        $ownerKey = $ownerKey ?? $this->getPrimaryValue();
+        return new BelongsTo($this, $related, $foreignKey, $ownerKey);
     }
 
-    public function belongsToMany($related, $pivotTable = null, $foreignKey = null, $relatedKey = null)
+    public function belongsToMany($related, $pivotTable = null, $foreignKey = null, $relatedPivotKey = null, $parentKey = null, $relatedKey = null)
     {
-        $pivotTable = $pivotTable ?: strtolower($this->table) . '_' . strtolower((new \ReflectionClass($related))->getShortName());
-        $foreignKey = $foreignKey ?: strtolower($this->table) . '_id';
-        $relatedKey = $relatedKey ?: strtolower((new \ReflectionClass($related))->getShortName()) . '_id';
+        $pivotTable = $pivotTable ?? $this->getPivotTableName($related);
+        $foreignPivotKey = $foreignKey ?? $this->primaryKey;
+        $relatedPivotKey = $relatedKey ?? $this->getPrimaryValue();
+        return new BelongsToMany($this, $related, $pivotTable, $foreignPivotKey, $relatedPivotKey, $parentKey, $relatedKey);
+    }
 
-        return new BelongsToMany($this, $related, $pivotTable, $foreignKey, $relatedKey);
+    protected function getPivotTableName($related)
+    {
+        $tables = [
+            $this->getTable(),
+            (new $related())->getTable(),
+        ];
+
+        sort($tables);
+
+        return strtolower(implode('_', $tables));
     }
 }
