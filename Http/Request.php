@@ -54,11 +54,22 @@ class Request
         return $this->errors;
     }
 
-    protected function parseHeaders()
+    // protected function parseHeaders()
+    // {
+    //     $headers = [];
+    //     foreach ($_SERVER as $key => $value) {
+    //         if (substr($key, 0, 5) === 'HTTP_') {
+    //             $header = str_replace(' ', '-', ucwords(strtolower(str_replace('_', ' ', substr($key, 5)))));
+    //             $headers[$header] = $value;
+    //         }
+    //     }
+    //     return $headers;
+    // }
+    protected function parseHeaders(): array
     {
         $headers = [];
         foreach ($_SERVER as $key => $value) {
-            if (substr($key, 0, 5) === 'HTTP_') {
+            if (strpos($key, 'HTTP_') === 0) {
                 $header = str_replace(' ', '-', ucwords(strtolower(str_replace('_', ' ', substr($key, 5)))));
                 $headers[$header] = $value;
             }
@@ -66,7 +77,7 @@ class Request
         return $headers;
     }
 
-    protected function parseBody()
+    protected function parseBody(): array
     {
         if (in_array($this->getMethod(), ['POST', 'PUT', 'PATCH', 'DELETE']) && $this->isFormData()) {
             parse_str($this->body, $bodyParams);
@@ -78,7 +89,7 @@ class Request
         return [];
     }
 
-    protected function detectMethod()
+    protected function detectMethod(): string
     {
         $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
         if ($method === 'POST' && isset($_SERVER['HTTP_X_HTTP_METHOD_OVERRIDE'])) {
@@ -90,17 +101,17 @@ class Request
         return $method;
     }
 
-    public function isJson()
+    public function isJson(): bool
     {
         return isset($this->headers['Content-Type']) && strpos($this->headers['Content-Type'], 'application/json') !== false;
     }
 
-    public function isFormData()
+    public function isFormData(): bool
     {
         return isset($this->headers['Content-Type']) && strpos($this->headers['Content-Type'], 'application/x-www-form-urlencoded') !== false;
     }
 
-    public function getHeader($name)
+    public function getHeader($name): ?string
     {
         return $this->headers[$name] ?? null;
     }
@@ -135,43 +146,43 @@ class Request
         return $this->method;
     }
 
-    public function getPath()
+    public function getPath(): string
     {
         return $this->path;
     }
 
-    public function getBody()
+    public function getBody(): string
     {
         return $this->body;
     }
 
-    public function isAjax()
+    public function isAjax(): bool
     {
         return $this->getHeader('X-Requested-With') === 'XMLHttpRequest';
     }
 
-    public function isSecure()
+    public function isSecure(): bool
     {
         return (!empty($this->serverParams['HTTPS']) && $this->serverParams['HTTPS'] !== 'off')
             || $this->serverParams['SERVER_PORT'] == 443;
     }
 
-    public function getIp()
+    public function getIp(): ?string
     {
         return $this->serverParams['REMOTE_ADDR'] ?? null;
     }
 
-    public function getUserAgent()
+    public function getUserAgent(): ?string
     {
         return $this->getHeader('User-Agent');
     }
 
-    public function getReferer()
+    public function getReferer(): ?string
     {
         return $this->getHeader('Referer');
     }
 
-    public function is($pattern)
+    public function is($pattern): bool
     {
         $path = $this->getPath();
         $pattern = '/' . trim($pattern, '/');

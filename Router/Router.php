@@ -123,11 +123,13 @@ class Router
         $pattern = "@^" . $route['path'] . "$@D";
         preg_match($pattern, $this->request->getPath(), $matches);
 
-        foreach ($matches as $key => $value) {
-            if (is_int($key)) {
-                unset($matches[$key]);
-            }
-        }
+        $matches = array_filter($matches, 'is_string', ARRAY_FILTER_USE_KEY);
+
+        // foreach ($matches as $key => $value) {
+        //     if (is_int($key)) {
+        //         unset($matches[$key]);
+        //     }
+        // }
 
         if (is_callable($route['action'])) {
             return call_user_func_array($route['action'], array_merge([$this->request, $this->response], array_values($matches)));
@@ -140,7 +142,8 @@ class Router
 
     protected function runControllerAction($action, $parameters)
     {
-        list($controller, $method) = $action;
+        // list($controller, $method) = $action;
+        [$controller, $method] = $action;
         $controllerInstance = new $controller();
         if (!method_exists($controllerInstance, $method)) {
             throw new BoltException('Controller method not found');
