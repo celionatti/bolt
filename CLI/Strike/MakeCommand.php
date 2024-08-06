@@ -430,7 +430,7 @@ class MakeCommand extends CliActions implements CommandInterface
             return;
         }
 
-        $middlewareDir = $this->basePath . DIRECTORY_SEPARATOR . "app" . DIRECTORY_SEPARATOR . "middlewares";
+        $middlewareDir = $this->basePath . DIRECTORY_SEPARATOR . "app" . DIRECTORY_SEPARATOR . "middlewares" . DIRECTORY_SEPARATOR;
 
         if (!is_dir($middlewareDir)) {
             if (!mkdir($middlewareDir, 0755, true)) {

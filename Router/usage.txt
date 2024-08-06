@@ -1,0 +1,14 @@
+$router = new Router($request, $response);
+
+$router->group(['prefix' => '/admin', 'middleware' => [AdminMiddleware::class]], function ($router) {
+    $router->get('/dashboard', 'AdminController@dashboard')->name('admin.dashboard');
+    $router->get('/users', 'AdminController@users')->name('admin.users');
+});
+
+$router->get('/profile', 'UserController@profile')->name('user.profile');
+
+
+Generating Urls
+echo $router->url('admin.dashboard'); // Output: /admin/dashboard
+echo $router->url('admin.users'); // Output: /admin/users
+echo $router->url('user.profile'); // Output: /profile

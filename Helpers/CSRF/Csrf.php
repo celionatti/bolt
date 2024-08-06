@@ -16,6 +16,11 @@ class Csrf
     private $sessionExpiryKey = '_csrf_token_expiry';
     private $tokenLifetime = 3600; // Token lifetime in seconds (e.g., 1 hour)
 
+    public function __construct()
+    {
+        $this->generateToken();
+    }
+
     public function generateToken()
     {
         if (session_status() === PHP_SESSION_NONE) {

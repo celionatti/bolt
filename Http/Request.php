@@ -54,17 +54,6 @@ class Request
         return $this->errors;
     }
 
-    // protected function parseHeaders()
-    // {
-    //     $headers = [];
-    //     foreach ($_SERVER as $key => $value) {
-    //         if (substr($key, 0, 5) === 'HTTP_') {
-    //             $header = str_replace(' ', '-', ucwords(strtolower(str_replace('_', ' ', substr($key, 5)))));
-    //             $headers[$header] = $value;
-    //         }
-    //     }
-    //     return $headers;
-    // }
     protected function parseHeaders(): array
     {
         $headers = [];
@@ -221,5 +210,45 @@ class Request
             $instance = new self();
         }
         return $instance;
+    }
+
+    public function get($name, $default = null)
+    {
+        if (isset($this->bodyParams[$name])) {
+            return $this->getBodyParam($name, $default);
+        }
+
+        if (isset($this->queryParams[$name])) {
+            return $this->getQueryParam($name, $default);
+        }
+
+        if (isset($this->serverParams[$name])) {
+            return $this->getServerParam($name, $default);
+        }
+
+        if (isset($this->headers[$name])) {
+            return $this->getHeader($name);
+        }
+
+        return $default;
+    }
+
+    public function set($name, $value): void
+    {
+        if (isset($this->bodyParams[$name])) {
+            $this->bodyParams[$name] = $this->sanitize($value);
+        } elseif (isset($this->queryParams[$name])) {
+            $this->queryParams[$name] = $this->sanitize($value);
+        } elseif (isset($this->serverParams[$name])) {
+            $this->serverParams[$name] = $value;
+        } elseif (isset($this->headers[$name])) {
+            $this->headers[$name] = $value;
+        } elseif (isset($this->cookies[$name])) {
+            $this->cookies[$name] = $this->sanitize($value);
+        } elseif (isset($this->files[$name])) {
+            $this->files[$name] = $value;
+        } else {
+            $this->bodyParams[$name] = $this->sanitize($value);
+        }
     }
 }

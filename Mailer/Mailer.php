@@ -5,82 +5,98 @@ declare(strict_types=1);
 /**
  * ========================================================
  * =====================            =======================
- * Mail Class
+ * Bolt - Mailer Class
  * =====================            =======================
  * ========================================================
  */
 
 namespace celionatti\Bolt\Mailer;
 
+use celionatti\Bolt\View\View;
 use PHPMailer\PHPMailer\Exception;
 use PHPMailer\PHPMailer\PHPMailer;
-use celionatti\Bolt\Localization\Translation;
-
+use celionatti\Bolt\BoltException\BoltException;
 
 class Mailer
 {
-    private $mail;
-    private $translator;
+    protected $mailer;
+    protected $view;
 
-    public function __construct($locale = 'en')
+    public function __construct()
     {
-        $this->mail = new PHPMailer(true);
-        $this->configure();
-        $this->translator = new Translation($locale);
+        $this->mailer = new PHPMailer(true);
+        $this->view = new View();
+        $this->configureForGmail();
     }
 
-    private function configure()
+    // Default Gmail Configuration
+    public function configureForGmail()
+    {
+        $this->configure('smtp.gmail.com', 'your-email@gmail.com', 'your-email-password', 587, 'tls');
+    }
+
+    public function configure($host, $username, $password, $port = 587, $encryption = 'tls')
     {
         // Server settings
-        $this->mail->isSMTP();
-        $this->mail->Host = 'smtp.example.com';
-        $this->mail->SMTPAuth = true;
-        $this->mail->Username = 'your-email@example.com';
-        $this->mail->Password = 'your-password';
-        $this->mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-        $this->mail->Port = 587;
+        $this->mailer->isSMTP();
+        $this->mailer->Host       = $host;
+        $this->mailer->SMTPAuth   = true;
+        $this->mailer->Username   = $username;
+        $this->mailer->Password   = $password;
+        $this->mailer->SMTPSecure = $encryption;
+        $this->mailer->Port       = $port;
+
+        // Email settings
+        $this->mailer->CharSet = 'UTF-8';
+        $this->mailer->isHTML(true);
     }
 
-    public function setFrom($address, $name = '')
-    {
-        $this->mail->setFrom($address, $name);
-    }
-
-    public function addRecipient($address, $name = '')
-    {
-        $this->mail->addAddress($address, $name);
-    }
-
-    public function addAttachment($filePath, $fileName = '')
-    {
-        $this->mail->addAttachment($filePath, $fileName);
-    }
-
-    public function setLocale($locale)
-    {
-        $this->translator->setLocale($locale);
-    }
-
-    public function addTranslation($locale, $messages)
-    {
-        $this->translator->addTranslation($locale, $messages);
-    }
-
-    public function sendMail($subjectKey, $bodyKey, $isHtml = true)
+    public function send(
+        $to, 
+        $subject, 
+        $template, 
+        $data = [], 
+        $from = null, 
+        $fromName = null, 
+        $attachments = [], 
+        $cc = [], 
+        $bcc = []
+    )
     {
         try {
-            $subject = $this->translator->translate($subjectKey);
-            $body = $this->translator->translate($bodyKey);
+            if ($from && $fromName) {
+                $this->mailer->setFrom($from, $fromName);
+            } else {
+                $this->mailer->setFrom('your-email@gmail.com', 'Your Name');
+            }
 
-            $this->mail->isHTML($isHtml);
-            $this->mail->Subject = $subject;
-            $this->mail->Body = $body;
+            // Add recipients
+            foreach ((array)$to as $recipient) {
+                $this->mailer->addAddress($recipient);
+            }
 
-            $this->mail->send();
-            return true;
+            // Add CC
+            foreach ((array)$cc as $ccRecipient) {
+                $this->mailer->addCC($ccRecipient);
+            }
+
+            // Add BCC
+            foreach ((array)$bcc as $bccRecipient) {
+                $this->mailer->addBCC($bccRecipient);
+            }
+
+            $this->mailer->Subject = $subject;
+            $this->mailer->Body    = $this->view->render($template, $data);
+
+            // Add attachments
+            foreach ($attachments as $attachment) {
+                $this->mailer->addAttachment($attachment);
+            }
+
+            $this->mailer->send();
         } catch (Exception $e) {
-            echo "Message could not be sent. Mailer Error: {$this->mail->ErrorInfo}";
-            return false;
+            // Handle exception
+            throw new BoltException("Message could not be sent. Mailer Error: {$this->mailer->ErrorInfo}");
         }
     }
 }
