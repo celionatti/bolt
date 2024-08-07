@@ -10,6 +10,9 @@ declare(strict_types=1);
 
 namespace celionatti\Bolt\Router;
 
+use ReflectionMethod;
+use ReflectionFunction;
+use ReflectionParameter;
 use celionatti\Bolt\Http\Request;
 use celionatti\Bolt\Http\Response;
 use celionatti\Bolt\BoltException\BoltException;
@@ -22,10 +25,10 @@ class Router
     protected Response $response;
     protected array $currentRoute = [];
 
-    public function __construct(Request $request, Response $response)
+    public function __construct()
     {
-        $this->request = $request;
-        $this->response = $response;
+        $this->request = new Request();
+        $this->response = new Response();
     }
 
     public function addRoute(string $method, string $path, $action): self
@@ -158,9 +161,9 @@ class Router
         $matches = array_filter($matches, 'is_string', ARRAY_FILTER_USE_KEY);
 
         if (is_callable($route['action'])) {
-            return call_user_func_array($route['action'], array_merge([$this->request, $this->response], array_values($matches)));
+            return $this->callAction($route['action'], $matches);
         } elseif (is_array($route['action']) && count($route['action']) === 2) {
-            return $this->runControllerAction($route['action'], array_values($matches));
+            return $this->runControllerAction($route['action'], $matches);
         }
 
         throw new BoltException('Invalid route action');
@@ -173,6 +176,42 @@ class Router
         if (!method_exists($controllerInstance, $method)) {
             throw new BoltException('Controller method not found');
         }
-        return call_user_func_array([$controllerInstance, $method], array_merge([$this->request, $this->response], $parameters));
+
+        return $this->callAction([$controllerInstance, $method], $parameters);
+    }
+
+    protected function callAction(callable $action, array $parameters)
+    {
+        $reflection = is_array($action)
+            ? new ReflectionMethod($action[0], $action[1])
+            : new ReflectionFunction($action);
+
+        $args = [];
+        foreach ($reflection->getParameters() as $parameter) {
+            $name = $parameter->getName();
+            if (array_key_exists($name, $parameters)) {
+                $args[] = $parameters[$name];
+            } elseif ($parameter->getClass()) {
+                $args[] = $this->resolveClass($parameter);
+            } elseif ($parameter->isDefaultValueAvailable()) {
+                $args[] = $parameter->getDefaultValue();
+            } else {
+                throw new BoltException("Cannot resolve parameter '$name'");
+            }
+        }
+
+        return call_user_func_array($action, $args);
+    }
+
+    protected function resolveClass(ReflectionParameter $parameter)
+    {
+        $class = $parameter->getClass()->getName();
+        if ($class === Request::class) {
+            return $this->request;
+        } elseif ($class === Response::class) {
+            return $this->response;
+        } else {
+            throw new BoltException("Cannot resolve class '$class'");
+        }
     }
 }

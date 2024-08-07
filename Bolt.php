@@ -11,8 +11,6 @@ declare(strict_types=1);
 
 namespace celionatti\Bolt;
 
-use celionatti\Bolt\Http\Request;
-use celionatti\Bolt\Http\Response;
 use celionatti\Bolt\Router\Router;
 use celionatti\Bolt\Database\Database;
 use celionatti\Bolt\Container\Container;
@@ -28,8 +26,6 @@ use celionatti\Bolt\Illuminate\Support\ExtensionCheck;
 class Bolt
 {
     public Config $config;
-    public Request $request;
-    public Response $response;
     public Router $router;
     public Session $session;
     public Container $container;
@@ -59,18 +55,13 @@ class Bolt
         $this->pathResolver = new PathResolver(get_root_dir());
         $this->assetManager = new AssetManager(URL_ROOT);
 
-        $this->session = new Session();
         $this->config = new Config();
         $this->config::load($this->pathResolver->base_path(CONFIG_ROOT));
 
         $this->container = new Container();
-        $this->request = new Request();
-        $this->response = new Response();
-        $this->router = new Router($this->request, $this->response);
+        $this->router = new Router();
 
         $this->container->singleton('Database', fn () => new Database());
-        $this->container->singleton('Request', fn () => new Request());
-        $this->container->singleton('Response', fn () => new Response());
         $this->database = $this->container->make('Database');
 
         $this->verifyApplicationKey();

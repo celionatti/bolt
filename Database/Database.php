@@ -19,7 +19,6 @@ use celionatti\Bolt\Database\Exception\DatabaseException;
 class Database
 {
     private PDO $connection;
-    private static array $instances = [];
 
     public function __construct(array $config = null)
     {
@@ -38,7 +37,7 @@ class Database
         ];
     }
 
-    private function connect(array $config)
+    private function connect(array $config): void
     {
         $np_vars = [
             'DB_DRIVERS' => $config["drivers"] ?? bolt_env("DB_DRIVERS"),
@@ -67,24 +66,16 @@ class Database
         } catch (PDOException $e) {
             throw new DatabaseException($e->getMessage(), $e->getCode(), "info");
         }
-
-        // Reconnection Logic
-        if ($this->connection === null) {
-            $this->connect($config);
-        }
     }
 
-    // Reconnection method
-    public function reconnect()
+    public function reconnect(): void
     {
         $config = $this->loadDefaultConfig();
         $this->connect($config);
     }
 
-    // Example Query Logging
-    private function logQuery(string $query, array $params = [])
+    private function logQuery(string $query, array $params = []): void
     {
-        // Implement your logging mechanism here
         file_put_contents('query.log', date('Y-m-d H:i:s') . " - " . $query . " - " . json_encode($params) . PHP_EOL, FILE_APPEND);
     }
 
@@ -93,26 +84,17 @@ class Database
         return $this->connection;
     }
 
-    public static function getInstance(string $connectionName = 'database'): self
-    {
-        if (!isset(self::$instances[$connectionName])) {
-            self::$instances[$connectionName] = new self();
-        }
-
-        return self::$instances[$connectionName];
-    }
-
-    public function beginTransaction()
+    public function beginTransaction(): void
     {
         $this->connection->beginTransaction();
     }
 
-    public function commit()
+    public function commit(): void
     {
         $this->connection->commit();
     }
 
-    public function rollBack()
+    public function rollBack(): void
     {
         $this->connection->rollBack();
     }
@@ -136,7 +118,7 @@ class Database
                 $stmt->bindValue(":{$paramName}", $paramValue);
             }
             $result = $stmt->execute();
-            
+
             if ($result) {
                 $rows = match ($data_type) {
                     'object' => $stmt->fetchAll(PDO::FETCH_OBJ),
@@ -146,12 +128,12 @@ class Database
             }
 
             $resultData = [
-            'query' => $query,
-            'params' => $params,
-            'result' => $rows ?? [],
-            'count' => $stmt->rowCount(),
-            'query_id' => $this->connection->lastInsertId(),
-        ];
+                'query' => $query,
+                'params' => $params,
+                'result' => $rows ?? [],
+                'count' => $stmt->rowCount(),
+                'query_id' => $this->connection->lastInsertId(),
+            ];
         } catch (PDOException $e) {
             throw new DatabaseException("Database Query Error: {$e->getMessage()}", $e->getCode(), "info");
         }

@@ -47,6 +47,7 @@ class Session
 
     public function destroy(): void
     {
+        session_unset();
         session_destroy();
     }
 
@@ -99,14 +100,9 @@ class Session
 
     // ... (existing methods)
 
-    public function regenerateId(): void
+    public function regenerate(): void
     {
         session_regenerate_id(true);
-    }
-
-    public function clearAll(): void
-    {
-        session_unset();
     }
 
     public function getAll(): array

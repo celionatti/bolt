@@ -1,0 +1,43 @@
+class Service
+{
+    public function performTask()
+    {
+        return 'Task performed!';
+    }
+}
+
+class Controller
+{
+    protected $service;
+
+    public function __construct(Service $service)
+    {
+        $this->service = $service;
+    }
+
+    public function handleRequest($request, Service $service)
+    {
+        return $service->performTask();
+    }
+}
+
+
+/******/
+
+require_once 'path/to/Container.php';
+
+use celionatti\Bolt\Container\Container;
+
+$container = new Container();
+
+// Binding classes
+$container->bind(Service::class);
+$container->bind(Controller::class);
+
+// Resolving a class
+$controller = $container->make(Controller::class);
+
+// Method injection
+$response = $container->call([$controller, 'handleRequest'], ['request' => 'Sample Request']);
+
+echo $response; // Output: Task performed!

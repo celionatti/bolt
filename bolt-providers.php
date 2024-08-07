@@ -1,5 +1,5 @@
 <?php
 
 return [
-    celionatti\Bolt\Providers\Services\CsrfServiceProvider::class,
+    celionatti\Bolt\Providers\Services\SessionServiceProvider::class,
 ];
