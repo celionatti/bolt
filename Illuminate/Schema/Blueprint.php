@@ -55,9 +55,17 @@ class Blueprint
         return $this;
     }
 
+    public function default($value): self
+    {
+        $lastColumn = array_pop($this->columns);
+        $defaultValue = is_string($value) ? "'$value'" : $value;
+        $this->columns[] = "$lastColumn DEFAULT $defaultValue";
+        return $this;
+    }
+
     public function foreignId(string $name): self
     {
-        $this->columns[] = "`$name` INT UNSIGNED";
+        $this->columns[] = "`$name` BIGINT UNSIGNED";
         $this->foreignKeys[] = ['column' => $name];
         return $this;
     }

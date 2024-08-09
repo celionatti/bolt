@@ -61,7 +61,7 @@ class Bolt
         $this->container = new Container();
         $this->router = new Router();
 
-        $this->container->singleton('Database', fn () => new Database());
+        $this->container->singleton('Database', fn () => Database::getInstance());
         $this->database = $this->container->make('Database');
 
         $this->verifyApplicationKey();

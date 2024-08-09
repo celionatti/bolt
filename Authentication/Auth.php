@@ -17,14 +17,14 @@ use celionatti\Bolt\Illuminate\Support\Session;
 use celionatti\Bolt\BoltException\BoltException;
 use celionatti\Bolt\Illuminate\Support\RateLimits;
 
-class Auth
+abstract class Auth
 {
     protected $session;
     protected $rateLimiter;
 
     const MAX_ATTEMPTS = 5;
     const DECAY_MINUTES = 1;
-    const REMEMBER_ME_COOKIE_NAME = 'remember_me';
+    const REMEMBER_ME_COOKIE_NAME = '_bv_remember_me';
     const REMEMBER_ME_DURATION = 86400 * 30; // 30 days
 
     public function __construct()
@@ -33,15 +33,6 @@ class Auth
         $this->rateLimiter = new RateLimits();
     }
 
-    /**
-     * Attempt function
-     *
-     * @param array $credentials
-     * @param boolean $remember
-     * @param boolean $checkBlocked
-     * @param boolean $checkVerified
-     * @return boolean
-     */
     public function attempt(array $credentials, bool $remember = false, bool $checkBlocked = true, bool $checkVerified = true): bool
     {
         $this->validateEmail($credentials['email']);
@@ -67,12 +58,6 @@ class Auth
         return true;
     }
 
-    /**
-     * Summary of login
-     * @param \celionatti\Bolt\Model\User $user
-     * @param bool $remember
-     * @return void
-     */
     public function login(User $user, bool $remember = false): void
     {
         $this->session->set('user_id', $user->id);
@@ -91,10 +76,6 @@ class Auth
         $this->session->destroy();
     }
 
-    /**
-     * Summary of user
-     * @return User|\celionatti\Bolt\Database\Model\DatabaseModel|null
-     */
     public function user(): ?User
     {
         $userId = $this->session->get('user_id');
@@ -115,6 +96,32 @@ class Auth
     {
         return !$this->check();
     }
+
+    // public function hasRole(string $role)
+    // {
+    //     // $user = $this->user();
+    //     // return $user ? $user->hasRole($role) : false;
+    // }
+
+    // public function hasPermission(string $permission)
+    // {
+    //     // $user = $this->user();
+    //     // return $user ? $user->hasPermission($permission) : false;
+    // }
+
+    // public function authorizeRole(string $role): void
+    // {
+    //     if (!$this->hasRole($role)) {
+    //         throw new BoltException("Unauthorized. Role '{$role}' is required.");
+    //     }
+    // }
+
+    // public function authorizePermission(string $permission): void
+    // {
+    //     if (!$this->hasPermission($permission)) {
+    //         throw new BoltException("Unauthorized. Permission '{$permission}' is required.");
+    //     }
+    // }
 
     protected function throttleKey(string $email): string
     {

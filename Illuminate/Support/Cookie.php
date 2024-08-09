@@ -56,7 +56,7 @@ use DateTime;
         $encryptedValue = openssl_encrypt($value, self::ENCRYPTION_METHOD, COOKIE_SECRET, 0, $iv);
 
         // Combine IV and encrypted value
-        $combinedValue = base64_encode($iv . $encryptedValue);
+        $combinedValue = base64_encode("{$iv}{$encryptedValue}");
 
         // Store the combined value in the cookie
         $secureFlag = $secure ? '1' : '0'; // '1' for true, '0' for false

@@ -17,12 +17,8 @@ use Throwable;
 
 class BoltRuntimeException extends BoltException
 {
-    public function __construct(
-        string $message,
-        int $code = 0,
-        string $errorLevel = 'error',
-        Throwable $previous = null
-    ) {
-        parent::__construct($message, $code, $errorLevel, $previous);
+    public function __construct(string $message, int $code = 0, string $level = "warning", array $errors = [], ?Throwable $previous = null)
+    {
+        parent::__construct($message, $code, $level, $errors, $previous);
     }
 }

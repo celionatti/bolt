@@ -19,7 +19,7 @@ class ExtensionCheck
     private $requiredExtensions = [];
 
     private $config = [
-        'errorHandler' => 'default', // You can set this to 'exception' for exception-based error handling.
+        'errorHandler' => 'exception', // You can set this to 'exception' for exception-based error handling.
     ];
 
     public function addRequiredExtension(string $extension): void

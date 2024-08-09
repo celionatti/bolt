@@ -195,14 +195,16 @@ function bolt_die($value, $message = '', $title = 'BOLT Error - Oops! Something 
     
             .left-section {
                 flex: 2;
-                background-color: #025192;
+                background-color: rgb(21,69,152);
+                background-image: linear-gradient(160deg, rgba(21,69,152,1) 0%, #80D0C7 50%, rgba(21,69,152,1) 100%);
                 padding: 60px;
                 text-align: center;
             }
     
             .right-section {
                 flex: 1;
-                background-color: #ff5733;
+                background: rgb(21,69,152);
+                background: linear-gradient(90deg, rgba(21,69,152,1) 0%, rgba(22,155,173,1) 26%, rgba(235,230,232,1) 37%, rgba(99,156,173,1) 45%, rgba(37,78,149,1) 100%);
                 padding: 20px;
                 text-align: center;
                 display: flex;
@@ -260,7 +262,58 @@ function bolt_die($value, $message = '', $title = 'BOLT Error - Oops! Something 
                 <p>" . print_r($value, true) . "</p>
             </div>
             <div class='right-section'>
-                <img src='/assets/img/404.svg' alt='Error Icon'>
+                <svg
+                    xmlns='http://www.w3.org/2000/svg'
+                    version='1.1'
+                    width='400'
+                    height='300'
+                    viewBox='0 0 400 300'
+                    xml:space='preserve'
+                >
+                    <defs>
+                        <linearGradient id='gradient1' x1='0%' y1='0%' x2='100%' y2='100%'>
+                            <stop offset='0%' style='stop-color:#00BFFF; stop-opacity:1' />
+                            <stop offset='100%' style='stop-color:#1E90FF; stop-opacity:1' />
+                        </linearGradient>
+                    </defs>
+
+                    <rect x='0' y='0' width='400' height='300' fill='url(#gradient1)' />
+
+                    <!-- Cartoonish Error Graphic -->
+                    <g transform='translate(150, 70)'>
+                        <ellipse cx='50' cy='50' rx='50' ry='50' fill='#fff' />
+                        <circle cx='35' cy='35' r='8' fill='#000' />
+                        <circle cx='65' cy='35' r='8' fill='#000' />
+                        <path d='M 30 70 Q 50 90, 70 70' stroke='#000' stroke-width='4' fill='none' />
+                    </g>
+
+                    <!-- Dynamic Error Message -->
+                    <text
+                        x='50%'
+                        y='200'
+                        font-family='Arial Black, Gadget, sans-serif'
+                        font-size='20'
+                        font-weight='bold'
+                        font-style='italic'
+                        fill='#ffffff'
+                        text-anchor='middle'
+                    >
+                        Bolt Framework (PHPStrike)
+                    </text>
+
+                    <text
+                        x='50%'
+                        y='250'
+                        font-family='serif, sans-serif'
+                        font-size='18'
+                        font-weight='bold'
+                        font-style='italic'
+                        fill='#ffffff'
+                        text-anchor='middle'
+                    >
+                        Something Went Wrong!, But We Move!
+                    </text>
+                </svg>
             </div>
         </div>
     </body>

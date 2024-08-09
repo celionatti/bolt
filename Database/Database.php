@@ -18,12 +18,22 @@ use celionatti\Bolt\Database\Exception\DatabaseException;
 
 class Database
 {
+    private static ?Database $instance = null;
     private PDO $connection;
+    private array $config;
 
-    public function __construct(array $config = null)
+    private function __construct(array $config = null)
     {
-        $config = $config ?? $this->loadDefaultConfig();
-        $this->connect($config);
+        $this->config = $config ?? $this->loadDefaultConfig();
+        $this->connect($this->config);
+    }
+
+    public static function getInstance(array $config = null): Database
+    {
+        if (self::$instance === null) {
+            self::$instance = new self($config);
+        }
+        return self::$instance;
     }
 
     private function loadDefaultConfig(): array
@@ -48,30 +58,31 @@ class Database
         ];
 
         try {
+            $dsn = match ($np_vars['DB_DRIVERS']) {
+                'mysql' => "mysql:host={$np_vars['DB_HOST']};dbname={$np_vars['DB_NAME']};charset=utf8mb4",
+                'sqlite' => "sqlite:{$np_vars['DB_NAME']}",
+                default => throw new DatabaseException("Unsupported database driver: {$np_vars['DB_DRIVERS']}", 500, "error"),
+            };
+
+            $options = [
+                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_OBJ,
+            ];
+
             if ($np_vars['DB_DRIVERS'] === 'mysql') {
-                $dsn = "mysql:host={$np_vars['DB_HOST']};dbname={$np_vars['DB_NAME']};charset=utf8mb4";
-                $this->connection = new PDO($dsn, $np_vars['DB_USER'], $np_vars['DB_PASSWORD'], [
-                    PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-                    PDO::ATTR_EMULATE_PREPARES => false,
-                    PDO::ATTR_PERSISTENT => true,
-                    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_OBJ
-                ]);
-            } elseif ($np_vars['DB_DRIVERS'] === 'sqlite') {
-                $dsn = "sqlite:{$np_vars['DB_NAME']}";
-                $this->connection = new PDO($dsn, null, null, [
-                    PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-                    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_OBJ
-                ]);
+                $options[PDO::ATTR_EMULATE_PREPARES] = false;
+                $options[PDO::ATTR_PERSISTENT] = true;
             }
+
+            $this->connection = new PDO($dsn, $np_vars['DB_USER'], $np_vars['DB_PASSWORD'], $options);
         } catch (PDOException $e) {
-            throw new DatabaseException($e->getMessage(), $e->getCode(), "info");
+            throw new DatabaseException($e->getMessage(), $e->getCode(), "error");
         }
     }
 
     public function reconnect(): void
     {
-        $config = $this->loadDefaultConfig();
-        $this->connect($config);
+        $this->connect($this->config);
     }
 
     private function logQuery(string $query, array $params = []): void
@@ -99,7 +110,7 @@ class Database
         $this->connection->rollBack();
     }
 
-    public function prepare($query)
+    public function prepare(string $query)
     {
         return $this->connection->prepare($query);
     }
@@ -109,7 +120,7 @@ class Database
         return new QueryBuilder($this->connection);
     }
 
-    public function query(string $query, array $params = [], string $data_type = 'object')
+    public function query(string $query, array $params = [], string $data_type = 'object'): array
     {
         try {
             $this->logQuery($query, $params);
@@ -117,15 +128,13 @@ class Database
             foreach ($params as $paramName => $paramValue) {
                 $stmt->bindValue(":{$paramName}", $paramValue);
             }
-            $result = $stmt->execute();
+            $stmt->execute();
 
-            if ($result) {
-                $rows = match ($data_type) {
-                    'object' => $stmt->fetchAll(PDO::FETCH_OBJ),
-                    'assoc' => $stmt->fetchAll(PDO::FETCH_ASSOC),
-                    default => $stmt->fetchAll(PDO::FETCH_CLASS),
-                };
-            }
+            $rows = match ($data_type) {
+                'object' => $stmt->fetchAll(PDO::FETCH_OBJ),
+                'assoc' => $stmt->fetchAll(PDO::FETCH_ASSOC),
+                default => $stmt->fetchAll(PDO::FETCH_CLASS),
+            };
 
             $resultData = [
                 'query' => $query,
@@ -134,10 +143,21 @@ class Database
                 'count' => $stmt->rowCount(),
                 'query_id' => $this->connection->lastInsertId(),
             ];
-        } catch (PDOException $e) {
-            throw new DatabaseException("Database Query Error: {$e->getMessage()}", $e->getCode(), "info");
-        }
 
-        return $resultData;
+            return $resultData;
+        } catch (PDOException $e) {
+            throw new DatabaseException("Database Query Error: {$e->getMessage()}", $e->getCode(), "error");
+        }
+    }
+
+    public function fetchAll(string $query, array $params = [], string $data_type = 'object'): array
+    {
+        return $this->query($query, $params, $data_type)['result'];
+    }
+
+    public function fetchOne(string $query, array $params = [], string $data_type = 'object')
+    {
+        $result = $this->fetchAll($query, $params, $data_type);
+        return $result[0] ?? null;
     }
 }

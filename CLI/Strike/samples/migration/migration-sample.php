@@ -31,6 +31,14 @@ return new class extends Migration
             $table->string('password');
             $table->timestamps();
         });
+
+        Schema::create('rate_limits', function (Blueprint $table) {
+            $table->id();
+            $table->string('key')->unique('key');
+            $table->integer('attempts')->default(0);
+            $table->integer('expires_at');
+            $table->timestamps();
+        });
     }
 
     /**
