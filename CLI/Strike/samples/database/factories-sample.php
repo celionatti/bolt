@@ -2,7 +2,7 @@
 
 namespace PhpStrike\database\Factories;
 
-use celionatti\Bolt\Database\Factories\Factory;
+use celionatti\Bolt\Database\Factory\Factory;
 
 class {CLASSNAME} extends Factory
 {
@@ -24,7 +24,7 @@ class {CLASSNAME} extends Factory
             'name' => $this->faker->name,
             'email' => $this->faker->unique()->safeEmail,
             'password' => password_hash('password', PASSWORD_BCRYPT),
-            'remember_token' => RadndomString(64),
+            'remember_token' => stringToken(),
         ];
     }
 

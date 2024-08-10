@@ -38,18 +38,19 @@ abstract class Factory
 
     public function create(array $attributes = [])
     {
-        $attributes = array_merge($this->definition(), $attributes);
-        $model = new $this->model();
-        return $model->create($attributes);
+        $models = [];
+        for ($i = 0; $i < $this->count; $i++) {
+            $modelAttributes = array_merge($this->definition(), $attributes);
+            $model = new $this->model();
+            $models[] = $model->create($modelAttributes);
+        }
+
+        return $this->count === 1 ? $models[0] : $models;
     }
 
     public function createMany(array $attributes = [])
     {
-        $models = [];
-        for ($i = 0; $i < $this->count; $i++) {
-            $models[] = $this->create($attributes);
-        }
-        return $models;
+        return $this->count($this->count)->create($attributes);
     }
 
     abstract protected function definition(): array;
@@ -59,13 +60,4 @@ abstract class Factory
         $this->count = $count;
         return $this;
     }
-
-    // public function create(array $attributes = [])
-    // {
-    //     $models = $this->make($attributes);
-    //     foreach ((array) $models as $model) {
-    //         $model->save();
-    //     }
-    //     return $models;
-    // }
 }

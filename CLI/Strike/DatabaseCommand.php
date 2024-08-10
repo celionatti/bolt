@@ -85,6 +85,7 @@ class DatabaseCommand extends CliActions implements CommandInterface
         foreach ($seedFiles as $seedFile) {
             require_once $seedFile;
             $className = basename($seedFile, '.php');
+            $className = "PhpStrike\\database\\seeders\\{$className}";
 
             if (!class_exists($className)) {
                 $this->message("Error: Seeder class '$className' not found in '$seedFile'.", true, true, "error");

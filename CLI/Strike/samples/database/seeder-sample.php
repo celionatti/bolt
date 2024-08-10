@@ -3,7 +3,7 @@
 namespace PhpStrike\database\seeders;
 
 use celionatti\Bolt\models\User;
-use celionatti\Bolt\Database\Seeder;
+use celionatti\Bolt\Database\Seeder\Seeder;
 
 class {CLASSNAME} extends Seeder
 {

@@ -323,12 +323,14 @@ abstract class DatabaseModel
     // }
     public static function factory()
     {
-        $factoryClass = 'PhpStrike\\database\\factories\\' . static::class . 'Factory';
+        $modelClass = (new \ReflectionClass(static::class))->getShortName();
+        $factoryClass = "PhpStrike\\database\\factories\\{$modelClass}Factory";
+
         if (class_exists($factoryClass)) {
             return new $factoryClass;
         }
 
-        throw new BoltException('Factory class not found for ' . static::class);
+        throw new \Exception('Factory class not found for ' . static::class);
     }
 
     public static function whereStatic($column, $operator = '=', $value): array
@@ -351,7 +353,7 @@ abstract class DatabaseModel
                 $relatedResults = $this->{$relation}()->getEagerLoadResults(array_column($results, $this->getPrimaryKey()));
 
                 foreach ($results as &$result) {
-                    $result->{$relation} = array_filter($relatedResults, function($related) use ($result) {
+                    $result->{$relation} = array_filter($relatedResults, function ($related) use ($result) {
                         return $related->{$this->{$relation}()->getForeignKey()} == $result->{$this->getPrimaryKey()};
                     });
                 }

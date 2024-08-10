@@ -21,7 +21,7 @@ class Logger
     private $logFileBackupCount = 5;
     private $logLevels = ['DEBUG', 'INFO', 'WARNING', 'ERROR'];
     private $logDestination = 'file'; // 'file' or 'stdout'
-    private $monolog;
+    private $monolog;   
 
     public function __construct($logFilePath)
     {
