@@ -12,14 +12,9 @@ namespace celionatti\Bolt\Helpers\CSRF;
 
 class Csrf
 {
-    private $sessionKey = '_csrf_token';
-    private $sessionExpiryKey = '_csrf_token_expiry';
+    private $sessionKey = '__bv_csrf_token';
+    private $sessionExpiryKey = '__bv_csrf_token_expiry';
     private $tokenLifetime = 3600; // Token lifetime in seconds (e.g., 1 hour)
-
-    public function __construct()
-    {
-        $this->generateToken();
-    }
 
     public function generateToken()
     {

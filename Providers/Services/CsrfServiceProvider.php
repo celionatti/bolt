@@ -10,8 +10,10 @@ declare(strict_types=1);
 
 namespace celionatti\Bolt\Providers\Services;
 
+use celionatti\Bolt\Http\Request;
 use celionatti\Bolt\Helpers\CSRF\Csrf;
 use celionatti\Bolt\Providers\ServiceProvider;
+use celionatti\Bolt\BoltException\BoltException;
 
 class CsrfServiceProvider extends ServiceProvider
 {
@@ -27,31 +29,23 @@ class CsrfServiceProvider extends ServiceProvider
     public function boot()
     {
         $this->csrf = $this->app->make('csrf');
-        $this->handle($this->app->Request);
+        $this->handle();
     }
 
-    private function handle($request)
+    private function handle()
     {
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
-        }
+        $request = Request::instance();
+        
+        if (in_array($request->getMethod(), ['POST', 'DELETE', 'PUT'])) {
+            $formToken = $request->getBodyParam('__bv_csrf_token');
 
-        $method = $request->getMethod();
+            if (!$formToken) {
+                throw new BoltException('CSRF token missing from form.');
+            }
 
-        if (in_array($method, ['POST', 'PUT', 'DELETE', 'GET'])) {
-            $csrfToken = $request->get('_csrf_token') ?? $request->get('X-CSRF-TOKEN');
-            
-            if (!$csrfToken || !$this->csrf->validateToken($csrfToken)) {
-                throw new \Exception('CSRF token validation failed.');
+            if (!$this->csrf->validateToken($formToken)) {
+                throw new BoltException('CSRF token mismatch or expired.');
             }
         }
-
-        // Generate a new token if it's a GET request or no token is set
-        if ($method === 'GET' || !$this->csrf->getToken()) {
-            $this->csrf->generateToken();
-        }
-
-        // Set the token in the request for form rendering purposes
-        $request->set('_csrf_token', $this->csrf->getToken());
     }
 }
