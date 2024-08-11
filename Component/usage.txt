@@ -1,0 +1,48 @@
+AlertComponent Class
+
+namespace YourNamespace\Components;
+
+class AlertComponent extends Component
+{
+    protected function mount()
+    {
+        // This method will run during instantiation
+    }
+
+    public function getMessage()
+    {
+        return $this->data['message'] ?? 'Default message';
+    }
+}
+
+Alert Component View (alert-component.php)
+
+<!-- /path/to/your/views/components/alert-component.php -->
+<div class="alert">
+    <?= htmlspecialchars($this->getMessage()) ?>
+    <div class="slot-content">
+        <?= $this->slot('content', '<p>No additional content provided.</p>') ?>
+    </div>
+</div>
+
+
+Using the Component in a Controller
+
+namespace YourNamespace\Controllers;
+
+use YourNamespace\Components\AlertComponent;
+
+class SomeController
+{
+    public function show()
+    {
+        $alert = new AlertComponent(['message' => 'This is an alert message.'], ['content' => '<strong>Important!</strong>']);
+        echo $alert->render();
+    }
+}
+
+
+Using the Helper Function in Views
+
+<!-- /path/to/your/views/some-view.php -->
+<?= component(\YourNamespace\Components\AlertComponent::class, ['message' => 'This is an alert message.'], ['content' => '<strong>Important!</strong>']) ?>
