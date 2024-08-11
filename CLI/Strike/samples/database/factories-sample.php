@@ -3,6 +3,7 @@
 namespace PhpStrike\database\Factories;
 
 use celionatti\Bolt\Database\Factory\Factory;
+use PhpStrike\app\models\User;
 
 class {CLASSNAME} extends Factory
 {
@@ -21,6 +22,7 @@ class {CLASSNAME} extends Factory
     protected function definition(): array
     {
         return [
+            'user_id' => bolt_uuid(),
             'name' => $this->faker->name,
             'email' => $this->faker->unique()->safeEmail,
             'password' => password_hash('password', PASSWORD_BCRYPT),

@@ -367,30 +367,35 @@ abstract class DatabaseModel
 
     public function hasOne($related, $foreignKey = null, $localKey = null)
     {
-        $foreignKey = $foreignKey ?? $this->primaryKey;
-        $localKey = $localKey ?? $this->getPrimaryValue();
+        $foreignKey = $foreignKey ?? strtolower(class_basename($this)) . '_id';
+        $localKey = $localKey ?? $this->primaryKey;
         return new HasOne($this, $related, $foreignKey, $localKey);
     }
 
     public function hasMany($related, $foreignKey = null, $localKey = null)
     {
-        $foreignKey = $foreignKey ?? $this->primaryKey;
-        $localKey = $localKey ?? $this->getPrimaryValue();
+        // If the foreign key is not provided, assume it's the related model's table name with '_id' suffix.
+        $foreignKey = $foreignKey ?? strtolower(class_basename($this)) . '_id';
+
+        // If the local key is not provided, use the primary key of the current model.
+        $localKey = $localKey ?? $this->primaryKey;
+
+        // Return a new HasMany relationship instance.
         return new HasMany($this, $related, $foreignKey, $localKey);
     }
 
     public function belongsTo($related, $foreignKey = null, $ownerKey = null)
     {
-        $foreignKey = $foreignKey ?? $this->primaryKey;
-        $ownerKey = $ownerKey ?? $this->getPrimaryValue();
+        $foreignKey = $foreignKey ?? strtolower(class_basename($this)) . '_id';
+        $ownerKey = $ownerKey ?? $this->primaryKey;
         return new BelongsTo($this, $related, $foreignKey, $ownerKey);
     }
 
     public function belongsToMany($related, $pivotTable = null, $foreignKey = null, $relatedPivotKey = null, $parentKey = null, $relatedKey = null)
     {
         $pivotTable = $pivotTable ?? $this->getPivotTableName($related);
-        $foreignPivotKey = $foreignKey ?? $this->primaryKey;
-        $relatedPivotKey = $relatedKey ?? $this->getPrimaryValue();
+        $foreignPivotKey = $foreignKey ?? strtolower(class_basename($this)) . '_id';
+        $relatedPivotKey = $relatedKey ?? $this->primaryKey;
         return new BelongsToMany($this, $related, $pivotTable, $foreignPivotKey, $relatedPivotKey, $parentKey, $relatedKey);
     }
 
