@@ -12,211 +12,198 @@ namespace celionatti\Bolt\Illuminate\Utils;
 
 class StringUtils
 {
-    /**
-     * Generate a random token
-     *
-     * @param int $length
-     * @return string
-     */
-    public static function generateRandomToken(int $length = 32): string
+    protected $string;
+
+    public function __construct($string = '')
     {
-        return bin2hex(random_bytes($length));
+        $this->string = $string;
     }
 
-    /**
-     * Generate a random string of a specified length
-     *
-     * @param int $length
-     * @return string
-     */
-    public static function generateRandomStr(int $length = 10): string
+    public static function create($string = '')
+    {
+        return new static($string);
+    }
+
+    public function excerpt($length = 100, $ending = '...')
+    {
+        if (mb_strlen($this->string) <= $length) {
+            return $this->string;
+        }
+        
+        return mb_substr($this->string, 0, $length) . $ending;
+    }
+
+    public function toUpper()
+    {
+        return mb_strtoupper($this->string);
+    }
+
+    public function toLower()
+    {
+        return mb_strtolower($this->string);
+    }
+
+    public function toTitle()
+    {
+        return mb_convert_case($this->string, MB_CASE_TITLE);
+    }
+
+    public function toCamelCase()
+    {
+        $str = str_replace(' ', '', ucwords(str_replace(['-', '_'], ' ', $this->string)));
+        return lcfirst($str);
+    }
+
+    public function toSnakeCase()
+    {
+        $str = preg_replace('/[^A-Za-z0-9]+/', '_', $this->string);
+        return mb_strtolower(trim($str, '_'));
+    }
+
+    public function toKebabCase()
+    {
+        $str = preg_replace('/[^A-Za-z0-9]+/', '-', $this->string);
+        return mb_strtolower(trim($str, '-'));
+    }
+
+    public function toSlug($separator = '-')
+    {
+        $slug = preg_replace('/[^A-Za-z0-9]+/', $separator, $this->string);
+        return mb_strtolower(trim($slug, $separator));
+    }
+
+    public function truncate($length, $ending = '...')
+    {
+        if (mb_strlen($this->string) <= $length) {
+            return $this->string;
+        }
+
+        return mb_substr($this->string, 0, $length) . $ending;
+    }
+
+    public function contains($substring)
+    {
+        return mb_strpos($this->string, $substring) !== false;
+    }
+
+    public function startsWith($prefix)
+    {
+        return mb_substr($this->string, 0, mb_strlen($prefix)) === $prefix;
+    }
+
+    public function endsWith($suffix)
+    {
+        return mb_substr($this->string, -mb_strlen($suffix)) === $suffix;
+    }
+
+    public function replace($search, $replace)
+    {
+        return str_replace($search, $replace, $this->string);
+    }
+
+    public function replaceFirst($search, $replace)
+    {
+        $position = mb_strpos($this->string, $search);
+
+        if ($position !== false) {
+            return substr_replace($this->string, $replace, $position, mb_strlen($search));
+        }
+
+        return $this->string;
+    }
+
+    public function replaceLast($search, $replace)
+    {
+        $position = mb_strrpos($this->string, $search);
+
+        if ($position !== false) {
+            return substr_replace($this->string, $replace, $position, mb_strlen($search));
+        }
+
+        return $this->string;
+    }
+
+    public function split($delimiter)
+    {
+        return explode($delimiter, $this->string);
+    }
+
+    public function length()
+    {
+        return mb_strlen($this->string);
+    }
+
+    public function trim($characterMask = " \t\n\r\0\x0B")
+    {
+        return trim($this->string, $characterMask);
+    }
+
+    public function trimStart($characterMask = " \t\n\r\0\x0B")
+    {
+        return ltrim($this->string, $characterMask);
+    }
+
+    public function trimEnd($characterMask = " \t\n\r\0\x0B")
+    {
+        return rtrim($this->string, $characterMask);
+    }
+
+    public function stripTags($allowableTags = '')
+    {
+        return strip_tags($this->string, $allowableTags);
+    }
+
+    public function pad($length, $padString = ' ', $padType = STR_PAD_RIGHT)
+    {
+        return str_pad($this->string, $length, $padString, $padType);
+    }
+
+    public function toAscii()
+    {
+        $asciiString = iconv('UTF-8', 'ASCII//TRANSLIT', $this->string);
+        return preg_replace('/[^\x20-\x7E]/', '', $asciiString);
+    }
+
+    public function repeat($multiplier)
+    {
+        return str_repeat($this->string, $multiplier);
+    }
+
+    public function reverse()
+    {
+        return strrev($this->string);
+    }
+
+    public function random($length = 16)
     {
         $characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        $charactersLength = strlen($characters);
         $randomString = '';
 
         for ($i = 0; $i < $length; $i++) {
-            $randomString .= $characters[random_int(0, strlen($characters) - 1)];
+            $randomString .= $characters[random_int(0, $charactersLength - 1)];
         }
 
         return $randomString;
     }
 
-    /**
-     * Convert a string to a URL-friendly format
-     *
-     * @param string $input
-     * @param array $options
-     * @return string
-     */
-    public static function stringToUrl(string $input, array $options = []): string
+    public function ucfirst()
     {
-        // Set default options
-        $defaults = [
-            'replaceSpaces' => true,
-            'removeSpecialChars' => true,
-            'convertToLowercase' => true,
-            'preserveDiacritics' => false,
-            'separator' => '-',
-        ];
-
-        // Merge provided options with defaults
-        $options = array_merge($defaults, $options);
-
-        // Remove diacritics (accents) from characters
-        if ($options['preserveDiacritics']) {
-            $input = self::removeDiacritics($input);
-        }
-
-        // Replace spaces with a separator
-        if ($options['replaceSpaces']) {
-            $input = str_replace(' ', $options['separator'], $input);
-        }
-
-        // Remove special characters except for those commonly found in URL queries
-        if ($options['removeSpecialChars']) {
-            $input = preg_replace('/[^a-zA-Z0-9\-_&?=]/', '', $input);
-        }
-
-        // Convert the string to lowercase
-        if ($options['convertToLowercase']) {
-            $input = strtolower($input);
-        }
-
-        // Replace consecutive separators
-        $input = preg_replace('/' . preg_quote($options['separator'], '/') . '+/', $options['separator'], $input);
-
-        return $input;
+        return ucfirst($this->toLower());
     }
 
-    /**
-     * Reverse the process - Convert a URL-friendly string to the original format
-     *
-     * @param string $urlString
-     * @param string $separator
-     * @return string
-     */
-    public static function reverseStringToUrl(string $urlString, string $separator = '-'): string
+    public function lcfirst()
     {
-        $urlString = str_replace($separator, ' ', $urlString);
-        return ucwords($urlString);
+        return lcfirst($this->string);
     }
 
-    /**
-     * Remove diacritics (accents) from characters
-     *
-     * @param string $str
-     * @return string
-     */
-    private static function removeDiacritics(string $str): string
+    public function capitalizeWords()
     {
-        $str = htmlentities($str, ENT_COMPAT, 'UTF-8');
-        $str = preg_replace('/&([a-zA-Z])(uml|acute|grave|circ|tilde);/', '$1', $str);
-        return html_entity_decode($str);
+        return ucwords($this->string);
     }
 
-    /**
-     * Generate a reference number like those used in banking or ticketing systems
-     *
-     * @param int $length
-     * @param string $prefix
-     * @return string
-     */
-    public static function generateReferenceNumber(int $length = 10, string $prefix = 'REF'): string
+    public function __toString()
     {
-        $prefixLength = strlen($prefix);
-        $numericLength = max(0, $length - $prefixLength);
-
-        $numericPart = '';
-        for ($i = 0; $i < $numericLength; $i++) {
-            $numericPart .= random_int(0, 9);
-        }
-
-        $checksum = self::calculateChecksum($numericPart);
-
-        return $prefix . $numericPart . $checksum;
-    }
-
-    /**
-     * Calculate a simple checksum based on the numeric portion
-     *
-     * @param string $numericPart
-     * @return int
-     */
-    private static function calculateChecksum(string $numericPart): int
-    {
-        $checksum = 0;
-
-        for ($i = 0, $len = strlen($numericPart); $i < $len; $i++) {
-            $checksum += (int)$numericPart[$i];
-        }
-
-        return $checksum % 10;
-    }
-
-    /**
-     * Convert a string to uppercase
-     *
-     * @param string $str
-     * @return string
-     */
-    public static function toUpperCase(string $str): string
-    {
-        return strtoupper($str);
-    }
-
-    /**
-     * Convert a string to lowercase
-     *
-     * @param string $str
-     * @return string
-     */
-    public static function toLowerCase(string $str): string
-    {
-        return strtolower($str);
-    }
-
-    /**
-     * Replace a substring within a string
-     *
-     * @param string $haystack
-     * @param string $needle
-     * @param string $replacement
-     * @return string
-     */
-    public static function replace(string $haystack, string $needle, string $replacement): string
-    {
-        return str_replace($needle, $replacement, $haystack);
-    }
-
-    /**
-     * Generate an excerpt from a string
-     *
-     * @param string $str
-     * @param int $length
-     * @param string $suffix
-     * @return string
-     */
-    public static function excerpt(string $str, int $length = 100, string $suffix = '...'): string
-    {
-        if (strlen($str) <= $length) {
-            return $str;
-        }
-
-        $lastSpace = strrpos(substr($str, 0, $length - strlen($suffix)), ' ');
-        $excerpt = substr($str, 0, $lastSpace);
-
-        return rtrim($excerpt, " ,.!") . $suffix;
-    }
-
-    /**
-     * Check if a string contains another string
-     *
-     * @param string $haystack
-     * @param string $needle
-     * @return bool
-     */
-    public static function contains(string $haystack, string $needle): bool
-    {
-        return strpos($haystack, $needle) !== false;
+        return $this->string;
     }
 }

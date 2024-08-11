@@ -10,132 +10,301 @@ declare(strict_types=1);
 
 namespace celionatti\Bolt\Illuminate\Support;
 
+use Exception;
+use InvalidArgumentException;
+
 class Upload
 {
-    const DEFAULT_MAX_FILE_SIZE = 10485760; // 10 MB
+    protected $files = [];
+    protected $maxSize = 5 * 1024 * 1024; // Default max size: 5MB
+    protected $allowedTypes = ['image/jpeg', 'image/png', 'application/pdf'];
+    protected $uploadDir = 'uploads/';
+    protected $thumbnailDir = 'thumbnails/';
+    protected $chunkSize = 1024 * 1024; // Default chunk size: 1MB
+    protected $overwrite = false;
+    protected $customValidations = [];
 
-    protected $uploadDir;
-    protected $allowedFileTypes = [];
-    protected $maxFileSize = self::DEFAULT_MAX_FILE_SIZE;
-    protected $overwriteExisting = false;
-    protected $required = true;
-
-    public function __construct(string $uploadDir)
+    public function __construct(array $files)
     {
-        $this->uploadDir = $uploadDir;
-        $this->ensureUploadDirectoryExists($uploadDir);
+        $this->files = is_array($files['name']) ? $this->restructureFiles($files) : [$files];
+        $this->ensureDirectoriesExist();
     }
 
-    public function setAllowedFileTypes(array $allowedFileTypes): void
+    public function setMaxSize(int $bytes)
     {
-        $this->allowedFileTypes = $allowedFileTypes;
+        $this->maxSize = $bytes;
+        return $this;
     }
 
-    public function setMaxFileSize(int $maxFileSize): void
+    public function setAllowedTypes(array $types)
     {
-        $this->maxFileSize = $maxFileSize;
+        $this->allowedTypes = $types;
+        return $this;
     }
 
-    public function setOverwriteExisting(bool $overwriteExisting): void
+    public function setUploadDir(string $dir)
     {
-        $this->overwriteExisting = $overwriteExisting;
+        $this->uploadDir = rtrim($dir, '/') . '/';
+        return $this;
     }
 
-    public function setRequired(bool $required): void
+    public function setThumbnailDir(string $dir)
     {
-        $this->required = $required;
+        $this->thumbnailDir = rtrim($dir, '/') . '/';
+        return $this;
     }
 
-    public function uploadFile(string $fileInputName, bool $rename = true): array
+    public function setChunkSize(int $bytes)
     {
-        if ($this->required && (!$this->hasFile($fileInputName))) {
-            return ['error' => 'No file found for upload.'];
+        $this->chunkSize = $bytes;
+        return $this;
+    }
+
+    public function setOverwrite(bool $overwrite)
+    {
+        $this->overwrite = $overwrite;
+        return $this;
+    }
+
+    public function addCustomValidation(callable $callback)
+    {
+        $this->customValidations[] = $callback;
+        return $this;
+    }
+
+    protected function ensureDirectoriesExist()
+    {
+        if (!is_dir($this->uploadDir)) {
+            mkdir($this->uploadDir, 0755, true);
         }
+        if (!is_dir($this->thumbnailDir)) {
+            mkdir($this->thumbnailDir, 0755, true);
+        }
+    }
 
-        $file = $_FILES[$fileInputName];
-
+    public function validate($file)
+    {
         if ($file['error'] !== UPLOAD_ERR_OK) {
-            return ['error' => 'Error during file upload.'];
+            throw new Exception($this->getErrorMessage($file['error']));
         }
 
-        return $this->handleValidUpload($file, $rename);
+        if ($file['size'] > $this->maxSize) {
+            throw new Exception('File exceeds the maximum allowed size.');
+        }
+
+        if (!in_array($file['type'], $this->allowedTypes)) {
+            throw new Exception('File type is not allowed.');
+        }
+
+        foreach ($this->customValidations as $callback) {
+            if (!call_user_func($callback, $file)) {
+                throw new InvalidArgumentException('Custom validation failed.');
+            }
+        }
+
+        return true;
     }
 
-    public function deleteFile($filePath): bool
+    public function store($rename = true)
     {
-        if (file_exists($filePath)) {
-            unlink($filePath);
-            return true;
+        $storedFiles = [];
+
+        foreach ($this->files as $file) {
+            $this->validate($file);
+
+            $filename = $rename ? $this->generateUniqueFilename($file) : $file['name'];
+            $destination = $this->uploadDir . $filename;
+
+            if (file_exists($destination) && !$this->overwrite) {
+                throw new Exception('File already exists and overwrite is disabled.');
+            }
+
+            if (!move_uploaded_file($file['tmp_name'], $destination)) {
+                throw new Exception('Failed to move uploaded file.');
+            }
+
+            $storedFiles[] = $filename;
+        }
+
+        return $storedFiles;
+    }
+
+    public function storeChunked($chunk, $totalChunks, $filename)
+    {
+        $tempFile = $this->uploadDir . $filename . '.part';
+
+        file_put_contents($tempFile, $chunk, FILE_APPEND);
+
+        if (filesize($tempFile) >= $totalChunks * $this->chunkSize) {
+            rename($tempFile, $this->uploadDir . $filename);
+            return $filename;
         }
 
         return false;
     }
 
-    protected function ensureUploadDirectoryExists(string $uploadDir): void
+    public function generateThumbnail(string $filename, int $width, int $height)
     {
-        if (!file_exists($uploadDir) && !mkdir($uploadDir, 0777, true)) {
-            throw new \RuntimeException('Failed to create the upload directory.');
+        $filepath = $this->retrieve($filename);
+        $thumbnailPath = $this->thumbnailDir . $filename;
+
+        $image = $this->resizeImage($filepath, $width, $height);
+        imagejpeg($image, $thumbnailPath);
+
+        return $thumbnailPath;
+    }
+
+    public function cropImage(string $filename, int $x, int $y, int $width, int $height)
+    {
+        $filepath = $this->retrieve($filename);
+        $imageType = exif_imagetype($filepath);
+
+        $src = $this->createImageResource($filepath, $imageType);
+
+        $dst = imagecreatetruecolor($width, $height);
+        imagecopy($dst, $src, 0, 0, $x, $y, $width, $height);
+
+        $this->saveImageResource($dst, $filepath, $imageType);
+
+        imagedestroy($src);
+        imagedestroy($dst);
+
+        return $filepath;
+    }
+
+    public function addWatermark(string $filename, string $watermarkImage)
+    {
+        $filepath = $this->retrieve($filename);
+        $imageType = exif_imagetype($filepath);
+        $watermarkType = exif_imagetype($watermarkImage);
+
+        $image = $this->createImageResource($filepath, $imageType);
+        $watermark = $this->createImageResource($watermarkImage, $watermarkType);
+
+        $imageWidth = imagesx($image);
+        $imageHeight = imagesy($image);
+        $watermarkWidth = imagesx($watermark);
+        $watermarkHeight = imagesy($watermark);
+
+        $dstX = $imageWidth - $watermarkWidth - 10;
+        $dstY = $imageHeight - $watermarkHeight - 10;
+
+        imagecopy($image, $watermark, $dstX, $dstY, 0, 0, $watermarkWidth, $watermarkHeight);
+
+        $this->saveImageResource($image, $filepath, $imageType);
+
+        imagedestroy($image);
+        imagedestroy($watermark);
+
+        return $filepath;
+    }
+
+    public function retrieve(string $filename)
+    {
+        $filepath = $this->uploadDir . $filename;
+
+        if (!file_exists($filepath)) {
+            throw new Exception('File not found.');
+        }
+
+        return $filepath;
+    }
+
+    public function delete(string $filename)
+    {
+        $filepath = $this->uploadDir . $filename;
+
+        if (file_exists($filepath)) {
+            return unlink($filepath);
+        }
+
+        throw new Exception('File not found.');
+    }
+
+    protected function resizeImage(string $filepath, int $width, int $height, bool $keepAspectRatio = true)
+    {
+        $imageType = exif_imagetype($filepath);
+        $src = $this->createImageResource($filepath, $imageType);
+
+        $originalWidth = imagesx($src);
+        $originalHeight = imagesy($src);
+
+        if ($keepAspectRatio) {
+            $aspectRatio = $originalWidth / $originalHeight;
+            if ($width / $height > $aspectRatio) {
+                $width = (int)($height * $aspectRatio);
+            } else {
+                $height = (int)($width / $aspectRatio);
+            }
+        }
+
+        $dst = imagecreatetruecolor($width, $height);
+        imagecopyresampled($dst, $src, 0, 0, 0, 0, $width, $height, $originalWidth, $originalHeight);
+
+        imagedestroy($src);
+
+        return $dst;
+    }
+
+    protected function createImageResource($filepath, $imageType)
+    {
+        switch ($imageType) {
+            case IMAGETYPE_JPEG:
+                return imagecreatefromjpeg($filepath);
+            case IMAGETYPE_PNG:
+                return imagecreatefrompng($filepath);
+            default:
+                throw new Exception('Unsupported image type.');
         }
     }
 
-    protected function hasFile(string $fileInputName): bool
+    protected function saveImageResource($image, $filepath, $imageType)
     {
-        return isset($_FILES[$fileInputName]) && !empty($_FILES[$fileInputName]['name']);
+        switch ($imageType) {
+            case IMAGETYPE_JPEG:
+                imagejpeg($image, $filepath);
+                break;
+            case IMAGETYPE_PNG:
+                imagepng($image, $filepath);
+                break;
+            default:
+                throw new Exception('Unsupported image type.');
+        }
     }
 
-    protected function handleValidUpload(array $file, bool $rename): array
+    protected function generateUniqueFilename($file)
     {
-        $fileName = $rename ? $this->generateUniqueFileName($file['name']) : $file['name'];
-        $fileTmpPath = $file['tmp_name'];
-        $fileSize = $file['size'];
-
-        if ($fileSize > $this->maxFileSize) {
-            return ['error' => 'File size exceeds the allowed limit. ' . $this->formatBytes($this->maxFileSize)];
-        }
-
-        $fileType = mime_content_type($fileTmpPath);
-
-        if (!in_array($fileType, $this->allowedFileTypes)) {
-            return ['error' => 'Invalid file type.'];
-        }
-
-        $uploadPath = $this->uploadDir . '/' . $fileName;
-
-        if (!$this->overwriteExisting && file_exists($uploadPath)) {
-            return ['error' => 'A file with the same name already exists.'];
-        }
-
-        return $this->moveFileToUploadDirectory($fileTmpPath, $uploadPath);
+        $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
+        return uniqid() . '.' . $extension;
     }
 
-    protected function moveFileToUploadDirectory(string $fileTmpPath, string $uploadPath): array
+    protected function getErrorMessage($errorCode)
     {
-        if (move_uploaded_file($fileTmpPath, $uploadPath)) {
-            return ['success' => 'File uploaded successfully.', 'path' => $uploadPath];
+        $errors = [
+            UPLOAD_ERR_INI_SIZE => 'The uploaded file exceeds the upload_max_filesize directive in php.ini.',
+            UPLOAD_ERR_FORM_SIZE => 'The uploaded file exceeds the MAX_FILE_SIZE directive that was specified in the HTML form.',
+            UPLOAD_ERR_PARTIAL => 'The uploaded file was only partially uploaded.',
+            UPLOAD_ERR_NO_FILE => 'No file was uploaded.',
+            UPLOAD_ERR_NO_TMP_DIR => 'Missing a temporary folder.',
+            UPLOAD_ERR_CANT_WRITE => 'Failed to write file to disk.',
+            UPLOAD_ERR_EXTENSION => 'A PHP extension stopped the file upload.',
+        ];
+
+        return $errors[$errorCode] ?? 'Unknown error.';
+    }
+
+    protected function restructureFiles(array $files)
+    {
+        $structured = [];
+        foreach ($files['name'] as $key => $name) {
+            $structured[] = [
+                'name' => $name,
+                'type' => $files['type'][$key],
+                'tmp_name' => $files['tmp_name'][$key],
+                'error' => $files['error'][$key],
+                'size' => $files['size'][$key],
+            ];
         }
-
-        return ['error' => 'File upload failed.'];
-    }
-
-    protected function generateUniqueFileName(string $originalFileName): string
-    {
-        $extension = pathinfo($originalFileName, PATHINFO_EXTENSION);
-        $fileName = pathinfo($originalFileName, PATHINFO_FILENAME);
-        $fileName = substr($fileName, 0, 15);
-
-        return $fileName . '_' . uniqid() . '.' . $extension;
-    }
-
-    private function formatBytes(int $bytes, $precision = 2, $decimalSeparator = '.', $thousandsSeparator = ','): string
-    {
-        $units = ['B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
-
-        $bytes = max($bytes, 0);
-        $pow = floor(log($bytes, 1024));
-        $pow = min($pow, count($units) - 1);
-
-        $formattedSize = number_format($bytes / (1024 ** $pow), $precision, $decimalSeparator, $thousandsSeparator);
-
-        return $formattedSize . ' ' . $units[$pow];
+        return $structured;
     }
 }
