@@ -19,14 +19,14 @@ class {CLASSNAME} extends ServiceProvider
 {
     public function register()
     {
-        $this->app->bind('example', function($app) {
-            echo "Hello From App Service";
+        $this->app->bind('{TABLENAME}', function($app) {
+            echo "Hello From {TABLENAME} Service";
         });
     }
 
     public function boot()
     {
         // Optional boot logic
-        $this->app->make('example');
+        $this->app->make('{TABLENAME}');
     }
 }

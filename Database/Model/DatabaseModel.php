@@ -67,24 +67,50 @@ abstract class DatabaseModel
         return $this->table;
     }
 
-    public function with(array $relations)
+    // public function with(array $relations)
+    // {
+    //     $this->relations = $relations;
+    //     return $this;
+    // }
+    public function with($relations)
     {
-        $this->relations = $relations;
+        if (is_string($relations)) {
+            $relations = [$relations];
+        }
+
+        foreach ($relations as $relation) {
+            if (method_exists($this, $relation)) {
+                $this->relations[] = $relation;
+            }
+        }
+
         return $this;
     }
+
 
     public function create(array $attributes): ?self
     {
         $attributes = $this->filterAttributes($attributes);
         $attributes = $this->castAttributes($attributes);
-        return $this->saveAttributes($attributes);
+
+        try {
+            return $this->saveAttributes($attributes);
+        } catch (\Exception $e) {
+            // Handle the exception or log it.
+            throw new DatabaseException("Failed to create record: {$e->getMessage()}", $e->getCode(), "info");
+        }
     }
 
     public function update($id, array $attributes): ?self
     {
         $attributes = $this->filterAttributes($attributes);
         $attributes = $this->castAttributes($attributes);
-        return $this->saveAttributes($attributes, $id);
+        try {
+            return $this->saveAttributes($attributes, $id);
+        } catch (\Exception $e) {
+            // Handle the exception or log it.
+            throw new DatabaseException("Failed to update record: {$e->getMessage()}", $e->getCode(), "info");
+        }
     }
 
     private function saveAttributes(array $attributes, $id = null): ?self
@@ -345,23 +371,45 @@ abstract class DatabaseModel
         return $this->exists;
     }
 
-    protected function eagerLoadRelations($results)
+    protected function eagerLoadRelation($relation, $results)
     {
-        foreach ($this->relations as $relation) {
-            if (method_exists($this, $relation)) {
-                $relatedModel = $this->{$relation}()->getRelatedModel();
-                $relatedResults = $this->{$relation}()->getEagerLoadResults(array_column($results, $this->getPrimaryKey()));
+        $relationInstance = $this->$relation();
+        $relatedModel = $relationInstance->getRelatedModel();
+        $relatedPrimaryKey = $relatedModel->getPrimaryKey();
+        $foreignKey = $relationInstance->getForeignKey();
 
-                foreach ($results as &$result) {
-                    $result->{$relation} = array_filter($relatedResults, function ($related) use ($result) {
-                        return $related->{$this->{$relation}()->getForeignKey()} == $result->{$this->getPrimaryKey()};
-                    });
-                }
-            }
+        $keys = array_column($results, $this->getPrimaryKey());
+        $relatedResults = $relatedModel->whereIn($foreignKey, $keys)->get();
+
+        $mappedResults = [];
+        foreach ($relatedResults as $relatedResult) {
+            $mappedResults[$relatedResult->$foreignKey][] = $relatedResult;
+        }
+
+        foreach ($results as &$result) {
+            $result->$relation = $mappedResults[$result->{$this->getPrimaryKey()}] ?? [];
         }
 
         return $results;
     }
+
+    protected function eagerLoadRelations($results)
+    {
+        foreach ($this->relations as $relation) {
+            $results = $this->eagerLoadRelation($relation, $results);
+        }
+
+        return $results;
+    }
+
+
+    public function pluck($column)
+    {
+        return array_map(function ($item) use ($column) {
+            return $item->{$column};
+        }, $this->items);
+    }
+
 
     /** Relationship Section */
 

@@ -499,9 +499,11 @@ class MakeCommand extends CliActions implements CommandInterface
         }
 
         $className = ucfirst($serviceName) . 'ServiceProvider';
+        $tableName = strtolower($serviceName);
 
         $content = file_get_contents($sampleFile);
         $content = str_replace("{CLASSNAME}", $className, $content);
+        $content = str_replace("{TABLENAME}", $tableName, $content);
 
         if (file_put_contents($serviceFile, $content) === false) {
             $this->message("Unable to create the service file.", true, true, "error");

@@ -13,6 +13,7 @@ declare(strict_types=1);
 namespace PhpStrike\app\controllers;
 
 use celionatti\Bolt\Http\Request;
+use celionatti\Bolt\Http\Response;
 
 use celionatti\Bolt\Controller;
 
@@ -31,8 +32,49 @@ class {CLASSNAME} extends Controller
         // }   
     }
 
-    public function welcome()
+    public function index($name, Request $request, Response $reponse)
     {
+        $rules = [
+            'name' => 'required|string|min:3|max:50',
+            'email' => 'required|email|unique:users.email',
+            'password' => 'required|string|min:6|confirmed',
+        ];
+
+        $users = new User();
+
+        $attributes = [
+            'user_id' => bolt_uuid(),
+            'name' => 'celio tinny',
+            'email' => 'celiotinny@example.com',
+            'password' => 'passwordtinny',
+            'password_confirm' => 'passwordtinny',
+            'remember_token' => stringToken()
+        ];
+
+        /** For Creating a new Data. */
+        if($request->validate($rules, $attributes)) {
+            if($users->create($attributes)) {
+                dump("User Created Successfully!");
+            }
+        } else {
+            dump($request->getErrors());
+        }
+
+        /** For Updating data */
+        if (!$users->update("bv_0faafa7e3f0fb6dd972e82576708f569", $attributes)) {
+            var_dump("Update Failed!");
+        } else {
+            echo "User updated successfully!";
+        }
+
+        $user = $users->findUser("bv_0fac6ee9a715a02d3f03339c3b355875");
+        $post = $posts->first();
+        // $user = $users->findByEmail("test@example.com");
+        // $user = $users->get();
+
+        // dump($user->posts()->get());
+        // dump($post->user()->get());
+
         $view = [
             'title' => 'Bolt Framework',
             'header' => 'Hello, User! Welcome to Bolt Framework',
@@ -40,122 +82,6 @@ class {CLASSNAME} extends Controller
             'items' => ['Item 1', 'Item 2', 'Item 3'],
         ];
 
-        $this->view->render("{VIEWPATH}", $view);
-    }
-
-    public function onConstruct(): void
-    {   
-    }
-
-    /**
-     * Sign Up method. Sample
-     *
-     * @param Request $request
-     * @return void
-     */
-    public function signup(Request $request)
-    {
-        $user = new Users();
-
-        if ($request->isPost()) {
-            $user->setAllowedInsertParams([
-                'username',
-                'name',
-                'phone',
-                'email',
-                'acl',
-                'password'
-            ]);
-            $data = $request->getBody();
-            // check for password validation.
-            $user->passwordsMatchValidation($data['password'], $data['confirm_password']);
-            if ($user->validate($data)) {
-                // other method before saving.
-                $data['password'] = hashPassword($data['password']);
-                if ($user->insert($data)) {
-                    FlashMessage::setMessage("User Created Successfully", FlashMessage::SUCCESS, ['role' => 'alert', 'style' => 'z-index: 9999;']);
-                    redirect("/");
-                }
-            }
-        }
-        $view = [
-            'errors' => $user->getErrors(),
-            'user' => $user,
-            'uuid' => generateUuidV4()
-        ];
-
-        $this->view->render("auth/signup", $view);
-    }
-
-    public function users()
-    {
-        // Initialize the BoltApi client with your API key and base URL
-        $apiBaseUrl = 'http://localhost:3000';
-        // $apiBaseUrl = 'https://jsonplaceholder.typicode.com';
-        $boltApi = new BoltApi($apiBaseUrl);
-
-        try {
-            $endpoint = "/posts";
-            $response = $boltApi->getWithRetry($endpoint);
-            $data = [
-                "response" => $response,
-                "title" => "JSON Placeholder Post Request API."
-            ];
-            $this->view->render("users", $data);
-        } catch (\Exception $e) {
-            echo 'Error: ' . $e->getMessage();
-        }
-    }
-
-    public function delete()
-    {
-        // Initialize the BoltApi client with your API key and base URL
-        $apiBaseUrl = 'http://localhost:3000';
-        $boltApi = new BoltApi($apiBaseUrl);
-
-        try {
-            $endpoint = "/posts/3";
-            return $boltApi->delete($endpoint);
-        } catch (\Exception $e) {
-            echo 'Error: ' . $e->getMessage();
-        }
-    }
-
-    public function update()
-    {
-        // Initialize the BoltApi client with your API key and base URL
-        $apiBaseUrl = 'http://localhost:3000';
-        $boltApi = new BoltApi($apiBaseUrl);
-
-        try {
-            $data = [
-                "title" => "Post title for Two updated",
-                "body" => "Post Two updated Body content",
-                "userId" => 1
-            ];
-            $endpoint = "/posts/2";
-            return $boltApi->put($endpoint, $data);
-        } catch (\Exception $e) {
-            echo 'Error: ' . $e->getMessage();
-        }
-    }
-
-    public function create()
-    {
-        // Initialize the BoltApi client with your API key and base URL
-        $apiBaseUrl = 'http://localhost:3000';
-        $boltApi = new BoltApi($apiBaseUrl);
-
-        try {
-            $data = [
-                "title" => "Post title for New Data",
-                "body" => "Post for new Body content",
-                "userId" => 2
-            ];
-            $endpoint = "/posts";
-            return $boltApi->post($endpoint, $data);
-        } catch (\Exception $e) {
-            echo 'Error: ' . $e->getMessage();
-        }
+        $this->view->render("welcome", $view);
     }
 }

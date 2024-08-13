@@ -16,7 +16,6 @@ use celionatti\Bolt\Database\Database;
 use celionatti\Bolt\Container\Container;
 use celionatti\Bolt\Resolver\AssetManager;
 use celionatti\Bolt\Resolver\PathResolver;
-use celionatti\Bolt\Illuminate\Support\Session;
 use celionatti\Bolt\BoltException\BoltException;
 use celionatti\Bolt\Illuminate\Support\ExtensionCheck;
 
@@ -27,7 +26,6 @@ class Bolt
 {
     public Config $config;
     public Router $router;
-    public Session $session;
     public Container $container;
     public Database $database;
     public ?Controller $controller;

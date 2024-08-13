@@ -7,7 +7,7 @@ use PhpStrike\app\models\User;
 
 class {CLASSNAME} extends Factory
 {
-    protected $model = User::class;
+    protected $model = {CLASSNAME}::class;
 
     /**
      * The current password being used by the factory.

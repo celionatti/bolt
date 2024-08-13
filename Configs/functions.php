@@ -575,7 +575,7 @@ function validate_csrf_token($data, $toast = true)
     $redirect = $_SERVER['HTTP_REFERER'] ?? '';
 
     // Validate the CSRF token from the provided data
-    if (!$csrf->validateToken($data["_csrf_token"])) {
+    if (!$csrf->validateToken($data["__bv_csrf_token"])) {
         $message = "CSRF Token Expires";
 
         // Display a toast message or use `bolt_die` to terminate with an error message
@@ -701,77 +701,6 @@ function partials(string $path, $params = [])
     $view = new View();
 
     $view->partial($path, $params);
-}
-
-function loadData($object, $data, $options = [])
-{
-    $defaults = [
-        'validate' => false,
-        'type_cast' => false,
-        'ignore_unknown' => false,
-    ];
-
-    $options = array_merge($defaults, $options);
-
-    foreach ($data as $key => $value) {
-        if (property_exists($object, $key)) {
-            if ($options['validate']) {
-                if (!validateData($key, $value)) {
-                    // Handle validation errors (e.g., log, throw exceptions).
-                    continue;
-                }
-            }
-
-            if ($options['type_cast']) {
-                $value = typeCastData($key, $value);
-            }
-
-            $object->{$key} = $value;
-        } elseif (!$options['ignore_unknown']) {
-            // Handle unknown properties (e.g., log, throw exceptions).
-        }
-    }
-}
-
-function validateData($key, $value)
-{
-    // Implement custom validation logic for each property.
-    switch ($key) {
-        case 'name':
-            return is_string($value) && strlen($value) <= 255;
-        case 'age':
-            return is_int($value) && $value >= 18;
-        case 'email':
-            return filter_var($value, FILTER_VALIDATE_EMAIL) !== false;
-        case 'isSubscribed':
-            return is_bool($value);
-        case 'birthDate':
-            return \DateTime::createFromFormat('Y-m-d', $value) !== false;
-        default:
-            return true;
-    }
-}
-
-function typeCastData($key, $value)
-{
-    // Implement custom type casting logic for each property.
-    switch ($key) {
-        case 'age':
-            return (int)$value;
-        case 'name':
-            return (string)$value;
-        case 'username':
-            return (string)$value;
-        case 'surname':
-            return (string)$value;
-        case 'birthDate':
-            return \DateTime::createFromFormat('Y-m-d', $value);
-        case 'password':
-            // Hash the password using a secure hashing algorithm like password_hash().
-            return password_hash($value, PASSWORD_DEFAULT);
-        default:
-            return $value;
-    }
 }
 
 /**
@@ -1065,24 +994,12 @@ function compressToZip($source, $destination)
     return $destination;
 }
 
-// function tap($value, callable $callback)
-// {
-//     $callback($value);
-//     return $value;
-// }
-
-// function when($condition, callable $callback)
-// {
-//     if ($condition) {
-//         return $callback();
-//     }
-//     return null; // or return void as needed
-// }
-
-// function collect(array $items)
-// {
-//     return new Collection($items);
-// }
+function pluck(array $items, $column)
+{
+    return array_map(function ($item) use ($column) {
+        return $item->{$column};
+    }, $items);
+}
 
 function request()
 {
