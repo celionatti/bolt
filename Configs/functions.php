@@ -1005,3 +1005,18 @@ function request()
 {
     return \celionatti\Bolt\Http\Request::instance();
 }
+
+function renderComponent(string $componentClass, array $data = [], array $slots = []): string
+{
+    if (!class_exists($componentClass)) {
+        throw new \Exception("Component class {$componentClass} not found.");
+    }
+
+    $component = new $componentClass($data, $slots);
+
+    if (!method_exists($component, 'render')) {
+        throw new \Exception("The component class {$componentClass} does not have a render method.");
+    }
+
+    return $component->render();
+}

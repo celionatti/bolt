@@ -12,7 +12,7 @@ use celionatti\Bolt\Component\Component;
 
 class {CLASSNAME} extends Component
 {
-    protected function mount()
+    protected function mount(): void
     {
         // This method will run during instantiation
     }

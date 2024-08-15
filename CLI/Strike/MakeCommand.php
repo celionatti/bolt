@@ -522,7 +522,7 @@ class MakeCommand extends CliActions implements CommandInterface
             return;
         }
 
-        $componentDir = $this->basePath . DIRECTORY_SEPARATOR . "app" . DIRECTORY_SEPARATOR . "components";
+        $componentDir = $this->basePath . DIRECTORY_SEPARATOR . "app" . DIRECTORY_SEPARATOR . "components" . DIRECTORY_SEPARATOR;
 
         if (!is_dir($componentDir)) {
             if (!mkdir($componentDir, 0755, true)) {
