@@ -36,6 +36,12 @@ class Blueprint
         return $this;
     }
 
+    public function char(string $name, int $length = 255): self
+    {
+        $this->columns[] = "`$name` CHAR($length)";
+        return $this;
+    }
+
     public function timestamp(string $name): self
     {
         $this->columns[] = "`$name` TIMESTAMP";
@@ -48,10 +54,30 @@ class Blueprint
         return $this;
     }
 
-    public function nullable(): self
+    public function enum(string $name, array $allowedValues): self
     {
-        $lastColumn = array_pop($this->columns);
-        $this->columns[] = "$lastColumn NULL";
+        $allowedValuesString = implode("','", $allowedValues);
+        $this->columns[] = "`$name` ENUM('$allowedValuesString')";
+        return $this;
+    }
+
+    // public function nullable(): self
+    // {
+    //     $lastColumn = array_pop($this->columns);
+    //     $this->columns[] = "$lastColumn NULL";
+    //     return $this;
+    // }
+    public function nullable(string $columnName = null): self
+    {
+        if ($columnName) {
+            $index = array_search("`$columnName`", $this->columns);
+            if ($index !== false) {
+                $this->columns[$index] .= " NULL";
+            }
+        } else {
+            $lastColumn = array_pop($this->columns);
+            $this->columns[] = "$lastColumn NULL";
+        }
         return $this;
     }
 
@@ -186,6 +212,77 @@ class Blueprint
     {
         $this->columns[] = "`created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP";
         $this->columns[] = "`updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP";
+        return $this;
+    }
+
+    public function dropTable(): string
+    {
+        return "DROP TABLE `{$this->table}`;";
+    }
+
+    public function renameColumn(string $oldName, string $newName): self
+    {
+        $this->columns[] = "RENAME COLUMN `$oldName` TO `$newName`";
+        return $this;
+    }
+
+    public function renameTable(string $newName): string
+    {
+        return "RENAME TABLE `{$this->table}` TO `$newName`;";
+    }
+
+    public function dropForeignKey(string $keyName): self
+    {
+        $this->foreignKeys[] = "DROP FOREIGN KEY `$keyName`";
+        return $this;
+    }
+
+    public function dropIndex(string $indexName): self
+    {
+        $this->indexes[] = "DROP INDEX `$indexName`";
+        return $this;
+    }
+
+    public function dropUnique(string $uniqueName): self
+    {
+        $this->uniqueIndexes[] = "DROP INDEX `$uniqueName`";
+        return $this;
+    }
+
+    public function json(string $name): self
+    {
+        $this->columns[] = "`$name` JSON";
+        return $this;
+    }
+
+    public function geometry(string $name): self
+    {
+        $this->columns[] = "`$name` GEOMETRY";
+        return $this;
+    }
+
+    public function point(string $name): self
+    {
+        $this->columns[] = "`$name` POINT";
+        return $this;
+    }
+
+    public function multiPolygon(string $name): self
+    {
+        $this->columns[] = "`$name` MULTIPOLYGON";
+        return $this;
+    }
+
+    public function jsonb(string $name): self
+    {
+        $this->columns[] = "`$name` JSONB";
+        return $this;
+    }
+
+    public function set(string $name, array $allowedValues): self
+    {
+        $allowedValuesString = implode("','", $allowedValues);
+        $this->columns[] = "`$name` SET('$allowedValuesString')";
         return $this;
     }
 
