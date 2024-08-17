@@ -12,3 +12,25 @@ Generating Urls
 echo $router->url('admin.dashboard'); // Output: /admin/dashboard
 echo $router->url('admin.users'); // Output: /admin/users
 echo $router->url('user.profile'); // Output: /profile
+
+
+New
+
+$bolt->router->group(['prefix' => '/', []], function($router) {
+    $router->get('/', [SiteController::class, 'welcome']);
+    $router->get('/about', [SiteController::class, 'about']);
+    $router->get('/contact-us', [SiteController::class, 'contact']);
+});
+
+$bolt->router->get("/articles", [ArticleController::class, "articles"]);
+$bolt->router->get("/articles/{:id}", [ArticleController::class, "article"]);
+$bolt->router->get("/category/{:name}", [SiteController::class, "category"]);
+$bolt->router->get("/login", [AuthController::class, "login"]);
+
+/** Admin Routes */
+// $bolt->router->get("/admin", [AdminController::class, "dashboard"]);
+// $bolt->router->get("/admin/dashboard", [AdminController::class, "dashboard"]);
+
+$bolt->router->group(['prefix' => '/admin', []], function($router) {
+    $router->get('/dashboard', [AdminController::class, 'dashboard']);
+});

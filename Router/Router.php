@@ -38,7 +38,7 @@ class Router
         $group = end($this->groupStack);
         if ($group) {
             $path = rtrim($group['prefix'], '/') . '/' . ltrim($path, '/');
-            $middleware = array_merge($group['middleware'], $this->currentRoute['middleware'] ?? []);
+            $middleware = array_merge($group['middleware'] ?? [], $this->currentRoute['middleware'] ?? []);
         } else {
             $middleware = $this->currentRoute['middleware'] ?? [];
         }
@@ -92,14 +92,27 @@ class Router
 
     public function middleware($middleware): self
     {
+        if (!isset($this->currentRoute['middleware'])) {
+            $this->currentRoute['middleware'] = [];
+        }
         $this->currentRoute['middleware'][] = $middleware;
         return $this;
     }
 
     public function group(array $attributes, callable $callback): void
     {
+        // Ensure middleware is always an array
+        if (!isset($attributes['middleware'])) {
+            $attributes['middleware'] = [];
+        }
+
+        // Add group to the stack
         $this->groupStack[] = $attributes;
+
+        // Execute the callback with this router instance
         call_user_func($callback, $this);
+
+        // Remove the last group from the stack
         array_pop($this->groupStack);
     }
 
