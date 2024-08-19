@@ -185,6 +185,19 @@ class Request
         return $path === $pattern;
     }
 
+    public function with($key, $value)
+    {
+        // Add flash message or session data
+        $_SESSION[$key] = $value;
+        return $this;
+    }
+
+    public function back()
+    {
+        $_SERVER['HTTP_REFERER'] ?? '/';
+        return $this;
+    }
+
     protected function sanitize($data)
     {
         if (is_array($data)) {
