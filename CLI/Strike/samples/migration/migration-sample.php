@@ -36,7 +36,15 @@ return new class extends Migration
             $table->id();
             $table->string('key')->unique('key');
             $table->integer('attempts')->default(0);
-            $table->integer('expires_at');
+            $table->timestamp('expires_at');
+            $table->timestamps();
+        });
+
+        Schema::create('user_sessions', function (Blueprint $table) {
+            $table->id();
+            $table->string('session_id');
+            $table->text('data');
+            $table->dateTime('last_activity');
             $table->timestamps();
         });
     }
