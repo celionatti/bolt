@@ -41,13 +41,13 @@ return new class extends Migration
             $table->timestamp('expires_at');
         });
 
-        Schema::create('user_sessions', function (Blueprint $table) {
-            $table->id();
-            $table->string('session_id');
-            $table->text('data');
-            $table->dateTime('last_activity');
-            $table->timestamps();
-        });
+        // Schema::create('user_sessions', function (Blueprint $table) {
+        //     $table->id();
+        //     $table->string('session_id');
+        //     $table->text('data');
+        //     $table->dateTime('last_activity');
+        //     $table->timestamps();
+        // });
     }
 
     /**
