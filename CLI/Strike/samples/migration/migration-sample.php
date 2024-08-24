@@ -35,9 +35,10 @@ return new class extends Migration
         Schema::create('rate_limits', function (Blueprint $table) {
             $table->id();
             $table->string('key')->unique('key');
+            $table->string('ip_address');
+            $table->string('user_id');
             $table->integer('attempts')->default(0);
             $table->timestamp('expires_at');
-            $table->timestamps();
         });
 
         Schema::create('user_sessions', function (Blueprint $table) {

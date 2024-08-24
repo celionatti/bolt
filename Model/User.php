@@ -58,4 +58,10 @@ class User extends Model
     {
         return (new static())->findBy(['email' => $email]);
     }
+
+    // Find user by role
+    public static function hasRole($role)
+    {
+        return (new static())->findBy(['role' => $role])->first();
+    }
 }
