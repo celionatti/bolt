@@ -18,7 +18,7 @@ use celionatti\Bolt\Database\Relationships\HasMany;
 class {CLASSNAME} extends Model
 {
     /** By default the table name is the the classname with s added. But if different you can define it. */
-    $this->table = "{TABLENAME}";
+    protected $table = "{TABLENAME}";
     
     protected $fillable = ['user_id', 'name', 'email', 'password', 'remember_token'];
 

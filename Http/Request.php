@@ -198,10 +198,24 @@ class Request
         return $this;
     }
 
+    // protected function sanitize($data)
+    // {
+    //     if (is_array($data)) {
+    //         return array_map([$this, 'sanitize'], $data);
+    //     }
+
+    //     return htmlspecialchars(strip_tags($data), ENT_QUOTES, 'UTF-8');
+    // }
+
     protected function sanitize($data)
     {
         if (is_array($data)) {
             return array_map([$this, 'sanitize'], $data);
+        }
+
+        // Advanced sanitization for specific data types
+        if (is_numeric($data)) {
+            return filter_var($data, FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
         }
 
         return htmlspecialchars(strip_tags($data), ENT_QUOTES, 'UTF-8');
@@ -263,5 +277,31 @@ class Request
         } else {
             $this->bodyParams[$name] = $this->sanitize($value);
         }
+    }
+
+    public function validateFile($name, $allowedTypes = ['image/jpeg', 'image/png']): bool
+    {
+        if (!isset($this->files[$name])) {
+            $this->errors[$name] = "File not found.";
+            return false;
+        }
+
+        $file = $this->files[$name];
+        if (!in_array($file['type'], $allowedTypes)) {
+            $this->errors[$name] = "Invalid file type.";
+            return false;
+        }
+
+        return true;
+    }
+
+    public function loadData(): array
+    {
+        return $this->sanitize($_POST);
+    }
+
+    public function getMergeData(): array
+    {
+        return $this->sanitize(array_merge($this->queryParams, $this->bodyParams, $_POST));
     }
 }

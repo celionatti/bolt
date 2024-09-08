@@ -23,7 +23,7 @@ function loginUser()
     return BoltAuthentication::currentUser() ?? null;
 }
 
-function bolt_uuid()
+function bv_uuid()
 {
     // Generate 16 bytes of random data
     $data = random_bytes(16);
@@ -763,12 +763,14 @@ function filterData($data, $filterCriteria)
 
 function retrieveSessionData($key, $default = [])
 {
-    return Bolt::$bolt->session->get($key, $default);
+    // return Bolt::$bolt->session->get($key, $default);
+    return $_SESSION[$key] ?? $default;
 }
 
 function storeSessionData($key, $data)
 {
-    Bolt::$bolt->session->set($key, $data);
+    // Bolt::$bolt->session->set($key, $data);
+    $_SESSION[$key] = $data;
 }
 
 function sanitizeData($data)
