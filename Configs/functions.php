@@ -773,6 +773,13 @@ function storeSessionData($key, $data)
     $_SESSION[$key] = $data;
 }
 
+function unsetSessionArrayData($keys)
+{
+    foreach ($keys as $key) {
+        unset($_SESSION[$key]);
+    }
+}
+
 function sanitizeData($data)
 {
     if (is_array($data)) {
@@ -791,12 +798,12 @@ function toast($type, $message)
     }
 
     // Store the message, type, and attributes in the session
-    $_SESSION['__flash_toastr'] = [
+    $_SESSION['__bv_flash_toastr'] = [
         'message' => $message,
         'type' => $type,
     ];
 
-    $toastr = $_SESSION['__flash_toastr'] ?? null;
+    $toastr = $_SESSION['__bv_flash_toastr'] ?? null;
     return $toastr;
 }
 
