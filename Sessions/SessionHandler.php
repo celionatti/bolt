@@ -117,6 +117,20 @@ abstract class SessionHandler implements SessionInterface
         }
     }
 
+    public function setExpiration(int $minutes): void
+    {
+        $expirationTime = time() + ($minutes * 60);
+        $this->set('__bv_session_expiration', $expirationTime);
+    }
+
+    public function checkExpiration(): void
+    {
+        $expirationTime = $this->get('__bv_session_expiration');
+        if ($expirationTime !== null && time() > $expirationTime) {
+            $this->destroy();
+        }
+    }
+
     private function ensureSessionStarted(): void
     {
         if (session_status() === PHP_SESSION_NONE) {

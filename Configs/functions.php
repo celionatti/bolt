@@ -8,6 +8,7 @@ use celionatti\Bolt\Helpers\CSRF\Csrf;
 use celionatti\Bolt\Illuminate\Collection;
 use celionatti\Bolt\BoltException\BoltException;
 use celionatti\Bolt\Authentication\BoltAuthentication;
+use celionatti\Bolt\Sessions\Handlers\DefaultSessionHandler;
 
 function bolt_env($data)
 {
@@ -773,7 +774,7 @@ function storeSessionData($key, $data)
     $_SESSION[$key] = $data;
 }
 
-function unsetSessionArrayData($keys)
+function unsetSessionArrayData(array $keys)
 {
     foreach ($keys as $key) {
         unset($_SESSION[$key]);
@@ -1223,4 +1224,9 @@ function route($to, array $params = [])
 
     // Throw an exception if the request method is not GET
     throw new BoltException("Method Not Allowed", 405, "info");
+}
+
+function bv_session()
+{
+    return new DefaultSessionHandler();
 }

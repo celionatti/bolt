@@ -73,7 +73,8 @@ class Form
         $wrapperStr = self::processAttrs($wrapperAttrs);
         $inputAttrs['class'] = 'form-control ' . ($inputAttrs['class'] ?? '');
         $inputStr = self::processAttrs($inputAttrs);
-        $errorMsg = array_key_exists($id, $errors) ? $errors[$id] : '';
+        // $errorMsg = array_key_exists($id, $errors) ? $errors[$id] : '';
+        $errorMsg = array_key_exists($id, $errors) && isset($errors[$id][0]) ? $errors[$id][0] : '';
         $html = "<div {$wrapperStr}>";
         $html .= "<label for='{$id}' class='form-label'>{$label}</label>";
         $html .= "<input id='{$id}' name='{$id}' value='{$value}' {$inputStr} placeholder='{$label}' />";
@@ -88,7 +89,8 @@ class Form
         $wrapperStr = self::processAttrs($wrapperAttrs);
         $inputAttrs['class'] = 'form-control ' . ($inputAttrs['class'] ?? '');
         $inputStr = self::processAttrs($inputAttrs);
-        $errorMsg = array_key_exists($id, $errors) ? $errors[$id] : '';
+        // $errorMsg = array_key_exists($id, $errors) ? $errors[$id] : '';
+        $errorMsg = array_key_exists($id, $errors) && isset($errors[$id][0]) ? $errors[$id][0] : '';
         $html = "<div {$wrapperStr}>";
         $html .= "<label for='{$id}' class='form-label'>{$label}</label>";
         $html .= "<select id='{$id}' name='{$id}' class='form-select' {$inputStr}>";
@@ -108,7 +110,8 @@ class Form
         $wrapperStr = self::processAttrs($wrapperAttrs);
         $inputStr = self::processAttrs($inputAttrs);
         $checkedStr = $checked == 'on' ? 'checked' : '';
-        $errorMsg = array_key_exists($id, $errors) ? $errors[$id] : '';
+        // $errorMsg = array_key_exists($id, $errors) ? $errors[$id] : '';
+        $errorMsg = array_key_exists($id, $errors) && isset($errors[$id][0]) ? $errors[$id][0] : '';
         $html = "<div {$wrapperStr}>";
         $html .= "<input type=\"checkbox\" id=\"{$id}\" name=\"{$id}\" {$inputStr} {$checkedStr} class='form-check-input'>";
         $html .= "<label class='form-check-label' for=\"{$id}\">{$label}</label>";
@@ -123,7 +126,8 @@ class Form
         $wrapperStr = self::processAttrs($wrapperAttrs);
         $inputAttrs['class'] = 'form-control ' . ($inputAttrs['class'] ?? '');
         $inputStr = self::processAttrs($inputAttrs);
-        $errorMsg = array_key_exists($id, $errors) ? $errors[$id] : '';
+        // $errorMsg = array_key_exists($id, $errors) ? $errors[$id] : '';
+        $errorMsg = array_key_exists($id, $errors) && isset($errors[$id][0]) ? $errors[$id][0] : '';
         $html = "<div {$wrapperStr}>";
         $html .= "<label for='{$id}' class='form-label'>{$label}</label>";
         $html .= "<textarea id='{$id}' name='{$id}' {$inputStr} placeholder='{$label}'>{$value}</textarea>";
@@ -138,7 +142,8 @@ class Form
         $wrapperStr = self::processAttrs($wrapperAttrs);
         $inputAttrs['class'] = 'form-control-file ' . ($inputAttrs['class'] ?? '');
         $inputStr = self::processAttrs($inputAttrs);
-        $errorMsg = array_key_exists($id, $errors) ? $errors[$id] : '';
+        // $errorMsg = array_key_exists($id, $errors) ? $errors[$id] : '';
+        $errorMsg = array_key_exists($id, $errors) && isset($errors[$id][0]) ? $errors[$id][0] : '';
         $html = "<div {$wrapperStr}>";
         $html .= "<label for=\"{$id}\" class='form-label'>{$label}</label>";
         $html .= "<input type=\"file\" id=\"{$id}\" name=\"{$id}\" {$inputStr} class='form-control-file'/>";
