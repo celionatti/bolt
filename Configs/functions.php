@@ -5,9 +5,7 @@ declare(strict_types=1);
 use celionatti\Bolt\Bolt;
 use celionatti\Bolt\View\View;
 use celionatti\Bolt\Helpers\CSRF\Csrf;
-use celionatti\Bolt\Illuminate\Collection;
 use celionatti\Bolt\BoltException\BoltException;
-use celionatti\Bolt\Authentication\BoltAuthentication;
 use celionatti\Bolt\Sessions\Handlers\DefaultSessionHandler;
 
 function bolt_env($data)
@@ -17,11 +15,6 @@ function bolt_env($data)
     }
 
     return false;
-}
-
-function loginUser()
-{
-    return BoltAuthentication::currentUser() ?? null;
 }
 
 function bv_uuid()
@@ -808,21 +801,16 @@ function toast($type, $message)
     return $toastr;
 }
 
-function hasAccess(array $allowedRoles = [], array $excludedRoles = []): bool
+function setFormMessage($value): void
 {
-    $currentUser = BoltAuthentication::currentUser();
+    $session = bv_session();
+    $session->setFormMessage($value);
+}
 
-    if ($currentUser) {
-        $userRole = $currentUser->role;
-
-        // Check if the user role is allowed and is not in the excluded roles
-        return in_array($userRole, $allowedRoles) && !in_array($userRole, $excludedRoles);
-    } else {
-        // User is not logged in, handle accordingly
-        // For example, you can log the access attempt, redirect, or simply return false.
-        // Example: redirect("/login");
-        return false;
-    }
+function getFormMessage()
+{
+    $session = bv_session();
+    $session->getFormMessage();
 }
 
 function formatCurrency($amount, $currencyCode = "NGN")

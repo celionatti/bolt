@@ -15,6 +15,7 @@ use celionatti\Bolt\Sessions\SessionInterface;
 abstract class SessionHandler implements SessionInterface
 {
     protected string $flashKey = '_bv_flash';
+    protected string $formMessageKey = '__bv_form_message';
 
     public function start(): void
     {
@@ -115,6 +116,18 @@ abstract class SessionHandler implements SessionInterface
                 unset($_SESSION[$this->flashKey]['_keep']);
             }
         }
+    }
+
+    public function setFormMessage($value): void
+    {
+        $this->set($this->formMessageKey, $value) ?? null;
+    }
+
+    public function getFormMessage()
+    {
+        $value = $this->get($this->formMessageKey);
+        $this->remove($this->formMessageKey);
+        return $value ?? [];
     }
 
     public function setExpiration(int $minutes): void
