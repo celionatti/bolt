@@ -803,14 +803,17 @@ function toast($type, $message)
 
 function setFormMessage($value): void
 {
-    $session = bv_session();
-    $session->setFormMessage($value);
+    bv_session();
+    $_SESSION['__bv_form_message'] = $value;
 }
 
 function getFormMessage()
 {
-    $session = bv_session();
-    $session->getFormMessage();
+    bv_session();
+    if (isset($_SESSION['__bv_form_message'])) {
+        unset($_SESSION['__bv_form_message']);
+    }
+    return $_SESSION['__bv_form_message'] ?? [];
 }
 
 function formatCurrency($amount, $currencyCode = "NGN")
@@ -1216,5 +1219,7 @@ function route($to, array $params = [])
 
 function bv_session()
 {
-    return new DefaultSessionHandler();
+    if (session_status() === PHP_SESSION_NONE) {
+        session_start();
+    }
 }
