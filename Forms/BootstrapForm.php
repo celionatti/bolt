@@ -27,11 +27,11 @@ class BootstrapForm extends Form
         $inputAttrs['class'] = 'form-control ' . ($inputAttrs['class'] ?? '');
         $inputStr = self::processAttrs($inputAttrs);
         // $errorMsg = array_key_exists($id, $errors) ? $errors[$id] : '';
-        $errorMsg = array_key_exists($id, $errors) && isset($errors[$id][0]) ? $errors[$id][0] : '';
+        $errorMsg = array_key_exists($id, $errors) && isset($errors[$id]) ? $errors[$id] : '';
         $html = "<div {$wrapperStr}>";
         $html .= "<label for='{$id}' class='form-label'>{$label}</label>";
         $html .= "<input id='{$id}' name='{$id}' value='{$value}' {$inputStr} placeholder='{$label}' />";
-        $html .= "<div class='invalid-feedback'>{$errorMsg}</div></div>";
+        $html .= "<div class='invalid-feedback text-capitalize'>{$errorMsg}</div></div>";
         return $html;
     }
 
@@ -41,7 +41,7 @@ class BootstrapForm extends Form
         $inputAttrs = self::processAttrs($inputAttrs);
         $wrapperStr = self::processAttrs($wrapperAttrs);
         // $errorMsg = array_key_exists($id, $errors) ? $errors[$id] : "";
-        $errorMsg = array_key_exists($id, $errors) && isset($errors[$id][0]) ? $errors[$id][0] : '';
+        $errorMsg = array_key_exists($id, $errors) && isset($errors[$id]) ? $errors[$id] : '';
         $html = "<div {$wrapperStr}>";
         $html .= "<label for='{$id}' class='form-label'>{$label}</label>";
         $html .= "<select id='{$id}' name='{$id}' {$inputAttrs}>";
@@ -51,7 +51,7 @@ class BootstrapForm extends Form
             $html .= "<option value='{$val}'{$selected}>{$display}</option>";
         }
         $html .= "</select>";
-        $html .= "<div class='invalid-feedback'>{$errorMsg}</div></div>";
+        $html .= "<div class='invalid-feedback text-capitalize'>{$errorMsg}</div></div>";
         return $html;
     }
 
@@ -62,11 +62,11 @@ class BootstrapForm extends Form
         $inputStr = self::processAttrs($inputAttrs);
         $checkedStr = $checked == 'on' ? "checked" : "";
         // $errorMsg = array_key_exists($id, $errors) ? $errors[$id] : "";
-        $errorMsg = array_key_exists($id, $errors) && isset($errors[$id][0]) ? $errors[$id][0] : '';
+        $errorMsg = array_key_exists($id, $errors) && isset($errors[$id]) ? $errors[$id] : '';
         $html = "<div {$wrapperStr}>";
         $html .= "<input type=\"checkbox\" id=\"{$id}\" name=\"{$id}\" {$inputStr} {$checkedStr}>";
         $html .= "<label class=\"form-check-label text-black px-2\" for=\"{$id}\">{$label}</label>";
-        $html .= "<div class='invalid-feedback'>{$errorMsg}</div></div>";
+        $html .= "<div class='invalid-feedback text-capitalize'>{$errorMsg}</div></div>";
         return $html;
     }
 
@@ -76,11 +76,11 @@ class BootstrapForm extends Form
         $inputAttrs = self::appendBootErrors($id, $inputAttrs, $errors);
         $inputStr = self::processAttrs($inputAttrs);
         // $errorMsg = array_key_exists($id, $errors) ? $errors[$id] : '';
-        $errorMsg = array_key_exists($id, $errors) && isset($errors[$id][0]) ? $errors[$id][0] : '';
+        $errorMsg = array_key_exists($id, $errors) && isset($errors[$id]) ? $errors[$id] : '';
         $html = "<div {$wrapperStr}>";
         $html .= "<label for='{$id}' class='form-label'>{$label}</label>";
         $html .= "<textarea id='{$id}' name='{$id}' {$inputStr} placeholder='{$label}'>{$value}</textarea>";
-        $html .= "<div class='invalid-feedback'>{$errorMsg}</div></div>";
+        $html .= "<div class='invalid-feedback text-capitalize'>{$errorMsg}</div></div>";
         return $html;
     }
 
@@ -91,11 +91,11 @@ class BootstrapForm extends Form
         $inputAttrs['class'] = 'form-control-file ' . ($inputAttrs['class'] ?? '');
         $inputStr = self::processAttrs($inputAttrs);
         // $errorMsg = array_key_exists($id, $errors) ? $errors[$id] : '';
-        $errorMsg = array_key_exists($id, $errors) && isset($errors[$id][0]) ? $errors[$id][0] : '';
+        $errorMsg = array_key_exists($id, $errors) && isset($errors[$id]) ? $errors[$id] : '';
         $html = "<div {$wrapperStr}>";
         $html .= "<label for=\"{$id}\" class='form-label'>{$label}</label>";
         $html .= "<input type=\"file\" id=\"{$id}\" name=\"{$id}\" {$inputStr} class='form-control-file'/>";
-        $html .= "<div class=\"invalid-feedback\">{$errorMsg}</div></div>";
+        $html .= "<div class=\"invalid-feedback text-capitalize\">{$errorMsg}</div></div>";
         return $html;
     }
 
@@ -106,11 +106,11 @@ class BootstrapForm extends Form
         $inputAttrs['class'] = 'form-control-file ' . ($inputAttrs['class'] ?? '');
         $inputStr = self::processAttrs($inputAttrs);
         // $errorMsg = array_key_exists($id, $errors) ? $errors[$id] : '';
-        $errorMsg = array_key_exists($id, $errors) && isset($errors[$id][0]) ? $errors[$id][0] : '';
+        $errorMsg = array_key_exists($id, $errors) && isset($errors[$id]) ? $errors[$id] : '';
         $html = "<div {$wrapperStr}>";
         $html .= "<label for=\"{$id}\" class='form-label'>{$label}</label>";
         $html .= "<input type=\"file\" id=\"{$id}\" name=\"{$id}[]\" {$inputStr} class='form-control-file'/>";
-        $html .= "<div class=\"invalid-feedback\">{$errorMsg}</div></div>";
+        $html .= "<div class=\"invalid-feedback text-capitalize\">{$errorMsg}</div></div>";
         return $html;
     }
 

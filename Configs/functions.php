@@ -810,10 +810,11 @@ function setFormMessage($value): void
 function getFormMessage()
 {
     bv_session();
-    if (isset($_SESSION['__bv_form_message'])) {
+    $message = $_SESSION['__bv_form_message'] ?? null;
+    if ($message) {
         unset($_SESSION['__bv_form_message']);
     }
-    return $_SESSION['__bv_form_message'] ?? [];
+    return $message ?? []; // Return the message
 }
 
 function formatCurrency($amount, $currencyCode = "NGN")
