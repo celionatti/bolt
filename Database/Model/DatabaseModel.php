@@ -280,7 +280,7 @@ abstract class DatabaseModel
             case 'hash':
                 return password_hash($value, PASSWORD_DEFAULT, ['cost' => 12]);
             case 'uuid':
-                return bolt_uuid();
+                return bv_uuid();
             default:
                 return $value;
         }

@@ -404,14 +404,16 @@ function redirect($url, $status_code = 302, $headers = [], $query_params = [], $
         $status_code = 302; // Default to a temporary (302) redirect
     }
 
+    // Set the HTTP status code
+    http_response_code($status_code);
+
     // Build the query string from the provided query parameters
     $query_string = !empty($query_params) ? '?' . http_build_query($query_params) : '';
 
-    // Prepare and set custom headers
-    $headers['Location'] = $url . $query_string;
-    $headers['Status'] = $status_code . ' ' . http_response_code($status_code);
+    // Set the Location header for the redirect
+    header('Location: ' . $url . $query_string, true, $status_code);
 
-    // Send headers
+    // Send additional headers if provided
     foreach ($headers as $key => $value) {
         header($key . ': ' . $value, true);
     }
