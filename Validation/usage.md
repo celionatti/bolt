@@ -12,7 +12,7 @@ class User extends DatabaseModel
     protected $fillable = ['name', 'email', 'password'];
     protected $rules = [
         'name' => 'required|string|min:3|max:50',
-        'email' => 'required|email|unique:users.email',
+        'email' => "required|email|unique:users.email,user_id!=$id",
         'password' => 'required|string|min:6'
     ];
 }
