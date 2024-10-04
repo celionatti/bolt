@@ -129,16 +129,65 @@ class Validator
         }
     }
 
-    protected function validateUnique($field, $tableColumn)
+    // protected function validateUnique($field, $tableColumn)
+    // {
+    //     list($table, $column) = explode('.', $tableColumn);
+    //     $value = $this->data[$field];
+
+    //     $query = "SELECT COUNT(*) as count FROM {$table} WHERE {$column} = :value";
+    //     $stmt = Database::getInstance()->getConnection()->prepare($query);
+    //     $stmt->execute(['value' => $value]);
+    //     $result = $stmt->fetch(\PDO::FETCH_OBJ);
+
+    //     if ($result->count > 0) {
+    //         $this->errors[$field] = "{$field} must be unique.";
+    //     }
+    // }
+
+    protected function validateUnique($field, $tableColumnCondition)
     {
-        list($table, $column) = explode('.', $tableColumn);
+        // Split table, column, and additional condition if provided
+        $parts = explode(',', $tableColumnCondition);
+        list($table, $column) = explode('.', $parts[0]);
         $value = $this->data[$field];
 
+        // Build the base query
         $query = "SELECT COUNT(*) as count FROM {$table} WHERE {$column} = :value";
+        $params = ['value' => $value];
+
+        // Handle additional conditions (e.g., 'id != 1')
+        if (isset($parts[1])) {
+            // Parse additional condition(s), e.g., "id != 1"
+            $additionalCondition = trim($parts[1]);
+
+            // Assuming the format 'field != value' or 'field = value'
+            if (preg_match('/(\w+)\s*(=|!=|<|>|<=|>=)\s*(.+)/', $additionalCondition, $matches)) {
+                $conditionField = $matches[1];
+                $conditionOperator = $matches[2];
+                $conditionValue = $matches[3];
+
+                // Add the additional condition to the query
+                $query .= " AND {$conditionField} {$conditionOperator} :{$conditionField}";
+
+                // Determine if the value is numeric or a string, then bind it correctly
+                if (is_numeric($conditionValue)) {
+                    $params[$conditionField] = $conditionValue;
+                } else {
+                    // Remove quotes around strings like 'John' to bind properly
+                    $conditionValue = trim($conditionValue, "'");
+                    $params[$conditionField] = $conditionValue;
+                }
+            } else {
+                throw new BoltException("Invalid condition format in unique validation.");
+            }
+        }
+
+        // Execute the query with the prepared statement
         $stmt = Database::getInstance()->getConnection()->prepare($query);
-        $stmt->execute(['value' => $value]);
+        $stmt->execute($params);
         $result = $stmt->fetch(\PDO::FETCH_OBJ);
 
+        // Check if any records match
         if ($result->count > 0) {
             $this->errors[$field] = "{$field} must be unique.";
         }
