@@ -1,19 +1,6 @@
 <?php
 
-declare(strict_types=1);
-
-/**
- * ==========================================
- * Bolt - Upload ============================
- * ==========================================
- */
-
-namespace celionatti\Bolt\Illuminate\Support;
-
-use Exception;
-use InvalidArgumentException;
-
-class Upload
+class UploadAdv
 {
     protected string $uploadDir;
     protected int $maxFileSize;
