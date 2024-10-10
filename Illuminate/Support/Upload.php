@@ -56,6 +56,17 @@ class Upload
         return ['success' => true, 'file' => $filePath, 'message' => 'File uploaded successfully.'];
     }
 
+    public function delete(string $filename)
+    {
+        $filepath = URL_ROOT . '/' . $filename;
+
+        if (file_exists($filepath)) {
+            return unlink($filepath);
+        }
+
+        throw new Exception('File not found.');
+    }
+
     public function uploadMultiple(array $fileInputNames, bool $rename = true): array
     {
         $uploadedFiles = [];
@@ -81,7 +92,7 @@ class Upload
             return $this->mergeChunks($chunkDir, $file['name'], $uniqueId);
         }
 
-        return ['success' => true, 'message' => 'Chunk uploaded successfully.'];
+        return ['success' => 'Chunk uploaded successfully.'];
     }
 
     protected function mergeChunks(string $chunkDir, string $fileName, string $uniqueId): array
@@ -97,7 +108,7 @@ class Upload
         fclose($outputFile);
         rmdir($chunkDir);
 
-        return ['success' => true, 'message' => 'File uploaded successfully.', 'file' => $finalPath];
+        return ['success' => 'File uploaded successfully.', 'file' => $finalPath];
     }
 
     public function generateThumbnail(string $filePath, int $width, int $height, string $thumbDir = 'thumbnails/'): string
@@ -187,9 +198,12 @@ class Upload
             throw new Exception('File exceeds maximum allowed size.');
         }
 
-        $fileMimeType = mime_content_type($file['tmp_name']);
-        if (!in_array($fileMimeType, $this->allowedFileTypes)) {
-            throw new Exception('Invalid file type.');
+        if(!empty(mime_content_type($file['tmp_name']))) {
+            $fileMimeType = mime_content_type($file['tmp_name']);
+            if (!in_array($fileMimeType, $this->allowedFileTypes)) {
+                throw new Exception('Invalid file type.');
+            }
+            throw new Exception("Mime Type can not be empty!");
         }
 
         if (in_array($fileMimeType, ['text/x-php', 'application/x-executable'])) {
