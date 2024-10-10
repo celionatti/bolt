@@ -56,15 +56,48 @@ class Upload
         return ['success' => true, 'file' => $filePath, 'message' => 'File uploaded successfully.'];
     }
 
-    public function delete(string $filename)
-    {
-        $filepath = URL_ROOT . '/' . $filename;
+    // public function delete(string $filename): bool
+    // {
+    //     $filepath = realpath($filename);
 
-        if (file_exists($filepath)) {
-            return unlink($filepath);
+    //     if (!file_exists($filepath)) {
+    //         throw new Exception('File not found: ' . $filename);
+    //     }
+
+    //     if (!is_writable($filepath)) {
+    //         throw new Exception('File is not writable and cannot be deleted: ' . $filename);
+    //     }
+
+    //     if (!unlink($filepath)) {
+    //         throw new Exception('Failed to delete the file: ' . $filename);
+    //     }
+
+    //     return true;
+    // }
+
+    public function delete(string $filename, bool $ignoreIfNotFound = false): bool
+    {
+        $filepath = realpath($filename);
+
+        // If the file doesn't exist, either ignore or throw an exception based on the parameter.
+        if (!$filepath || !file_exists($filepath)) {
+            if ($ignoreIfNotFound) {
+                return false; // Continue silently
+            }
+            throw new Exception('File not found: ' . $filename);
         }
 
-        throw new Exception('File not found.');
+        // Check if the file is writable
+        if (!is_writable($filepath)) {
+            throw new Exception('File is not writable and cannot be deleted: ' . $filename);
+        }
+
+        // Attempt to delete the file
+        if (!unlink($filepath)) {
+            throw new Exception('Failed to delete the file: ' . $filename);
+        }
+
+        return true;
     }
 
     public function uploadMultiple(array $fileInputNames, bool $rename = true): array
@@ -194,19 +227,30 @@ class Upload
     {
         $file = $_FILES[$fileInputName];
 
+        // Check file size
         if ($file['size'] > $this->maxFileSize) {
             throw new Exception('File exceeds maximum allowed size.');
         }
 
-        if(!empty(mime_content_type($file['tmp_name']))) {
-            $fileMimeType = mime_content_type($file['tmp_name']);
-            if (!in_array($fileMimeType, $this->allowedFileTypes)) {
-                throw new Exception('Invalid file type.');
-            }
-            throw new Exception("Mime Type can not be empty!");
+        // Ensure the file exists and can be accessed
+        if (!is_uploaded_file($file['tmp_name'])) {
+            throw new Exception('Uploaded file is missing or inaccessible.');
         }
 
-        if (in_array($fileMimeType, ['text/x-php', 'application/x-executable'])) {
+        // Validate the MIME type
+        $fileMimeType = mime_content_type($file['tmp_name']);
+        if (empty($fileMimeType)) {
+            throw new Exception('Mime type cannot be empty.');
+        }
+
+        // Check if MIME type is allowed
+        if (!in_array($fileMimeType, $this->allowedFileTypes)) {
+            throw new Exception('Invalid file type. Allowed types are: ' . implode(', ', $this->allowedFileTypes));
+        }
+
+        // Disallow dangerous file types
+        $dangerousTypes = ['text/x-php', 'application/x-executable'];
+        if (in_array($fileMimeType, $dangerousTypes)) {
             throw new Exception('Uploading dangerous file types is prohibited.');
         }
 
