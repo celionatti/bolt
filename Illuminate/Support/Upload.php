@@ -53,7 +53,7 @@ class Upload
         $this->runAfterUploadCallbacks($filename);
         $this->logUpload($filename);
 
-        return ['success' => 'File uploaded successfully.', 'file' => $filePath];
+        return ['success' => true, 'file' => $filePath, 'message' => 'File uploaded successfully.'];
     }
 
     public function uploadMultiple(array $fileInputNames, bool $rename = true): array
@@ -81,7 +81,7 @@ class Upload
             return $this->mergeChunks($chunkDir, $file['name'], $uniqueId);
         }
 
-        return ['success' => 'Chunk uploaded successfully.'];
+        return ['success' => true, 'message' => 'Chunk uploaded successfully.'];
     }
 
     protected function mergeChunks(string $chunkDir, string $fileName, string $uniqueId): array
@@ -97,7 +97,7 @@ class Upload
         fclose($outputFile);
         rmdir($chunkDir);
 
-        return ['success' => 'File uploaded successfully.', 'file' => $finalPath];
+        return ['success' => true, 'message' => 'File uploaded successfully.', 'file' => $finalPath];
     }
 
     public function generateThumbnail(string $filePath, int $width, int $height, string $thumbDir = 'thumbnails/'): string
