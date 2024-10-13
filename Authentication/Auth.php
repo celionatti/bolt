@@ -12,172 +12,187 @@ declare(strict_types=1);
 
 namespace celionatti\Bolt\Authentication;
 
-use celionatti\Bolt\Model\User;
-use celionatti\Bolt\BoltException\BoltException;
+use Exception;
+use celionatti\Bolt\Database\Database;
 use celionatti\Bolt\Illuminate\Support\RateLimits;
-use celionatti\Bolt\Sessions\Handlers\DefaultSessionHandler;
 
-abstract class Auth
+class Auth
 {
-    protected $session;
-    protected $rateLimiter;
-    protected ?User $_user = null;
+    protected Database $db;
+    protected RateLimits $rateLimiter;
+    protected string $identifierColumn = 'email'; // Default identifier is email
 
-    const MAX_ATTEMPTS = 5;
-    const DECAY_MINUTES = 1;
-    const REMEMBER_ME_COOKIE_NAME = "_bv_remember_me";
-    const BV_SESSION_NAME = "__bv_user_id";
-    const REMEMBER_ME_DURATION = 86400 * 30; // 30 days
-
-    public function __construct()
+    /**
+     * Auth constructor.
+     *
+     * @param Database $db
+     * @param RateLimits $rateLimiter
+     */
+    public function __construct(Database $db, RateLimits $rateLimiter)
     {
-        $this->session = new DefaultSessionHandler();
-        $this->rateLimiter = new RateLimits();
+        $this->db = $db;
+        $this->rateLimiter = $rateLimiter;
     }
 
-    public function attempt(array $credentials, bool $remember = false, bool $checkBlocked = true, bool $checkVerified = true): bool
+    /**
+     * Attempt to log in a user with the given credentials.
+     *
+     * @param array $credentials
+     * @return bool
+     * @throws Exception
+     */
+    public function login(array $credentials): bool
     {
-        $this->validateEmail($credentials['email']);
+        $identifier = $credentials[$this->identifierColumn];
 
-        $key = $this->throttleKey($credentials['email']);
-
-        if ($this->rateLimiter->tooManyAttempts($key, self::MAX_ATTEMPTS)) {
-            throw new BoltException("Too many login attempts. Please try again later.");
+        // Check if the user is locked
+        if ($this->rateLimiter->isLocked($identifier)) {
+            throw new Exception("This account is locked. Please wait {$this->rateLimiter->retryDelayMinutes($identifier)} minutes.");
         }
 
-        /**
-         * @var User $user
-         */
-        $user = (new User())->findBy(['email' => $credentials['email']])->first();
-
-        if (!$user || !$this->validateUser($user, $credentials['password'], $checkBlocked, $checkVerified)) {
-            $this->rateLimiter->hit($key, self::DECAY_MINUTES * 60);
-            throw new BoltException("Invalid credentials.");
+        // Check if there are too many login attempts
+        if ($this->rateLimiter->tooManyAttempts($identifier)) {
+            $this->rateLimiter->lock($identifier);
+            throw new Exception('Too many login attempts. Please try again later.');
         }
 
-        $this->login($user, $remember);
-        $this->rateLimiter->clear($key);
+        // Fetch user from the database based on the identifier
+        $user = $this->getUserByIdentifier($identifier);
+
+        if (!$user || !$this->verifyPassword($credentials['password'], $user->password)) {
+            // Increment failed login attempts
+            $this->rateLimiter->hit($identifier);
+
+            throw new Exception('Invalid credentials.');
+        }
+
+        // Clear attempts after successful login
+        $this->rateLimiter->clearAttempts($identifier);
+
+        // Login the user (e.g., start a session)
+        $this->setUserSession($user);
+
         return true;
     }
 
-    public function login(User $user, bool $remember = false): void
-    {
-        $this->session->set(self::BV_SESSION_NAME, $user->user_id);
-
-        if ($remember) {
-            $token = bin2hex(random_bytes(16));
-            $hashedToken = password_hash($token, PASSWORD_DEFAULT);
-            $this->setRememberMeCookie($token);
-            $user->remember_token = $hashedToken;
-            $user->save();
-        }
-    }
-
+    /**
+     * Log out the authenticated user.
+     *
+     * @return void
+     */
     public function logout(): void
     {
-        $this->clearRememberMeCookie();
-        $this->session->destroy();
+        // Clear user session or authentication tokens
+        $this->clearUserSession();
     }
 
-    public function user(): ?User
+    /**
+     * Lock the user manually.
+     *
+     * @param string $identifier
+     * @return void
+     */
+    public function lock(string $identifier): void
     {
-        $userId = $this->session->get(self::BV_SESSION_NAME);
+        $this->rateLimiter->lock($identifier);
+    }
 
-        if ($userId) {
-            return (new User())->find($userId);
+    /**
+     * Get user by identifier (e.g., email).
+     *
+     * @param string $identifier
+     * @return object|null
+     */
+    protected function getUserByIdentifier(string $identifier): ?object
+    {
+        $result = $this->db->query("
+            SELECT *
+            FROM users
+            WHERE {$this->identifierColumn} = :identifier
+            LIMIT 1
+        ", ['identifier' => $identifier]);
+
+        return $result[0] ?? null;
+    }
+
+    /**
+     * Verify that the given password matches the stored hash.
+     *
+     * @param string $password
+     * @param string $hashedPassword
+     * @return bool
+     */
+    protected function verifyPassword(string $password, string $hashedPassword): bool
+    {
+        return password_verify($password, $hashedPassword);
+    }
+
+    /**
+     * Set the authenticated user in the session.
+     *
+     * @param object $user
+     * @return void
+     */
+    protected function setUserSession(object $user): void
+    {
+        $_SESSION['user_id'] = $user->id;
+        $_SESSION['user_name'] = $user->name;
+    }
+
+    /**
+     * Clear the authenticated user's session.
+     *
+     * @return void
+     */
+    protected function clearUserSession(): void
+    {
+        // Assuming we store session or token for the logged-in user
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
         }
 
-        return $this->getUserFromRememberMeCookie();
-    }
+        unset($_SESSION['user_id'], $_SESSION['email']);
+        // Clear the session data related to the user
+        $_SESSION = [];
 
-    public function check(): bool
-    {
-        return $this->session->has(self::BV_SESSION_NAME) || $this->hasRememberMeCookie();
-    }
-
-    public function guest(): bool
-    {
-        return !$this->check();
-    }
-
-    public function hasRole(string $role)
-    {
-        $user = $this->user();
-        return $user ? $user->hasRole($role) : false;
-    }
-
-    public function authorizeRole(string $role): void
-    {
-        if (!$this->hasRole($role)) {
-            throw new BoltException("Unauthorized. Role '{$role}' is required.");
-        }
-    }
-
-    protected function throttleKey(string $email): string
-    {
-        return 'login_attempt_' . md5($email);
-    }
-
-    private function validateEmail(string $email): void
-    {
-        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            throw new BoltException("Invalid email format.");
-        }
-    }
-
-    private function validateUser(User $user, string $password, bool $checkBlocked, bool $checkVerified): bool
-    {
-        if ($checkBlocked && $user->blocked) {
-            throw new BoltException("User is blocked.");
+        // Destroy the session completely
+        if (ini_get("session.use_cookies")) {
+            $params = session_get_cookie_params();
+            setcookie(session_name(), '', time() - 42000, $params["path"], $params["domain"], $params["secure"], $params["httponly"]);
         }
 
-        if ($checkVerified && !$user->verified) {
-            throw new BoltException("User is not verified.");
-        }
-
-        return password_verify($password, $user->password);
+        // Finally, destroy the session
+        session_destroy(); // Optional: Destroy the entire session
     }
 
-    private function setRememberMeCookie(string $token): void
+    /**
+     * Check if the user is authenticated.
+     *
+     * @return bool
+     */
+    public function isAuthenticated(): bool
     {
-        setcookie(self::REMEMBER_ME_COOKIE_NAME, $token, [
-            'expires' => time() + self::REMEMBER_ME_DURATION,
-            'path' => '/',
-            'secure' => true, // Only send over HTTPS
-            'httponly' => true, // Accessible only via HTTP (no JavaScript)
-            'samesite' => 'Strict', // Only send the cookie for same-site requests
-        ]);
+        return isset($_SESSION['user_id']);
     }
 
-    private function clearRememberMeCookie(): void
+    /**
+     * Get the authenticated user's ID.
+     *
+     * @return int|null
+     */
+    public function getUserId(): ?int
     {
-        if (isset($_COOKIE[self::REMEMBER_ME_COOKIE_NAME])) {
-            unset($_COOKIE[self::REMEMBER_ME_COOKIE_NAME]);
-            setcookie(self::REMEMBER_ME_COOKIE_NAME, '', time() - 3600, '/');
-        }
+        return $_SESSION['user_id'] ?? null;
     }
 
-    private function getUserFromRememberMeCookie(): ?User
+    /**
+     * Set a custom identifier column (e.g., 'username').
+     *
+     * @param string $column
+     * @return void
+     */
+    public function setIdentifierColumn(string $column): void
     {
-        if ($this->hasRememberMeCookie()) {
-            $cookieToken = $_COOKIE[self::REMEMBER_ME_COOKIE_NAME];
-
-            /**
-             * @var User $user
-             */
-            $user = (new User())->findBy(['remember_token' => $cookieToken])->first();
-
-            if ($user && password_verify($cookieToken, $user->remember_token)) {
-                $this->session->set(self::BV_SESSION_NAME, $user->id);
-                return $user;
-            }
-        }
-
-        return null;
-    }
-
-    private function hasRememberMeCookie(): bool
-    {
-        return isset($_COOKIE[self::REMEMBER_ME_COOKIE_NAME]);
+        $this->identifierColumn = $column;
     }
 }

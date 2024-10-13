@@ -12,122 +12,225 @@ declare(strict_types=1);
 
 namespace celionatti\Bolt\Illuminate\Support;
 
+use DateTime;
 use celionatti\Bolt\Database\Database;
-use celionatti\Bolt\BoltQueryBuilder\QueryBuilder;
 
 
 class RateLimits
 {
-    protected $queryBuilder;
-    protected $encryptionKey = 'bv_auth_encrypt_key_2024';
-    protected $iv = 'bv_key_2024';
+    protected string $keyPrefix = 'rate_limiter_';
+    protected int $maxAttempts;
+    protected int $decayMinutes;
+    protected Database $db;
 
-    public function __construct()
+    /**
+     * RateLimiter constructor.
+     *
+     * @param Database $db
+     * @param int $maxAttempts
+     * @param int $decayMinutes
+     */
+    public function __construct(Database $db, int $maxAttempts = 5, int $decayMinutes = 1)
     {
-        $database = new Database();
-        $this->queryBuilder = new QueryBuilder($database->getConnection());
+        $this->db = $db;
+        $this->maxAttempts = $maxAttempts;
+        $this->decayMinutes = $decayMinutes;
     }
 
-    protected function getIpAddress()
+    /**
+     * Generate a unique key for the identifier.
+     *
+     * @param string $identifier
+     * @return string
+     */
+    protected function getKey(string $identifier): string
     {
-        return $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+        return $this->keyPrefix . $identifier;
     }
 
-    protected function encrypt($data)
+    /**
+     * Increment the number of attempts for the given identifier.
+     *
+     * @param string $identifier
+     */
+    public function hit(string $identifier): void
     {
-        return openssl_encrypt($data, 'aes-256-cbc', $this->encryptionKey, 0, $this->iv);
+        $key = $this->getKey($identifier);
+
+        $this->db->query("
+            INSERT INTO rate_limits (rate_key, attempts, last_attempt_at)
+            VALUES (:key, 1, NOW())
+            ON DUPLICATE KEY UPDATE attempts = attempts + 1, last_attempt_at = NOW()
+        ", [
+            'key' => $key
+        ]);
     }
 
-    protected function decrypt($data)
+    /**
+     * Determine if the given identifier has exceeded the maximum number of attempts.
+     *
+     * @param string $identifier
+     * @return bool
+     */
+    public function tooManyAttempts(string $identifier): bool
     {
-        return openssl_decrypt($data, 'aes-256-cbc', $this->encryptionKey, 0, $this->iv);
-    }
+        $key = $this->getKey($identifier);
 
-    protected function logRateLimit($key, $ipAddress)
-    {
-        // Implement your logging logic here
-        $message = "Rate limit hit for key: {$key} from IP: {$ipAddress} at " . date('Y-m-d H:i:s');
-        error_log($message);
-    }
+        // Get the number of attempts and the timestamp of the last attempt
+        $result = $this->db->query("
+            SELECT attempts, last_attempt_at
+            FROM rate_limits
+            WHERE rate_key = :key
+        ", ['key' => $key]);
 
-    public function hit($key, $seconds = 60, $userId = null)
-    {
-        $ipAddress = $this->encrypt($this->getIpAddress());
-        $attempts = $this->getAttempts($key, $ipAddress, $userId);
-        $multiplier = pow(2, $attempts - 1); // Exponential backoff
-        $expiresAt = time() + ($seconds * $multiplier);
+        if ($result) {
+            $attempts = (int) $result[0]->attempts;
+            $lastAttemptAt = new DateTime($result[0]->last_attempt_at);
+            $currentDate = new DateTime();
 
-        $this->logRateLimit($key, $ipAddress);
+            // Check if decay time has passed
+            if ($currentDate->diff($lastAttemptAt)->i >= $this->decayMinutes) {
+                $this->clearAttempts($identifier);
+                return false; // Decay time has passed, reset attempts
+            }
 
-        if ($attempts > 0) {
-            $this->queryBuilder->update('rate_limits', [
-                'attempts' => $attempts + 1,
-                'expires_at' => $expiresAt
-            ])->where('key', '=', $key)
-                ->where('ip_address', '=', $ipAddress)
-                ->where('user_id', '=', $userId)
-                ->execute();
-        } else {
-            $this->queryBuilder->insert('rate_limits', [
-                'key' => $key,
-                'ip_address' => $ipAddress,
-                'user_id' => $userId,
-                'attempts' => 1,
-                'expires_at' => $expiresAt
-            ])->execute();
-        }
-    }
-
-    public function tooManyAttempts($key, $maxAttempts = 5, $userId = null)
-    {
-        $ipAddress = $this->encrypt($this->getIpAddress());
-        return $this->getAttempts($key, $ipAddress, $userId) >= $maxAttempts;
-    }
-
-    public function clear($key, $ipAddress = null, $userId = null)
-    {
-        $query = $this->queryBuilder->delete('rate_limits')
-            ->where('key', '=', $key);
-
-        if ($ipAddress) {
-            $query->where('ip_address', '=', $ipAddress);
-        }
-
-        if ($userId) {
-            $query->where('user_id', '=', $userId);
-        }
-
-        $query->execute();
-    }
-
-    protected function getAttempts($key, $ipAddress, $userId = null)
-    {
-        $result = $this->queryBuilder->select('attempts', 'expires_at')
-            ->from('rate_limits')
-            ->where('key', '=', $key)
-            ->where('ip_address', '=', $ipAddress);
-
-        if ($userId) {
-            $result->where('user_id', '=', $userId);
+            return $attempts >= $this->maxAttempts;
         }
 
-        $result = $result->execute();
+        return false; // No attempts yet
+    }
 
-        if ($result && $result[0]['expires_at'] > time()) {
-            return $result[0]['attempts'];
+    /**
+     * Clear the number of attempts for the given identifier.
+     *
+     * @param string $identifier
+     */
+    public function clearAttempts(string $identifier): void
+    {
+        $key = $this->getKey($identifier);
+
+        $this->db->query("DELETE FROM rate_limits WHERE rate_key = :key", ['key' => $key]);
+    }
+
+    /**
+     * Lock the identifier to prevent further attempts.
+     *
+     * @param string $identifier
+     */
+    public function lock(string $identifier): void
+    {
+        $key = $this->getKey($identifier);
+        $lockTime = (new DateTime())->format('Y-m-d H:i:s');
+
+        // Insert lock data or update an existing lock timestamp
+        $this->db->query("
+            INSERT INTO rate_limits (rate_key, attempts, last_attempt_at, locked_at)
+            VALUES (:key, :attempts, NOW(), :lock_time)
+            ON DUPLICATE KEY UPDATE locked_at = :lock_time
+        ", [
+            'key' => $key,
+            'attempts' => $this->maxAttempts,
+            'lock_time' => $lockTime
+        ]);
+    }
+
+    /**
+     * Check if the identifier is currently locked.
+     *
+     * @param string $identifier
+     * @return bool
+     */
+    public function isLocked(string $identifier): bool
+    {
+        $key = $this->getKey($identifier);
+        $result = $this->db->query("
+            SELECT locked_at
+            FROM rate_limits
+            WHERE rate_key = :key
+        ", ['key' => $key]);
+
+        if ($result && $result[0]->locked_at) {
+            $lockedAt = new DateTime($result[0]->locked_at);
+            $currentDate = new DateTime();
+
+            // Check if the lock time is still valid (within decay period)
+            $unlockTime = $lockedAt->modify("+{$this->decayMinutes} minutes");
+            if ($currentDate < $unlockTime) {
+                return true; // Still locked
+            } else {
+                // Lock has expired, clear lock
+                $this->clearLock($identifier);
+            }
         }
 
-        if ($result && $result[0]['expires_at'] <= time()) {
-            $this->clear($key, $ipAddress, $userId);
+        return false; // Not locked
+    }
+
+    /**
+     * Clear the lock for a given identifier.
+     *
+     * @param string $identifier
+     */
+    public function clearLock(string $identifier): void
+    {
+        $key = $this->getKey($identifier);
+
+        $this->db->query("
+            UPDATE rate_limits
+            SET locked_at = NULL
+            WHERE rate_key = :key
+        ", ['key' => $key]);
+    }
+
+    /**
+     * Get the number of remaining attempts before lockout.
+     *
+     * @param string $identifier
+     * @return int
+     */
+    public function remainingAttempts(string $identifier): int
+    {
+        $key = $this->getKey($identifier);
+        $result = $this->db->query("
+            SELECT attempts
+            FROM rate_limits
+            WHERE rate_key = :key
+        ", ['key' => $key]);
+
+        if ($result) {
+            $attempts = (int) $result[0]->attempts;
+            return max($this->maxAttempts - $attempts, 0);
+        }
+
+        return $this->maxAttempts;
+    }
+
+    /**
+     * Get the retry delay in minutes for a given identifier.
+     *
+     * @param string $identifier
+     * @return int
+     */
+    public function retryDelayMinutes(string $identifier): int
+    {
+        $key = $this->getKey($identifier);
+        $result = $this->db->query("
+            SELECT last_attempt_at
+            FROM rate_limits
+            WHERE rate_key = :key
+        ", ['key' => $key]);
+
+        if ($result) {
+            $lastAttemptAt = new DateTime($result[0]->last_attempt_at);
+            $currentDate = new DateTime();
+            $elapsedMinutes = $currentDate->diff($lastAttemptAt)->i;
+
+            // If within the decay period, return remaining delay time
+            if ($elapsedMinutes < $this->decayMinutes) {
+                return $this->decayMinutes - $elapsedMinutes;
+            }
         }
 
         return 0;
-    }
-
-    public function cleanup()
-    {
-        $this->queryBuilder->delete('rate_limits')
-            ->where('expires_at', '<=', time())
-            ->execute();
     }
 }
