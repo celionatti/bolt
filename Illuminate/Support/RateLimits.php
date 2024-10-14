@@ -77,18 +77,29 @@ class RateLimits
 
         // Get the number of attempts and the timestamp of the last attempt
         $result = $this->db->query("
-            SELECT attempts, last_attempt_at
-            FROM rate_limits
-            WHERE rate_key = :key
-        ", ['key' => $key]);
+        SELECT attempts, last_attempt_at
+        FROM rate_limits
+        WHERE rate_key = :key
+    ", ['key' => $key]);
 
-        if ($result) {
+        if ($result && isset($result[0]->last_attempt_at)) {
             $attempts = (int) $result[0]->attempts;
-            $lastAttemptAt = new DateTime($result[0]->last_attempt_at);
+
+            // Ensure last_attempt_at is not null before creating a DateTime object
+            if ($result[0]->last_attempt_at) {
+                $lastAttemptAt = new DateTime($result[0]->last_attempt_at);
+            } else {
+                return false; // No attempts yet, safe to return false
+            }
+
             $currentDate = new DateTime();
 
+            // Calculate the total minutes passed since the last attempt
+            $timeDifference = $currentDate->getTimestamp() - $lastAttemptAt->getTimestamp();
+            $minutesPassed = $timeDifference / 60;  // Convert seconds to minutes
+
             // Check if decay time has passed
-            if ($currentDate->diff($lastAttemptAt)->i >= $this->decayMinutes) {
+            if ($minutesPassed >= $this->decayMinutes) {
                 $this->clearAttempts($identifier);
                 return false; // Decay time has passed, reset attempts
             }
@@ -96,7 +107,7 @@ class RateLimits
             return $attempts >= $this->maxAttempts;
         }
 
-        return false; // No attempts yet
+        return false; // No attempts yet or no record found for this identifier
     }
 
     /**
