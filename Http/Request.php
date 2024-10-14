@@ -304,4 +304,61 @@ class Request
     {
         return $this->sanitize(array_merge($this->queryParams, $this->bodyParams, $_POST));
     }
+
+    public function has($key): bool
+    {
+        return isset($this->bodyParams[$key])
+            || isset($this->queryParams[$key])
+            || isset($this->serverParams[$key])
+            || isset($this->headers[$key])
+            || isset($this->cookies[$key])
+            || isset($_POST[$key]);
+    }
+
+    public function only(array $keys): array
+    {
+        $data = [];
+        foreach ($keys as $key) {
+            // Check if the key exists in any of the request sources, including form data ($_POST)
+            if ($this->has($key)) {
+                // Prefer bodyParams and queryParams, but check $_POST as well
+                if (isset($this->bodyParams[$key])) {
+                    $data[$key] = $this->getBodyParam($key);
+                } elseif (isset($this->queryParams[$key])) {
+                    $data[$key] = $this->getQueryParam($key);
+                } elseif (isset($_POST[$key])) {
+                    $data[$key] = $this->sanitize($_POST[$key]);  // Fetch and sanitize from $_POST
+                } elseif (isset($_REQUEST[$key])) {
+                    $data[$key] = $this->sanitize($_REQUEST[$key]);
+                }
+            }
+        }
+        return $data;
+    }
+
+    /**
+     * Method to provide information about the available methods in the Request class.
+     *
+     * @return array
+     */
+    public function help(): array
+    {
+        return [
+            'get' => 'Retrieve a request parameter by name.',
+            'set' => 'Set a value for a request parameter.',
+            'has' => 'Check if a specific request parameter exists.',
+            'validate' => 'Validate request parameters based on rules.',
+            'getErrors' => 'Get validation errors if any exist.',
+            'isJson' => 'Check if the request content type is JSON.',
+            'isFormData' => 'Check if the request is form data.',
+            'getMethod' => 'Retrieve the HTTP method of the request.',
+            'getPath' => 'Get the request path.',
+            'isAjax' => 'Check if the request is an Ajax (XHR) request.',
+            'isSecure' => 'Check if the request is served over HTTPS.',
+            'getIp' => 'Get the client IP address.',
+            'getUserAgent' => 'Get the user agent string from the request.',
+            'getReferer' => 'Get the referer from the request.',
+            'validateFile' => 'Validate a file upload based on allowed types.',
+        ];
+    }
 }

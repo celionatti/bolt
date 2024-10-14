@@ -26,13 +26,12 @@ class RateLimits
     /**
      * RateLimiter constructor.
      *
-     * @param Database $db
      * @param int $maxAttempts
      * @param int $decayMinutes
      */
-    public function __construct(Database $db, int $maxAttempts = 5, int $decayMinutes = 1)
+    public function __construct(int $maxAttempts = 5, int $decayMinutes = 1)
     {
-        $this->db = $db;
+        $this->db = Database::getInstance();
         $this->maxAttempts = $maxAttempts;
         $this->decayMinutes = $decayMinutes;
     }

@@ -29,17 +29,26 @@ return new class extends Migration
             $table->string('email')->unique('email');
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
+            $table->string('remember_token');
             $table->timestamps();
         });
 
         Schema::create('rate_limits', function (Blueprint $table) {
             $table->id();
-            $table->string('key')->unique('key');
-            $table->string('ip_address');
-            $table->string('user_id');
+            $table->string('rate_key')->unique('rate_key');
             $table->integer('attempts')->default(0);
-            $table->timestamp('expires_at');
+            $table->timestamp('last_attempt_at');
+            $table->timestamp('locked_at');
         });
+
+        //  Schema::create('rate_limits', function (Blueprint $table) {
+        //     $table->id();
+        //     $table->string('key')->unique('key');
+        //     $table->string('ip_address');
+        //     $table->string('user_id');
+        //     $table->integer('attempts')->default(0);
+        //     $table->timestamp('expires_at');
+        // });
 
         // Schema::create('user_sessions', function (Blueprint $table) {
         //     $table->id();

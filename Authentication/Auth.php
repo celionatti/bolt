@@ -21,69 +21,87 @@ class Auth
     protected Database $db;
     protected RateLimits $rateLimiter;
     protected string $identifierColumn = 'email'; // Default identifier is email
+    protected array $errors = []; // Store form errors
 
     /**
      * Auth constructor.
      *
-     * @param Database $db
      * @param RateLimits $rateLimiter
      */
-    public function __construct(Database $db, RateLimits $rateLimiter)
+    public function __construct()
     {
-        $this->db = $db;
-        $this->rateLimiter = $rateLimiter;
+        $this->db = Database::getInstance();
+        $this->rateLimiter = new RateLimits();
+    }
+
+    public function rateLimiter()
+    {
+        return $this->rateLimiter;
     }
 
     /**
      * Attempt to log in a user with the given credentials.
      *
      * @param array $credentials
+     * @param bool $rememberMe
      * @return bool
-     * @throws Exception
      */
-    public function login(array $credentials): bool
+    public function login(array $credentials, bool $rememberMe = false): bool
     {
         $identifier = $credentials[$this->identifierColumn];
+        $password = $credentials['password'];
 
-        // Check if the user is locked
         if ($this->rateLimiter->isLocked($identifier)) {
-            throw new Exception("This account is locked. Please wait {$this->rateLimiter->retryDelayMinutes($identifier)} minutes.");
+            $this->addError("This account is locked. Please wait {$this->rateLimiter->retryDelayMinutes($identifier)} minutes.");
+            return false;
         }
 
-        // Check if there are too many login attempts
         if ($this->rateLimiter->tooManyAttempts($identifier)) {
             $this->rateLimiter->lock($identifier);
-            throw new Exception('Too many login attempts. Please try again later.');
+            $this->addError('Too many login attempts. Please try again later.');
+            return false;
         }
 
-        // Fetch user from the database based on the identifier
         $user = $this->getUserByIdentifier($identifier);
 
-        if (!$user || !$this->verifyPassword($credentials['password'], $user->password)) {
-            // Increment failed login attempts
+        if (!$user || !$this->verifyPassword($password, $user->password)) {
             $this->rateLimiter->hit($identifier);
-
-            throw new Exception('Invalid credentials.');
+            $this->addError('Invalid credentials.');
+            return false;
         }
 
-        // Clear attempts after successful login
         $this->rateLimiter->clearAttempts($identifier);
 
-        // Login the user (e.g., start a session)
+        // Login the user
         $this->setUserSession($user);
+
+        // Handle "remember me" functionality
+        if ($rememberMe) {
+            $this->setRememberMeToken($user);
+        }
 
         return true;
     }
 
     /**
-     * Log out the authenticated user.
+     * Log out the authenticated user and clear remember-me cookie.
      *
      * @return void
      */
     public function logout(): void
     {
-        // Clear user session or authentication tokens
         $this->clearUserSession();
+        $this->clearRememberMeToken();
+    }
+
+    /**
+     * Get form errors.
+     *
+     * @return array
+     */
+    public function getErrors(): array
+    {
+        return $this->errors;
     }
 
     /**
@@ -135,6 +153,10 @@ class Auth
      */
     protected function setUserSession(object $user): void
     {
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+
         $_SESSION['user_id'] = $user->id;
         $_SESSION['user_name'] = $user->name;
     }
@@ -146,23 +168,56 @@ class Auth
      */
     protected function clearUserSession(): void
     {
-        // Assuming we store session or token for the logged-in user
         if (session_status() === PHP_SESSION_NONE) {
             session_start();
         }
 
-        unset($_SESSION['user_id'], $_SESSION['email']);
-        // Clear the session data related to the user
-        $_SESSION = [];
+        unset($_SESSION['user_id'], $_SESSION['user_name']);
+        session_destroy();
+    }
 
-        // Destroy the session completely
-        if (ini_get("session.use_cookies")) {
-            $params = session_get_cookie_params();
-            setcookie(session_name(), '', time() - 42000, $params["path"], $params["domain"], $params["secure"], $params["httponly"]);
+    /**
+     * Set a remember-me token in a cookie.
+     *
+     * @param object $user
+     * @return void
+     */
+    protected function setRememberMeToken(object $user): void
+    {
+        $token = bin2hex(random_bytes(32));
+        $hashedToken = password_hash($token, PASSWORD_DEFAULT);
+
+        // Store hashed token in the database
+        $this->db->query("
+            UPDATE users
+            SET remember_token = :token
+            WHERE id = :id
+        ", ['token' => $hashedToken, 'id' => $user->id]);
+
+        // Set the cookie with the raw token
+        setcookie('remember_me', "{$user->id}|{$token}", time() + (86400 * 30), "/", "", true, true);
+    }
+
+    /**
+     * Clear the remember-me cookie and token in the database.
+     *
+     * @return void
+     */
+    protected function clearRememberMeToken(): void
+    {
+        if (isset($_COOKIE['remember_me'])) {
+            list($userId, $token) = explode('|', $_COOKIE['remember_me']);
+
+            // Remove the token from the database
+            $this->db->query("
+                UPDATE users
+                SET remember_token = NULL
+                WHERE id = :id
+            ", ['id' => $userId]);
+
+            // Expire the cookie
+            setcookie('remember_me', '', time() - 3600, "/", "", true, true);
         }
-
-        // Finally, destroy the session
-        session_destroy(); // Optional: Destroy the entire session
     }
 
     /**
@@ -183,6 +238,17 @@ class Auth
     public function getUserId(): ?int
     {
         return $_SESSION['user_id'] ?? null;
+    }
+
+    /**
+     * Add error to the form errors array.
+     *
+     * @param string $error
+     * @return void
+     */
+    protected function addError(string $error): void
+    {
+        $this->errors[] = $error;
     }
 
     /**
