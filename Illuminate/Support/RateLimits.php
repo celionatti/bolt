@@ -56,13 +56,17 @@ class RateLimits
     {
         $key = $this->getKey($identifier);
 
-        $this->db->query("
-            INSERT INTO rate_limits (rate_key, attempts, last_attempt_at)
-            VALUES (:key, 1, NOW())
-            ON DUPLICATE KEY UPDATE attempts = attempts + 1, last_attempt_at = NOW()
-        ", [
-            'key' => $key
-        ]);
+        $query = "
+        INSERT INTO rate_limits (rate_key, attempts, last_attempt_at)
+        VALUES (:key, 1, NOW())
+        ON DUPLICATE KEY UPDATE attempts = attempts + 1, last_attempt_at = NOW()
+    ";
+
+        try {
+            $this->db->query($query, ['key' => $key]);
+        } catch (\Exception $e) {
+            // Handle exception, maybe log it
+        }
     }
 
     /**
@@ -74,40 +78,34 @@ class RateLimits
     public function tooManyAttempts(string $identifier): bool
     {
         $key = $this->getKey($identifier);
-
-        // Get the number of attempts and the timestamp of the last attempt
         $result = $this->db->query("
         SELECT attempts, last_attempt_at
         FROM rate_limits
         WHERE rate_key = :key
     ", ['key' => $key]);
 
-        if ($result && isset($result[0]->last_attempt_at)) {
-            $attempts = (int) $result[0]->attempts;
-
-            // Ensure last_attempt_at is not null before creating a DateTime object
-            if ($result[0]->last_attempt_at) {
-                $lastAttemptAt = new DateTime($result[0]->last_attempt_at);
-            } else {
-                return false; // No attempts yet, safe to return false
-            }
-
-            $currentDate = new DateTime();
-
-            // Calculate the total minutes passed since the last attempt
-            $timeDifference = $currentDate->getTimestamp() - $lastAttemptAt->getTimestamp();
-            $minutesPassed = $timeDifference / 60;  // Convert seconds to minutes
-
-            // Check if decay time has passed
-            if ($minutesPassed >= $this->decayMinutes) {
-                $this->clearAttempts($identifier);
-                return false; // Decay time has passed, reset attempts
-            }
-
-            return $attempts >= $this->maxAttempts;
+        if (!isset($result['result'][0])) {
+            // No record found
+            return false;
         }
 
-        return false; // No attempts yet or no record found for this identifier
+        $record = $result['result'][0];
+        $attempts = (int) $record->attempts;
+
+        if (empty($record->last_attempt_at)) {
+            return false;
+        }
+
+        $lastAttemptAt = new DateTime($record->last_attempt_at);
+        $currentDate = new DateTime();
+        $minutesPassed = ($currentDate->getTimestamp() - $lastAttemptAt->getTimestamp()) / 60;
+
+        if ($minutesPassed >= $this->decayMinutes) {
+            $this->clearAttempts($identifier);
+            return false; // Reset after decay time
+        }
+
+        return $attempts >= $this->maxAttempts;
     }
 
     /**
@@ -159,8 +157,8 @@ class RateLimits
             WHERE rate_key = :key
         ", ['key' => $key]);
 
-        if ($result && $result[0]->locked_at) {
-            $lockedAt = new DateTime($result[0]->locked_at);
+        if ($result && $result['result'][0]->locked_at) {
+            $lockedAt = new DateTime($result['result'][0]->locked_at);
             $currentDate = new DateTime();
 
             // Check if the lock time is still valid (within decay period)
@@ -231,7 +229,7 @@ class RateLimits
         ", ['key' => $key]);
 
         if ($result) {
-            $lastAttemptAt = new DateTime($result[0]->last_attempt_at);
+            $lastAttemptAt = new DateTime($result['result'][0]->last_attempt_at);
             $currentDate = new DateTime();
             $elapsedMinutes = $currentDate->diff($lastAttemptAt)->i;
 
@@ -242,5 +240,19 @@ class RateLimits
         }
 
         return 0;
+    }
+
+    public function isRateLimited(string $identifier): bool
+    {
+        if ($this->isLocked($identifier)) {
+            return true;
+        }
+
+        if ($this->tooManyAttempts($identifier)) {
+            $this->lock($identifier);
+            return true;
+        }
+
+        return false;
     }
 }

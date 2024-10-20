@@ -57,6 +57,12 @@ class QueryBuilder
         return $this;
     }
 
+    public function table($table)
+    {
+        $this->from = $table;
+        return $this;
+    }
+
     public function from($table)
     {
         $this->from = $table;
@@ -121,6 +127,13 @@ class QueryBuilder
     {
         $this->select = ["COUNT($column) AS count"];
         return $this;
+    }
+
+    public function first($columns = ['*'])
+    {
+        $this->select($columns);
+        $this->limit(1);
+        return $this->execute()[0] ?? null; // return the first result or null if empty
     }
 
     public function insert($table, array $data)
