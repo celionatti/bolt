@@ -59,15 +59,21 @@ class Validator
 
     protected function validateRequired($field)
     {
+        // if (!isset($this->data[$field]) || empty($this->data[$field])) {
+        //     $this->errors[$field] = "{$field} is required.";
+        // }
         if (!isset($this->data[$field]) || empty($this->data[$field])) {
-            $this->errors[$field] = "{$field} is required.";
+            $this->errors[$field] = $this->formatFieldName($field) . " is required.";
         }
     }
 
     protected function validateEmail($field)
     {
+        // if (!filter_var($this->data[$field], FILTER_VALIDATE_EMAIL)) {
+        //     $this->errors[$field] = "{$field} must be a valid email address.";
+        // }
         if (!filter_var($this->data[$field], FILTER_VALIDATE_EMAIL)) {
-            $this->errors[$field] = "{$field} must be a valid email address.";
+            $this->errors[$field] = $this->formatFieldName($field) . " must be a valid email address.";
         }
     }
 
@@ -204,5 +210,10 @@ class Validator
     public static function addCustomValidator($name, callable $callback)
     {
         self::$customValidators[$name] = $callback;
+    }
+
+    protected function formatFieldName(string $field): string
+    {
+        return ucwords(str_replace('_', ' ', $field));
     }
 }
