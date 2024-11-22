@@ -410,6 +410,28 @@ abstract class DatabaseModel
         }, $this->items);
     }
 
+    public function join(string $table, string $firstColumn, string $operator, string $secondColumn, string $type = 'INNER'): self
+    {
+        $queryBuilder = new QueryBuilder($this->connection);
+    
+        // Add the join clause
+        $queryBuilder->select()
+            ->from($this->table)
+            ->join($table, $firstColumn, $operator, $secondColumn, $type);
+    
+        // Retrieve the results
+        $result = $queryBuilder->execute();
+    
+        if ($result) {
+            $this->attributes = (array)$result[0];
+            $this->attributes = $this->castAttributes($this->attributes);
+            $this->exists = true;
+            return $this;
+        }
+    
+        throw new DatabaseException("No records found in join query", 404, "error");
+    }
+
 
     /** Relationship Section */
 
