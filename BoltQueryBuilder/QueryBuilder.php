@@ -91,6 +91,16 @@ class QueryBuilder
         return $this;
     }
 
+    public function whereNested(callable $callback, $boolean = 'AND')
+    {
+        $query = new static($this->pdo);
+        $callback($query);
+        $nestedWhere = '(' . implode(" $boolean ", $query->where) . ')';
+        $this->where[] = $nestedWhere;
+        $this->bindings = array_merge($this->bindings, $query->bindings);
+        return $this;
+    }
+
     public function orderBy($column, $direction = 'ASC')
     {
         $this->orderBy[] = "$column $direction";
@@ -144,6 +154,27 @@ class QueryBuilder
         return $this;
     }
 
+    public function upsert(array $data, array $updateColumns)
+    {
+        $this->type = 'insert';
+        $this->insert = $data;
+        $columns = array_keys($data);
+        $params = array_map(fn($column) => ':' . $column, $columns);
+    
+        $update = implode(', ', array_map(fn($column) => "$column = VALUES($column)", $updateColumns));
+    
+        $sql = 'INSERT INTO ' . $this->from .
+               ' (' . implode(', ', $columns) . ')' .
+               ' VALUES (' . implode(', ', $params) . ')' .
+               ' ON DUPLICATE KEY UPDATE ' . $update;
+    
+        foreach ($data as $column => $value) {
+            $this->bindings[$column] = $value;
+        }
+    
+        return $sql;
+    }
+
     public function update($table, array $data)
     {
         $this->type = 'update';
@@ -178,6 +209,32 @@ class QueryBuilder
             default:
                 return $this->buildSelect();
         }
+    }
+
+    public function getLastQuery()
+    {
+        $sql = $this->toSql();
+        foreach ($this->bindings as $key => $value) {
+            $sql = str_replace(":$key", $this->pdo->quote($value), $sql);
+        }
+        return $sql;
+    }
+
+    public function paginate($perPage = 10, $currentPage = 1)
+    {
+        $this->limit($perPage)->offset(($currentPage - 1) * $perPage);
+        $results = $this->execute();
+        $totalQuery = clone $this;
+        $totalQuery->select('COUNT(*) as total')->limit(null)->offset(null);
+        $total = $totalQuery->execute()[0]['total'] ?? 0;
+    
+        return [
+            'data' => $results,
+            'total' => $total,
+            'per_page' => $perPage,
+            'current_page' => $currentPage,
+            'last_page' => ceil($total / $perPage),
+        ];
     }
 
     protected function buildSelect()
@@ -257,19 +314,39 @@ class QueryBuilder
         return $sql;
     }
 
+    // public function execute($fetchMode = PDO::FETCH_ASSOC, $className = null)
+    // {
+    //     $stmt = $this->pdo->prepare($this->toSql());
+    //     $stmt->execute($this->bindings);
+
+    //     if ($this->type === 'select') {
+    //         if ($fetchMode === PDO::FETCH_CLASS && $className !== null) {
+    //             return $stmt->fetchAll($fetchMode, $className);
+    //         } else {
+    //             return $stmt->fetchAll($fetchMode);
+    //         }
+    //     }
+
+    //     return $stmt->rowCount();
+    // }
+
     public function execute($fetchMode = PDO::FETCH_ASSOC, $className = null)
     {
-        $stmt = $this->pdo->prepare($this->toSql());
-        $stmt->execute($this->bindings);
-
-        if ($this->type === 'select') {
-            if ($fetchMode === PDO::FETCH_CLASS && $className !== null) {
-                return $stmt->fetchAll($fetchMode, $className);
-            } else {
-                return $stmt->fetchAll($fetchMode);
+        try {
+            $stmt = $this->pdo->prepare($this->toSql());
+            $stmt->execute($this->bindings);
+    
+            if ($this->type === 'select') {
+                if ($fetchMode === PDO::FETCH_CLASS && $className !== null) {
+                    return $stmt->fetchAll($fetchMode, $className);
+                } else {
+                    return $stmt->fetchAll($fetchMode);
+                }
             }
+    
+            return $stmt->rowCount();
+        } catch (\PDOException $e) {
+            throw new \Exception("Query execution failed: " . $e->getMessage() . "\nSQL: " . $this->getLastQuery());
         }
-
-        return $stmt->rowCount();
     }
 }
