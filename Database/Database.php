@@ -12,6 +12,7 @@ namespace celionatti\Bolt\Database;
 
 use PDO;
 use PDOException;
+use PDOStatement;
 use celionatti\Bolt\BoltQueryBuilder\QueryBuilder;
 use celionatti\Bolt\Database\Exception\DatabaseException;
 
@@ -39,11 +40,11 @@ class Database
     private function loadDefaultConfig(): array
     {
         return [
-            "drivers" => DB_DRIVERS ?? bolt_env("DB_DRIVERS"),
-            "host" => DB_HOST ?? bolt_env("DB_HOST"),
-            "dbname" => DB_NAME ?? bolt_env("DB_DATABASE"),
-            "username" => DB_USERNAME ?? bolt_env("DB_USERNAME"),
-            "password" => DB_PASSWORD ?? bolt_env("DB_PASSWORD")
+            "drivers" => defined('DB_DRIVERS') ? DB_DRIVERS : bolt_env("DB_DRIVERS"),
+            "host" => defined('DB_HOST') ? DB_HOST : bolt_env("DB_HOST"),
+            "dbname" => defined('DB_NAME') ? DB_NAME : bolt_env("DB_DATABASE"),
+            "username" => defined('DB_USERNAME') ? DB_USERNAME : bolt_env("DB_USERNAME"),
+            "password" => defined('DB_PASSWORD') ? DB_PASSWORD : bolt_env("DB_PASSWORD"),
         ];
     }
 
@@ -58,16 +59,25 @@ class Database
         ];
 
         try {
+
             $dsn = match ($np_vars['DB_DRIVERS']) {
                 'mysql' => "mysql:host={$np_vars['DB_HOST']};dbname={$np_vars['DB_NAME']};charset=utf8mb4",
                 'sqlite' => "sqlite:{$np_vars['DB_NAME']}",
-                default => throw new DatabaseException("Unsupported database driver: {$np_vars['DB_DRIVERS']}", 500, "error"),
+                default => throw new DatabaseException(
+                    "Unsupported database driver: '{$np_vars['DB_DRIVERS']}'. Supported drivers are 'mysql' and 'sqlite'.",
+                    500,
+                    "error"
+                ),
             };
 
             $options = [
                 PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_OBJ,
             ];
+
+            if ($np_vars['DB_DRIVERS'] === 'mysql') {
+                $options[PDO::MYSQL_ATTR_INIT_COMMAND] = "SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci";
+            }            
 
             if ($np_vars['DB_DRIVERS'] === 'mysql') {
                 $options[PDO::ATTR_EMULATE_PREPARES] = false;
@@ -87,8 +97,15 @@ class Database
 
     private function logQuery(string $query, array $params = []): void
     {
-        file_put_contents('query.log', date('Y-m-d H:i:s') . " - " . $query . " - " . json_encode($params) . PHP_EOL, FILE_APPEND);
+        $logDir = __DIR__ . '/logs';
+        if (!is_dir($logDir)) {
+            mkdir($logDir, 0755, true);
+        }
+
+        $logFile = $logDir . '/query.log';
+        file_put_contents($logFile, date('Y-m-d H:i:s') . " - {$query} - " . json_encode($params) . PHP_EOL, FILE_APPEND | LOCK_EX);
     }
+
 
     public function getConnection(): PDO
     {
@@ -110,7 +127,7 @@ class Database
         $this->connection->rollBack();
     }
 
-    public function prepare(string $query)
+    public function prepare(string $query): PDOStatement
     {
         return $this->connection->prepare($query);
     }
@@ -125,9 +142,13 @@ class Database
         try {
             $this->logQuery($query, $params);
             $stmt = $this->connection->prepare($query);
+            // foreach ($params as $paramName => $paramValue) {
+            //     $stmt->bindValue(":{$paramName}", $paramValue);
+            // }
             foreach ($params as $paramName => $paramValue) {
-                $stmt->bindValue(":{$paramName}", $paramValue);
+                $stmt->bindValue($paramName[0] === ':' ? $paramName : ":{$paramName}", $paramValue);
             }
+            
             $stmt->execute();
 
             $rows = match ($data_type) {
@@ -146,7 +167,12 @@ class Database
 
             return $resultData;
         } catch (PDOException $e) {
-            throw new DatabaseException("Database Query Error: {$e->getMessage()}", $e->getCode(), "error");
+            throw new DatabaseException(
+                "Database Query Error: {$e->getMessage()}\nQuery: {$query}\nParams: " . json_encode($params),
+                $e->getCode(),
+                "error"
+            );
+            
         }
     }
 

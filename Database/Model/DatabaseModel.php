@@ -39,6 +39,11 @@ abstract class DatabaseModel
         $this->setTable();
     }
 
+    private function database()
+    {
+        return Database::getInstance();
+    }
+
     private function setTable()
     {
         if (!$this->table) {
@@ -50,6 +55,11 @@ abstract class DatabaseModel
     public function getConnection()
     {
         return $this->connection;
+    }
+
+    public function query(string $query, array $params = [], string $data_type = 'object')
+    {
+        return $this->database()->query($query, $params, $data_type);
     }
 
     public function getPrimaryKey()
@@ -217,6 +227,26 @@ abstract class DatabaseModel
         ];
     }
 
+    public function join(string $table, string $first, string $operator, string $second, string $type = 'INNER'): self
+    {
+        $queryBuilder = new QueryBuilder($this->connection);
+
+        $queryBuilder->select()
+            ->from($this->table)
+            ->join($table, $first, $operator, $second, $type);
+
+        $results = $queryBuilder->execute();
+
+        if ($results) {
+            $this->attributes = (array) $results[0];
+            $this->attributes = $this->castAttributes($this->attributes);
+            $this->exists = true;
+            return $this;
+        }
+
+        throw new DatabaseException("No matching records found for join operation.", 404, "error");
+    }
+
     // public function paginate(int $perPage, int $page = 1): array
     // {
     //     $queryBuilder = new QueryBuilder($this->connection);
@@ -359,7 +389,7 @@ abstract class DatabaseModel
         throw new \Exception('Factory class not found for ' . static::class);
     }
 
-    public static function whereStatic($column, $operator = '=', $value): array
+    public static function whereStatic($column, $operator = '=', $value): array|int
     {
         $instance = new static();
         $queryBuilder = new QueryBuilder($instance->connection);
@@ -410,64 +440,41 @@ abstract class DatabaseModel
         }, $this->items);
     }
 
-    public function join(string $table, string $firstColumn, string $operator, string $secondColumn, string $type = 'INNER'): self
-    {
-        $queryBuilder = new QueryBuilder($this->connection);
-    
-        // Add the join clause
-        $queryBuilder->select()
-            ->from($this->table)
-            ->join($table, $firstColumn, $operator, $secondColumn, $type);
-    
-        // Retrieve the results
-        $result = $queryBuilder->execute();
-    
-        if ($result) {
-            $this->attributes = (array)$result[0];
-            $this->attributes = $this->castAttributes($this->attributes);
-            $this->exists = true;
-            return $this;
-        }
-    
-        throw new DatabaseException("No records found in join query", 404, "error");
-    }
-
-
     /** Relationship Section */
 
-    public function hasOne($related, $foreignKey = null, $localKey = null)
-    {
-        $foreignKey = $foreignKey ?? strtolower(class_basename($this)) . '_id';
-        $localKey = $localKey ?? $this->primaryKey;
-        return new HasOne($this, $related, $foreignKey, $localKey);
-    }
+    // public function hasOne($related, $foreignKey = null, $localKey = null)
+    // {
+    //     $foreignKey = $foreignKey ?? strtolower(class_basename($this)) . '_id';
+    //     $localKey = $localKey ?? $this->primaryKey;
+    //     return new HasOne($this, $related, $foreignKey, $localKey);
+    // }
 
-    public function hasMany($related, $foreignKey = null, $localKey = null)
-    {
-        // If the foreign key is not provided, assume it's the related model's table name with '_id' suffix.
-        $foreignKey = $foreignKey ?? strtolower(class_basename($this)) . '_id';
+    // public function hasMany($related, $foreignKey = null, $localKey = null)
+    // {
+    //     // If the foreign key is not provided, assume it's the related model's table name with '_id' suffix.
+    //     $foreignKey = $foreignKey ?? strtolower(class_basename($this)) . '_id';
 
-        // If the local key is not provided, use the primary key of the current model.
-        $localKey = $localKey ?? $this->primaryKey;
+    //     // If the local key is not provided, use the primary key of the current model.
+    //     $localKey = $localKey ?? $this->primaryKey;
 
-        // Return a new HasMany relationship instance.
-        return new HasMany($this, $related, $foreignKey, $localKey);
-    }
+    //     // Return a new HasMany relationship instance.
+    //     return new HasMany($this, $related, $foreignKey, $localKey);
+    // }
 
-    public function belongsTo($related, $foreignKey = null, $ownerKey = null)
-    {
-        $foreignKey = $foreignKey ?? strtolower(class_basename($this)) . '_id';
-        $ownerKey = $ownerKey ?? $this->primaryKey;
-        return new BelongsTo($this, $related, $foreignKey, $ownerKey);
-    }
+    // public function belongsTo($related, $foreignKey = null, $ownerKey = null)
+    // {
+    //     $foreignKey = $foreignKey ?? strtolower(class_basename($this)) . '_id';
+    //     $ownerKey = $ownerKey ?? $this->primaryKey;
+    //     return new BelongsTo($this, $related, $foreignKey, $ownerKey);
+    // }
 
-    public function belongsToMany($related, $pivotTable = null, $foreignKey = null, $relatedPivotKey = null, $parentKey = null, $relatedKey = null)
-    {
-        $pivotTable = $pivotTable ?? $this->getPivotTableName($related);
-        $foreignPivotKey = $foreignKey ?? strtolower(class_basename($this)) . '_id';
-        $relatedPivotKey = $relatedKey ?? $this->primaryKey;
-        return new BelongsToMany($this, $related, $pivotTable, $foreignPivotKey, $relatedPivotKey, $parentKey, $relatedKey);
-    }
+    // public function belongsToMany($related, $pivotTable = null, $foreignKey = null, $relatedPivotKey = null, $parentKey = null, $relatedKey = null)
+    // {
+    //     $pivotTable = $pivotTable ?? $this->getPivotTableName($related);
+    //     $foreignPivotKey = $foreignKey ?? strtolower(class_basename($this)) . '_id';
+    //     $relatedPivotKey = $relatedKey ?? $this->primaryKey;
+    //     return new BelongsToMany($this, $related, $pivotTable, $foreignPivotKey, $relatedPivotKey, $parentKey, $relatedKey);
+    // }
 
     protected function getPivotTableName($related)
     {

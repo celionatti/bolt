@@ -11,6 +11,8 @@ declare(strict_types=1);
 namespace celionatti\Bolt\BoltQueryBuilder;
 
 use PDO;
+use PDOException;
+use InvalidArgumentException;
 
 
 class QueryBuilder
@@ -69,9 +71,9 @@ class QueryBuilder
         return $this;
     }
 
-    public function join($table, $first, $operator, $second, $type = 'INNER')
+    public function join(string $table, string $first, string $operator, string $second, string $type = 'INNER'): self
     {
-        $this->join[] = compact('table', 'first', 'operator', 'second', 'type');
+        $this->join[] = "{$type} JOIN {$table} ON {$first} {$operator} {$second}";
         return $this;
     }
 
@@ -103,9 +105,14 @@ class QueryBuilder
 
     public function orderBy($column, $direction = 'ASC')
     {
+        $direction = strtoupper($direction);
+        if (!in_array($direction, ['ASC', 'DESC'], true)) {
+            throw new InvalidArgumentException("Invalid order direction: $direction");
+        }
         $this->orderBy[] = "$column $direction";
         return $this;
     }
+
 
     public function groupBy($column)
     {
@@ -156,22 +163,34 @@ class QueryBuilder
 
     public function upsert(array $data, array $updateColumns)
     {
+        // Validate inputs
+        if (empty($data)) {
+            throw new InvalidArgumentException('Data array cannot be empty.');
+        }
+        if (empty($updateColumns)) {
+            throw new InvalidArgumentException('Update columns array cannot be empty.');
+        }
+
+        // Prepare columns and bindings
         $this->type = 'insert';
         $this->insert = $data;
         $columns = array_keys($data);
         $params = array_map(fn($column) => ':' . $column, $columns);
-    
+
+        // Handle MySQL 8.0+ compatibility for ON DUPLICATE KEY UPDATE
         $update = implode(', ', array_map(fn($column) => "$column = VALUES($column)", $updateColumns));
-    
+
+        // Generate SQL
         $sql = 'INSERT INTO ' . $this->from .
-               ' (' . implode(', ', $columns) . ')' .
-               ' VALUES (' . implode(', ', $params) . ')' .
-               ' ON DUPLICATE KEY UPDATE ' . $update;
-    
+            ' (' . implode(', ', $columns) . ')' .
+            ' VALUES (' . implode(', ', $params) . ')' .
+            ' ON DUPLICATE KEY UPDATE ' . $update;
+
+        // Bind values
         foreach ($data as $column => $value) {
             $this->bindings[$column] = $value;
         }
-    
+
         return $sql;
     }
 
@@ -227,7 +246,7 @@ class QueryBuilder
         $totalQuery = clone $this;
         $totalQuery->select('COUNT(*) as total')->limit(null)->offset(null);
         $total = $totalQuery->execute()[0]['total'] ?? 0;
-    
+
         return [
             'data' => $results,
             'total' => $total,
@@ -241,9 +260,10 @@ class QueryBuilder
     {
         $sql = 'SELECT ' . implode(', ', $this->select) . ' FROM ' . $this->from;
         if ($this->join) {
-            foreach ($this->join as $join) {
-                $sql .= " {$join['type']} JOIN {$join['table']} ON {$join['first']} {$join['operator']} {$join['second']}";
-            }
+            // foreach ($this->join as $join) {
+            //     $sql .= " {$join['type']} JOIN {$join['table']} ON {$join['first']} {$join['operator']} {$join['second']}";
+            // }
+            $sql .= ' ' . implode(' ', $this->join);
         }
         if ($this->where) {
             $sql .= ' WHERE ' . implode(' AND ', $this->where);
@@ -316,18 +336,22 @@ class QueryBuilder
 
     // public function execute($fetchMode = PDO::FETCH_ASSOC, $className = null)
     // {
-    //     $stmt = $this->pdo->prepare($this->toSql());
-    //     $stmt->execute($this->bindings);
+    //     try {
+    //         $stmt = $this->pdo->prepare($this->toSql());
+    //         $stmt->execute($this->bindings);
 
-    //     if ($this->type === 'select') {
-    //         if ($fetchMode === PDO::FETCH_CLASS && $className !== null) {
-    //             return $stmt->fetchAll($fetchMode, $className);
-    //         } else {
-    //             return $stmt->fetchAll($fetchMode);
+    //         if ($this->type === 'select') {
+    //             if ($fetchMode === PDO::FETCH_CLASS && $className !== null) {
+    //                 return $stmt->fetchAll($fetchMode, $className);
+    //             } else {
+    //                 return $stmt->fetchAll($fetchMode);
+    //             }
     //         }
-    //     }
 
-    //     return $stmt->rowCount();
+    //         return $stmt->rowCount();
+    //     } catch (\PDOException $e) {
+    //         throw new \Exception("Query execution failed: " . $e->getMessage() . "\nSQL: " . $this->getLastQuery());
+    //     }
     // }
 
     public function execute($fetchMode = PDO::FETCH_ASSOC, $className = null)
@@ -335,18 +359,16 @@ class QueryBuilder
         try {
             $stmt = $this->pdo->prepare($this->toSql());
             $stmt->execute($this->bindings);
-    
+
             if ($this->type === 'select') {
-                if ($fetchMode === PDO::FETCH_CLASS && $className !== null) {
-                    return $stmt->fetchAll($fetchMode, $className);
-                } else {
-                    return $stmt->fetchAll($fetchMode);
-                }
+                return $className
+                    ? $stmt->fetchAll(PDO::FETCH_CLASS, $className)
+                    : $stmt->fetchAll($fetchMode);
             }
-    
+
             return $stmt->rowCount();
-        } catch (\PDOException $e) {
-            throw new \Exception("Query execution failed: " . $e->getMessage() . "\nSQL: " . $this->getLastQuery());
+        } catch (PDOException $e) {
+            throw new \Exception("Query failed: " . $e->getMessage());
         }
     }
 }
