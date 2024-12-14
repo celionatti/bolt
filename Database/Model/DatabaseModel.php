@@ -191,6 +191,13 @@ abstract class DatabaseModel
         return true;
     }
 
+    public static function allBy($column, $value): array
+    {
+        $instance = new static();
+        $queryBuilder = new QueryBuilder($instance->connection);
+        return $queryBuilder->select()->from($instance->table)->where($column, '=', $value)->execute();
+    }
+
     public static function all(): array
     {
         $instance = new static();
