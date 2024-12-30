@@ -111,12 +111,12 @@ abstract class DatabaseModel
         }
     }
 
-    public function update($id, array $attributes): ?self
+    public function update(array $attributes, $id, $key = null): ?self
     {
         $attributes = $this->filterAttributes($attributes);
         $attributes = $this->castAttributes($attributes);
         try {
-            return $this->saveAttributes($attributes, $id);
+            return $this->saveAttributes($attributes, $id, $key ?? $this->primaryKey);
         } catch (\Exception $e) {
             // Handle the exception or log it.
             throw new DatabaseException("Failed to update record: {$e->getMessage()}", $e->getCode(), "info");
