@@ -33,10 +33,20 @@ class Auth
 
     public function login(string $email, string $password, bool $rememberMe = false): array
     {
-        $user = $this->user->findBy(['email' => $email])->toArray();
+        // Validate email and password inputs
+        if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL) && empty($password)) {
+            setFormMessage(["email" => "Invalid or empty credentials.", "password" => ""]);
+            redirect(URL_ROOT . "/login");
+        }
 
-        if (!$user) {
+        // Ensure $user is an array or object before further operations
+        if (!$user || !is_array($user) && !is_object($user)) {
             return $this->handleFailedLogin($email, 'User does not exist.');
+        }
+
+        // Convert to array if necessary
+        if (is_object($user)) {
+            $user = $user->toArray();
         }
 
         if ($user['is_blocked'] && $this->isBlocked($email)) {
