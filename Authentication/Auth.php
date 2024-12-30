@@ -31,7 +31,7 @@ class Auth
         $this->user = new User();
     }
 
-    public function login(string $email, string $password): array
+    public function login(string $email, string $password, bool $rememberMe = false): array
     {
         $user = $this->user->findBy(['email' => $email])->toArray();
 
@@ -51,7 +51,60 @@ class Auth
 
         $this->session->set("user_id", $user['user_id']);
 
+        if ($rememberMe) {
+            $this->setRememberMeToken($user['user_id']);
+        }
+
         return ['success' => true, 'message' => 'Login successful.'];
+    }
+
+    protected function setRememberMeToken(int $userId): void
+    {
+        $token = bin2hex(random_bytes(32));
+        $hashedToken = hash('sha256', $token);
+
+        // Store token in the database
+        $this->user->update(['remember_token' => $hashedToken], $userId, 'user_id');
+
+        // Set cookie (e.g., 30 days expiration)
+        setcookie(REMEMBER_ME_NAME, $token, [
+            'expires' => time() + (30 * 24 * 60 * 60),
+            'path' => '/',
+            'httponly' => true,
+            'secure' => true,
+        ]);
+    }
+
+    public function autoLogin(): ?array
+    {
+        if ($this->session->get("user_id")) {
+            return $this->user->find($this->session->get("user_id"))->toArray();
+        }
+
+        if (isset($_COOKIE[REMEMBER_ME_NAME])) {
+            $token = $_COOKIE[REMEMBER_ME_NAME];
+            $hashedToken = hash('sha256', $token);
+
+            $user = $this->user->findBy(['remember_token' => $hashedToken])->toArray();
+
+            if ($user) {
+                // Log in the user automatically
+                $this->session->set("user_id", $user['user_id']);
+                return $user;
+            }
+        }
+
+        return null;
+    }
+
+    public function logout(): void
+    {
+        $this->session->remove("user_id");
+
+        // Clear the remember_me cookie
+        if (isset($_COOKIE[REMEMBER_ME_NAME])) {
+            setcookie(REMEMBER_ME_NAME, '', time() - 3600, '/');
+        }
     }
 
     protected function handleFailedLogin(string $email, string $reason): array
