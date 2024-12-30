@@ -13,252 +13,92 @@ declare(strict_types=1);
 namespace celionatti\Bolt\Authentication;
 
 use Exception;
-use celionatti\Bolt\Database\Database;
-use celionatti\Bolt\Illuminate\Support\RateLimits;
+use DateTime;
+use PhpStrike\app\models\FailedLogin;
+use PhpStrike\app\models\User;
+use celionatti\Bolt\Sessions\Handlers\DefaultSessionHandler;
 
 class Auth
 {
-    protected Database $db;
-    protected RateLimits $rateLimiter;
-    protected string $identifierColumn = 'email'; // Default identifier is email
-    protected array $errors = []; // Store form errors
+    protected DefaultSessionHandler $session;
+    protected FailedLogin $failedLogin;
+    protected User $user;
 
-    /**
-     * Auth constructor.
-     *
-     * @param RateLimits $rateLimiter
-     */
     public function __construct()
     {
-        $this->db = Database::getInstance();
-        $this->rateLimiter = new RateLimits();
+        $this->session = new DefaultSessionHandler();
+        $this->failedLogin = new FailedLogin();
+        $this->user = new User();
     }
 
-    public function rateLimiter()
+    public function login(string $email, string $password): array
     {
-        return $this->rateLimiter;
+        $user = $this->user->findBy(['email' => $email])->toArray();
+
+        if (!$user) {
+            return $this->handleFailedLogin($email, 'User does not exist.');
+        }
+
+        if ($user['is_blocked'] && $this->isBlocked($email)) {
+            return ['success' => false, 'message' => 'Account is currently blocked.'];
+        }
+
+        if (!password_verify($password, $user['password'])) {
+            return $this->handleFailedLogin($email, 'Invalid credentials.');
+        }
+
+        $this->resetFailedLogins($email);
+
+        $this->session->set("user_id", $user['user_id']);
+
+        return ['success' => true, 'message' => 'Login successful.'];
     }
 
-    /**
-     * Attempt to log in a user with the given credentials.
-     *
-     * @param array $credentials
-     * @param bool $rememberMe
-     * @return bool
-     */
-    public function login(array $credentials, bool $rememberMe = false): bool
+    protected function handleFailedLogin(string $email, string $reason): array
     {
-        $identifier = $credentials[$this->identifierColumn];
-        $password = $credentials['password'];
+        $record = $this->failedLogin->findBy(['email' => $email]);
 
-        if ($this->rateLimiter->isLocked($identifier)) {
-            $this->addError("This account is locked. Please wait {$this->rateLimiter->retryDelayMinutes($identifier)} minutes.");
+        if (!$record) {
+            $this->failedLogin->create(['email' => $email, 'attempts' => 1, 'blocked_until' => null]);
+        } else {
+            $this->updateFailedLogin($record, $email);
+        }
+
+        return ['success' => false, 'message' => $reason];
+    }
+
+    protected function updateFailedLogin($record, string $email): void
+    {
+        $attempts = $record->attempts + 1;
+        $blockDuration = $this->calculateBlockDuration($attempts);
+        $blockedUntil = $attempts > 4 ? (new DateTime())->modify("+$blockDuration minutes")->format('Y-m-d H:i:s') : null;
+
+        $this->failedLogin->update(['attempts' => $attempts, 'blocked_until' => $blockedUntil], $email, "email");
+
+        if ($attempts > 4) {
+            $this->user->update(['is_blocked' => 1], $email, "email");
+        }
+    }
+
+    protected function resetFailedLogins(string $email): void
+    {
+        $this->failedLogin->delete(['email' => $email]);
+        $this->user->update(['is_blocked' => 0], $email, "email");
+    }
+
+    protected function calculateBlockDuration(int $attempts): int
+    {
+        return min(max(($attempts - 4) * 5, 5), 60);
+    }
+
+    public function isBlocked(string $email): bool
+    {
+        $record = $this->failedLogin->findBy(['email' => $email])->toArray();
+
+        if (!$record || !$record['blocked_until']) {
             return false;
         }
 
-        if ($this->rateLimiter->tooManyAttempts($identifier)) {
-            $this->rateLimiter->lock($identifier);
-            $this->addError('Too many login attempts. Please try again later.');
-            return false;
-        }
-
-        $user = $this->getUserByIdentifier($identifier);
-
-        if (!$user || !$this->verifyPassword($password, $user->password)) {
-            $this->rateLimiter->hit($identifier);
-            $this->addError('Invalid credentials.');
-            return false;
-        }
-
-        $this->rateLimiter->clearAttempts($identifier);
-
-        // Login the user
-        $this->setUserSession($user);
-
-        // Handle "remember me" functionality
-        if ($rememberMe) {
-            $this->setRememberMeToken($user);
-        }
-
-        return true;
-    }
-
-    /**
-     * Log out the authenticated user and clear remember-me cookie.
-     *
-     * @return void
-     */
-    public function logout(): void
-    {
-        $this->clearUserSession();
-        $this->clearRememberMeToken();
-    }
-
-    /**
-     * Get form errors.
-     *
-     * @return array
-     */
-    public function getErrors(): array
-    {
-        return $this->errors;
-    }
-
-    /**
-     * Lock the user manually.
-     *
-     * @param string $identifier
-     * @return void
-     */
-    public function lock(string $identifier): void
-    {
-        $this->rateLimiter->lock($identifier);
-    }
-
-    /**
-     * Get user by identifier (e.g., email).
-     *
-     * @param string $identifier
-     * @return object|null
-     */
-    protected function getUserByIdentifier(string $identifier): ?object
-    {
-        $result = $this->db->query("
-            SELECT *
-            FROM users
-            WHERE {$this->identifierColumn} = :identifier
-            LIMIT 1
-        ", ['identifier' => $identifier]);
-
-        return $result[0] ?? null;
-    }
-
-    /**
-     * Verify that the given password matches the stored hash.
-     *
-     * @param string $password
-     * @param string $hashedPassword
-     * @return bool
-     */
-    protected function verifyPassword(string $password, string $hashedPassword): bool
-    {
-        return password_verify($password, $hashedPassword);
-    }
-
-    /**
-     * Set the authenticated user in the session.
-     *
-     * @param object $user
-     * @return void
-     */
-    protected function setUserSession(object $user): void
-    {
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
-        }
-
-        $_SESSION['user_id'] = $user->id;
-        $_SESSION['user_name'] = $user->name;
-    }
-
-    /**
-     * Clear the authenticated user's session.
-     *
-     * @return void
-     */
-    protected function clearUserSession(): void
-    {
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
-        }
-
-        unset($_SESSION['user_id'], $_SESSION['user_name']);
-        session_destroy();
-    }
-
-    /**
-     * Set a remember-me token in a cookie.
-     *
-     * @param object $user
-     * @return void
-     */
-    protected function setRememberMeToken(object $user): void
-    {
-        $token = bin2hex(random_bytes(32));
-        $hashedToken = password_hash($token, PASSWORD_DEFAULT);
-
-        // Store hashed token in the database
-        $this->db->query("
-            UPDATE users
-            SET remember_token = :token
-            WHERE id = :id
-        ", ['token' => $hashedToken, 'id' => $user->id]);
-
-        // Set the cookie with the raw token
-        setcookie('remember_me', "{$user->id}|{$token}", time() + (86400 * 30), "/", "", true, true);
-    }
-
-    /**
-     * Clear the remember-me cookie and token in the database.
-     *
-     * @return void
-     */
-    protected function clearRememberMeToken(): void
-    {
-        if (isset($_COOKIE['remember_me'])) {
-            list($userId, $token) = explode('|', $_COOKIE['remember_me']);
-
-            // Remove the token from the database
-            $this->db->query("
-                UPDATE users
-                SET remember_token = NULL
-                WHERE id = :id
-            ", ['id' => $userId]);
-
-            // Expire the cookie
-            setcookie('remember_me', '', time() - 3600, "/", "", true, true);
-        }
-    }
-
-    /**
-     * Check if the user is authenticated.
-     *
-     * @return bool
-     */
-    public function isAuthenticated(): bool
-    {
-        return isset($_SESSION['user_id']);
-    }
-
-    /**
-     * Get the authenticated user's ID.
-     *
-     * @return int|null
-     */
-    public function getUserId(): ?int
-    {
-        return $_SESSION['user_id'] ?? null;
-    }
-
-    /**
-     * Add error to the form errors array.
-     *
-     * @param string $error
-     * @return void
-     */
-    protected function addError(string $error): void
-    {
-        $this->errors[] = $error;
-    }
-
-    /**
-     * Set a custom identifier column (e.g., 'username').
-     *
-     * @param string $column
-     * @return void
-     */
-    public function setIdentifierColumn(string $column): void
-    {
-        $this->identifierColumn = $column;
+        return (new DateTime($record['blocked_until'])) > new DateTime();
     }
 }
