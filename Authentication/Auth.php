@@ -53,7 +53,7 @@ class Auth
         }
 
         if ($user['is_blocked'] && $this->isBlocked($email)) {
-            return ['success' => false, 'message' => 'Account is currently blocked.'];
+            return ['success' => false, 'message' => 'Account is currently blocked.', 'type' => 'warning'];
         }
 
         if (!password_verify($password, $user['password'])) {
@@ -68,7 +68,7 @@ class Auth
             $this->setRememberMeToken($user['user_id']);
         }
 
-        return ['success' => true, 'message' => 'Login successful.'];
+        return ['success' => true, 'message' => 'Login successful.', 'type' => 'success'];
     }
 
     protected function setRememberMeToken(int $userId): void
@@ -122,6 +122,12 @@ class Auth
 
     protected function handleFailedLogin(string $email, string $reason): array
     {
+        // Check if the email exists in the User table
+        $userExists = $this->user->findBy(['email' => $email]);
+        if (!$userExists) {
+            return ['success' => false, 'message' => 'User does not exist.', 'type' => 'info'];
+        }
+
         $record = $this->failedLogin->findBy(['email' => $email]);
 
         if (!$record) {
@@ -130,7 +136,7 @@ class Auth
             $this->updateFailedLogin($record, $email);
         }
 
-        return ['success' => false, 'message' => $reason];
+        return ['success' => false, 'message' => $reason, 'type' => 'warning'];
     }
 
     protected function updateFailedLogin($record, string $email): void
