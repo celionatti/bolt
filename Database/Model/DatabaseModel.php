@@ -123,11 +123,11 @@ abstract class DatabaseModel
         }
     }
 
-    private function saveAttributes(array $attributes, $id = null): ?self
+    private function saveAttributes(array $attributes, $id = null, $key = null): ?self
     {
         $queryBuilder = new QueryBuilder($this->connection);
         if ($id) {
-            $queryBuilder->update($this->table, $attributes)->where($this->primaryKey, '=', $id)->execute();
+            $queryBuilder->update($this->table, $attributes)->where($key, '=', $id)->execute();
             return $this->find($id);
         } else {
             $queryBuilder->insert($this->table, $attributes)->execute();
@@ -184,10 +184,10 @@ abstract class DatabaseModel
         return null;
     }
 
-    public function delete($id): bool
+    public function delete($id, $key = null): bool
     {
         $queryBuilder = new QueryBuilder($this->connection);
-        $queryBuilder->delete($this->table)->where($this->primaryKey, '=', $id)->execute();
+        $queryBuilder->delete($this->table)->where($key ?? $this->primaryKey, '=', $id)->execute();
         return true;
     }
 
