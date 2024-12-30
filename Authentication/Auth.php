@@ -39,6 +39,9 @@ class Auth
             redirect(URL_ROOT . "/login");
         }
 
+        // Query the user
+        $user = $this->user->findBy(['email' => $email]);
+
         // Ensure $user is an array or object before further operations
         if (!$user || !is_array($user) && !is_object($user)) {
             return $this->handleFailedLogin($email, 'User does not exist.');
