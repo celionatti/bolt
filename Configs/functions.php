@@ -1226,3 +1226,23 @@ function bv_session()
         session_start();
     }
 }
+
+function active_nav($position, $value)
+{
+    // Remove leading and trailing slashes from the URL and split into segments
+    $segments = explode('/', trim($_SERVER['REQUEST_URI'], '/'));
+
+    // Check if the position exists and if its value matches
+    return isset($segments[$position - 1]) && $segments[$position - 1] === $value;
+}
+
+// function active_nav($position, $compare)
+// {
+//     $request = explode("/", $_SERVER['REQUEST_URI']);
+//     if($request) {
+//         if($request[$position] === $compare) {
+//             return true;
+//         }
+//     }
+//     return false;
+// }
