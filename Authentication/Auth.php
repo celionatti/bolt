@@ -71,20 +71,21 @@ class Auth
         return ['success' => true, 'message' => 'Login successful.', 'type' => 'success'];
     }
 
-    protected function setRememberMeToken(int $userId): void
+    protected function setRememberMeToken($userId): void
     {
         $token = bin2hex(random_bytes(32));
         $hashedToken = hash('sha256', $token);
 
         // Store token in the database
-        $this->user->update(['remember_token' => $hashedToken], $userId, 'user_id');
+        $this->user->update(['remember_token' => $hashedToken], $userId, "user_id");
 
         // Set cookie (e.g., 30 days expiration)
         setcookie(REMEMBER_ME_NAME, $token, [
             'expires' => time() + (30 * 24 * 60 * 60),
             'path' => '/',
             'httponly' => true,
-            'secure' => true,
+            'secure' => false, // Set to true in production with HTTPS
+            'samesite' => 'Lax', // Or 'Strict'/'None' based on your requirements
         ]);
     }
 
