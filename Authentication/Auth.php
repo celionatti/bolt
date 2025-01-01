@@ -23,12 +23,43 @@ class Auth
     protected DefaultSessionHandler $session;
     protected FailedLogin $failedLogin;
     protected User $user;
+    protected $loggedInUser;
 
     public function __construct()
     {
         $this->session = new DefaultSessionHandler();
         $this->failedLogin = new FailedLogin();
         $this->user = new User();
+    }
+
+    public function user(): ?array
+    {
+        if ($this->loggedInUser !== null) {
+            return $this->loggedInUser;
+        }
+
+        $userId = $this->session->get("user_id");
+
+        if (!$userId) {
+            // Attempt auto-login if no user ID is in the session
+            $user = $this->autoLogin();
+
+            if ($user) {
+                $this->loggedInUser = $user;
+                return $this->loggedInUser;
+            }
+
+            return null;
+        }
+
+        $user = $this->user->find($userId);
+
+        if ($user) {
+            $this->loggedInUser = $user->toArray();
+            return $this->loggedInUser;
+        }
+
+        return null;
     }
 
     public function login(string $email, string $password, bool $rememberMe = false): array
