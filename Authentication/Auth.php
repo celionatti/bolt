@@ -62,6 +62,9 @@ class Auth
 
         $this->resetFailedLogins($email);
 
+        // Regenerate session ID for security
+        session_regenerate_id(true);
+
         $this->session->set("user_id", $user['user_id']);
 
         if ($rememberMe) {
