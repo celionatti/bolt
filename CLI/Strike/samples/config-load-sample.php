@@ -62,3 +62,7 @@ if (!defined('DB_DRIVERS')) {
 if (!defined('DB_HOST')) {
     define('DB_HOST', $_ENV["DB_HOST"]);
 }
+
+if (!defined('REMEMBER_ME_NAME')) {
+    define('REMEMBER_ME_NAME', "bolt_remember_me");
+}
