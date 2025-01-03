@@ -213,7 +213,7 @@ abstract class DatabaseModel
         $offset = ($page - 1) * $itemsPerPage;
 
         $totalItemsQuery = (new QueryBuilder($instance->connection))->select("COUNT(*) as total")->from($instance->table)->execute();
-        $totalItems = $totalItemsQuery[0]->total;
+        $totalItems = $totalItemsQuery[0]['total'];
 
         $results = $queryBuilder->select()
             ->from($instance->table)
