@@ -41,9 +41,7 @@ class Auth
         $userId = $this->session->get("user_id");
 
         if (!$userId) {
-            // Attempt auto-login if no user ID is in the session
             $user = $this->autoLogin();
-
             if ($user) {
                 $this->loggedInUser = $user;
                 return $this->loggedInUser;
@@ -53,7 +51,6 @@ class Auth
         }
 
         $user = $this->user->find($userId);
-
         if ($user) {
             $this->loggedInUser = $user->toArray();
             return $this->loggedInUser;
@@ -64,21 +61,17 @@ class Auth
 
     public function login(string $email, string $password, bool $rememberMe = false): array
     {
-        // Validate email and password inputs
-        if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL) && empty($password)) {
+        if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL) || empty($password)) {
             setFormMessage(["email" => "Invalid or empty credentials.", "password" => ""]);
             redirect(URL_ROOT . "/login");
         }
 
-        // Query the user
         $user = $this->user->findBy(['email' => $email]);
 
-        // Ensure $user is an array or object before further operations
         if (!$user || !is_array($user) && !is_object($user)) {
             return $this->handleFailedLogin($email, 'User does not exist.');
         }
 
-        // Convert to array if necessary
         if (is_object($user)) {
             $user = $user->toArray();
         }
@@ -93,9 +86,7 @@ class Auth
 
         $this->resetFailedLogins($email);
 
-        // Regenerate session ID for security
         session_regenerate_id(true);
-
         $this->session->set("user_id", $user['user_id']);
 
         if ($rememberMe) {
@@ -110,10 +101,8 @@ class Auth
         $token = bin2hex(random_bytes(32));
         $hashedToken = hash('sha256', $token);
 
-        // Store token in the database
         $this->user->update(['remember_token' => $hashedToken], $userId, "user_id");
 
-        // Set cookie (e.g., 30 days expiration)
         setcookie(REMEMBER_ME_NAME, $token, [
             'expires' => time() + (30 * 24 * 60 * 60),
             'path' => '/',
@@ -126,19 +115,25 @@ class Auth
     public function autoLogin(): ?array
     {
         if ($this->session->get("user_id")) {
-            return $this->user->find($this->session->get("user_id"))->toArray();
+            $user = $this->user->find($this->session->get("user_id"));
+            if ($user) {
+                $this->loggedInUser = $user->toArray();
+                return $this->loggedInUser;
+            }
         }
 
         if (isset($_COOKIE[REMEMBER_ME_NAME])) {
             $token = $_COOKIE[REMEMBER_ME_NAME];
             $hashedToken = hash('sha256', $token);
 
-            $user = $this->user->findBy(['remember_token' => $hashedToken])->toArray();
+            $user = $this->user->findBy(['remember_token' => $hashedToken]);
 
             if ($user) {
-                // Log in the user automatically
+                session_regenerate_id(true);
                 $this->session->set("user_id", $user['user_id']);
-                return $user;
+                $this->loggedInUser = $user->toArray();
+
+                return $this->loggedInUser;
             }
         }
 
@@ -147,17 +142,24 @@ class Auth
 
     public function logout(): void
     {
+        $userId = $this->session->get("user_id");
+
+        if ($userId) {
+            // Regenerate remember token to invalidate old one
+            $this->user->update(['remember_token' => null], $userId, "user_id");
+        }
+
         $this->session->remove("user_id");
 
-        // Clear the remember_me cookie
         if (isset($_COOKIE[REMEMBER_ME_NAME])) {
             setcookie(REMEMBER_ME_NAME, '', time() - 3600, '/');
         }
+
+        session_regenerate_id(true); // Prevent session fixation
     }
 
     protected function handleFailedLogin(string $email, string $reason): array
     {
-        // Check if the email exists in the User table
         $userExists = $this->user->findBy(['email' => $email]);
         if (!$userExists) {
             return ['success' => false, 'message' => 'User does not exist.', 'type' => 'info'];
@@ -200,7 +202,7 @@ class Auth
 
     public function isBlocked(string $email): bool
     {
-        $record = $this->failedLogin->findBy(['email' => $email])->toArray();
+        $record = $this->failedLogin->findBy(['email' => $email]);
 
         if (!$record || !$record['blocked_until']) {
             return false;
