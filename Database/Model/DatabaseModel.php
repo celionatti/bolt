@@ -205,21 +205,37 @@ abstract class DatabaseModel
         return $queryBuilder->select()->from($instance->table)->execute();
     }
 
-    public static function paginate(int $page = 1, int $itemsPerPage = 15): array
+    public static function paginate(int $page = 1, int $itemsPerPage = 15, array $conditions = []): array
     {
         $instance = new static();
         $queryBuilder = new QueryBuilder($instance->connection);
 
         $offset = ($page - 1) * $itemsPerPage;
 
-        $totalItemsQuery = (new QueryBuilder($instance->connection))->select("COUNT(*) as total")->from($instance->table)->execute();
-        $totalItems = $totalItemsQuery[0]['total'];
+        // Apply conditions if provided
+        $queryBuilder->select()->from($instance->table);
 
-        $results = $queryBuilder->select()
-            ->from($instance->table)
-            ->limit($itemsPerPage)
-            ->offset($offset)
-            ->execute();
+        if (!empty($conditions)) {
+            foreach ($conditions as $column => $value) {
+                $queryBuilder->where($column, '=', $value);
+            }
+        }
+
+        $queryBuilder->limit($itemsPerPage)->offset($offset);
+
+        $results = $queryBuilder->execute();
+
+        // Calculate total items considering the conditions
+        $countQuery = (new QueryBuilder($instance->connection))->select("COUNT(*) as total")->from($instance->table);
+
+        if (!empty($conditions)) {
+            foreach ($conditions as $column => $value) {
+                $countQuery->where($column, '=', $value);
+            }
+        }
+
+        $totalItemsQuery = $countQuery->execute();
+        $totalItems = $totalItemsQuery[0]['total'];
 
         $totalPages = ceil($totalItems / $itemsPerPage);
 
