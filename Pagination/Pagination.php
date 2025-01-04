@@ -163,22 +163,35 @@ class Pagination
         $aClass = $this->customClasses['a'] ?? '';
 
         $html = '<ul class="' . $ulClass . '">';
-        $html .= '<li class="' . $liClass . '"><a class="' . $aClass . '" href="' . $this->createPageUrl(1) . '">1</a></li>';
+
+        // First page with active class check
+        $firstActiveClass = ($this->currentPage == 1) ? 'active' : '';
+        $html .= '<li class="' . $liClass . ' ' . $firstActiveClass . '">';
+        $html .= '<a class="' . $aClass . '" href="' . $this->createPageUrl(1) . '">1</a>';
+        $html .= '</li>';
 
         if ($this->currentPage > 3) {
-            $html .= '<li class="' . $liClass . '">...</li>';
+            $html .= '<li class="' . $liClass . '"><a class="' . $aClass . '">...</a></li>';
         }
 
+        // Middle pages
         for ($i = max(2, $this->currentPage - 1); $i <= min($this->totalPages - 1, $this->currentPage + 1); $i++) {
             $activeClass = ($i == $this->currentPage) ? 'active' : '';
-            $html .= '<li class="' . $liClass . ' ' . $activeClass . '"><a class="' . $aClass . '" href="' . $this->createPageUrl($i) . '">' . $i . '</a></li>';
+            $html .= '<li class="' . $liClass . ' ' . $activeClass . '">';
+            $html .= '<a class="' . $aClass . '" href="' . $this->createPageUrl($i) . '">' . $i . '</a>';
+            $html .= '</li>';
         }
 
         if ($this->currentPage < $this->totalPages - 2) {
-            $html .= '<li class="' . $liClass . '">...</li>';
+            $html .= '<li class="' . $liClass . '"><a class="' . $aClass . '">...</a></li>';
         }
 
-        $html .= '<li class="' . $liClass . '"><a class="' . $aClass . '" href="' . $this->createPageUrl($this->totalPages) . '">' . $this->totalPages . '</a></li>';
+        // Last page with active class check
+        $lastActiveClass = ($this->currentPage == $this->totalPages) ? 'active' : '';
+        $html .= '<li class="' . $liClass . ' ' . $lastActiveClass . '">';
+        $html .= '<a class="' . $aClass . '" href="' . $this->createPageUrl($this->totalPages) . '">' . $this->totalPages . '</a>';
+        $html .= '</li>';
+
         $html .= '</ul>';
         return $html;
     }
