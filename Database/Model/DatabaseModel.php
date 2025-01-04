@@ -205,7 +205,7 @@ abstract class DatabaseModel
         return $queryBuilder->select()->from($instance->table)->execute();
     }
 
-    public static function paginate(int $page = 1, int $itemsPerPage = 15, array $conditions = []): array
+    public static function paginate(int $page = 1, int $itemsPerPage = 15, array $conditions = [], $order = []): array
     {
         $instance = new static();
         $queryBuilder = new QueryBuilder($instance->connection);
@@ -222,6 +222,12 @@ abstract class DatabaseModel
         }
 
         $queryBuilder->limit($itemsPerPage)->offset($offset);
+
+        if (!empty($order)) {
+            foreach ($order as $column => $value) {
+                $queryBuilder->orderBy($column, $value);
+            }
+        }
 
         $results = $queryBuilder->execute();
 
