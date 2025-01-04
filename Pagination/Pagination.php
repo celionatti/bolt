@@ -30,7 +30,7 @@ class Pagination
         $this->customClasses = $customClasses;
     }
 
-    protected function createPageUrl(int $pageNumber): string
+    protected function createPageUrl(int|string|float $pageNumber): string
     {
         $urlComponents = parse_url($this->urlPattern);
         $queryParams = [];
@@ -41,7 +41,7 @@ class Pagination
         }
 
         // Add or replace the page parameter
-        $queryParams['page'] = $pageNumber;
+        $queryParams['page'] = (int) $pageNumber;
 
         // Rebuild the query string
         $queryString = http_build_query($queryParams);
