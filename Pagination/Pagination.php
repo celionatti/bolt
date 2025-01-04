@@ -20,7 +20,7 @@ class Pagination
     protected $urlPattern;
     protected $customClasses;
 
-    public function __construct(array $paginationData, string $urlPattern = '/page/(:num)', array $customClasses = [])
+    public function __construct(array $paginationData, string $urlPattern = '', array $customClasses = [])
     {
         $this->totalItems = $paginationData['total_items'];
         $this->currentPage = $paginationData['current_page'];
@@ -32,7 +32,25 @@ class Pagination
 
     protected function createPageUrl(int $pageNumber): string
     {
-        return str_replace('(:num)', (string)$pageNumber, $this->urlPattern);
+        $urlComponents = parse_url($this->urlPattern);
+        $queryParams = [];
+
+        // Parse existing query string if it exists
+        if (isset($urlComponents['query'])) {
+            parse_str($urlComponents['query'], $queryParams);
+        }
+
+        // Add or replace the page parameter
+        $queryParams['page'] = $pageNumber;
+
+        // Rebuild the query string
+        $queryString = http_build_query($queryParams);
+
+        // Construct the final URL
+        $baseUrl = $urlComponents['path'] ?? '';
+        $finalUrl = $baseUrl . '?' . $queryString;
+
+        return $finalUrl;
     }
 
     public function render(string $style = 'default')
