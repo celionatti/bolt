@@ -300,6 +300,19 @@ class Request
         return $this->sanitize($_POST);
     }
 
+    public function loadDataExcept(array $excludedKeys): array
+    {
+        // Merge query parameters, body parameters, and $_POST
+        $allData = $this->getMergeData();
+
+        // Remove the excluded keys from the data
+        foreach ($excludedKeys as $key) {
+            unset($allData[$key]);
+        }
+
+        return $allData;
+    }
+
     public function getMergeData(): array
     {
         return $this->sanitize(array_merge($this->queryParams, $this->bodyParams, $_POST));
