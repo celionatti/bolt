@@ -847,7 +847,7 @@ function formatCurrency($amount, $currencyCode = "NGN")
     }
 }
 
-function calReadTime($text, $wordsPerMinute = 200, $contentCategory = 'generic', $timeUnit = ' Min To Read')
+function calReadTime($text, $timeUnit = ' Min To Read', $contentCategory = 'generic', $wordsPerMinute = 200)
 {
     // Function to count the number of words in the text
     $countWords = function ($text) {
