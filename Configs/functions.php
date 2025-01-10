@@ -514,6 +514,7 @@ function get_image(?string $path = null, string $type = 'post'): string
         'male' => '/assets/img/user_male.jpg',
         'female' => '/assets/img/user_female.jpg',
         'icon' => '/assets/img/favicon.ico',
+        'default' => '/assets/img/default.jpg',
     ];
 
     // Set the image path to the provided $path or an empty string if null
