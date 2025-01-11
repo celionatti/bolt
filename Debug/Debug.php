@@ -25,8 +25,9 @@ class Debug
 
         $codeSnippet = self::getCodeSnippet($file, $line);
         $stackTrace = self::formatStackTrace($backtrace);
+        $frameworkDetails = self::getFrameworkDetails();
 
-        $html = self::generateHtml($dumpedOutput, $stackTrace, $file, $line, $codeSnippet);
+        $html = self::generateHtml($dumpedOutput, $stackTrace, $file, $line, $codeSnippet, $frameworkDetails);
 
         // Output and terminate execution
         echo $html;
@@ -70,7 +71,28 @@ class Debug
         return implode("\n", $formattedTrace);
     }
 
-    private static function generateHtml($dump, $stackTrace, $file, $line, $codeSnippet)
+    private static function getFrameworkDetails()
+    {
+        return [
+            'Framework Version' => '1.0.0', // Example version, update this dynamically if possible
+            'PHP Version' => phpversion(),
+            'Server Time' => date('Y-m-d H:i:s'),
+            'OS' => PHP_OS,
+            'Memory Usage' => self::formatBytes(memory_get_usage(true)),
+            'Loaded Extensions' => implode(', ', get_loaded_extensions())
+        ];
+    }
+
+    private static function formatBytes($bytes, $precision = 2)
+    {
+        $units = ['B', 'KB', 'MB', 'GB', 'TB', 'PB'];
+        $bytes = max($bytes, 0);
+        $pow = floor(($bytes ? log($bytes) : 0) / log(1024));
+        $bytes /= pow(1024, $pow);
+        return round($bytes, $precision) . ' ' . $units[$pow];
+    }
+
+    private static function generateHtml($dump, $stackTrace, $file, $line, $codeSnippet, $frameworkDetails)
     {
         $traceHtml = nl2br(htmlspecialchars($stackTrace, ENT_QUOTES | ENT_HTML5, 'UTF-8'));
 
@@ -82,6 +104,15 @@ class Debug
                 $isHighlighted ? 'highlight' : '',
                 $lineInfo['number'],
                 htmlspecialchars($lineInfo['code'], ENT_QUOTES | ENT_HTML5, 'UTF-8')
+            );
+        }
+
+        $frameworkDetailsHtml = '';
+        foreach ($frameworkDetails as $key => $value) {
+            $frameworkDetailsHtml .= sprintf(
+                '<div class="detail"><strong>%s:</strong> %s</div>',
+                $key,
+                htmlspecialchars($value, ENT_QUOTES | ENT_HTML5, 'UTF-8')
             );
         }
 
@@ -161,6 +192,18 @@ class Debug
             background: #ffdddd;
             color: black;
         }
+        .framework-details {
+            background: #eaf0f0;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+        .detail {
+            margin-bottom: 10px;
+        }
+        .detail strong {
+            color: tomato;
+        }
     </style>
 </head>
 <body>
@@ -169,6 +212,7 @@ class Debug
         <div class="tab active" data-tab="variables">Variables</div>
         <div class="tab" data-tab="stack-trace">Stack Trace</div>
         <div class="tab" data-tab="code">Code</div>
+        <div class="tab" data-tab="framework-details">Framework Details</div>
     </div>
     <div class="tab-content active" id="variables">
         <pre>{$dump}</pre>
@@ -178,6 +222,11 @@ class Debug
     </div>
     <div class="tab-content" id="code">
         <div class="code">{$codeHtml}</div>
+    </div>
+    <div class="tab-content" id="framework-details">
+        <div class="framework-details">
+            {$frameworkDetailsHtml}
+        </div>
     </div>
 </div>
 <script>
