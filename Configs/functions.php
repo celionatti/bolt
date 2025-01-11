@@ -5,6 +5,7 @@ declare(strict_types=1);
 use celionatti\Bolt\Bolt;
 use celionatti\Bolt\View\View;
 use celionatti\Bolt\Helpers\CSRF\Csrf;
+use celionatti\Bolt\Debug\Debug;
 use celionatti\Bolt\BoltException\BoltException;
 use celionatti\Bolt\Sessions\Handlers\DefaultSessionHandler;
 
@@ -317,85 +318,90 @@ function bolt_die($value, $message = '', $title = 'BOLT Error - Oops! Something 
     die;
 }
 
-function dump($value, $die = true)
+function dump($value)
 {
-    $frameworkDetails = [
-        'Framework' => 'Bolt PHP Framework',
-        'Version' => '1.0.8',
-        'Environment' => 'Development',
-        'PHP Version' => phpversion(),
-        'Timestamp' => date('Y-m-d H:i:s')
-    ];
-
-    echo "<style>
-    body {
-        background-color: #282828;
-        color: #52e3f6;
-        font-family: Menlo, Monaco, monospace;
-        margin: 0;
-        padding: 16px;
-    }
-    .dump-container {
-        display: flex;
-        border-radius: 6px;
-        overflow: hidden;
-        margin-bottom: 5px;
-    }
-    .details-column, .dump-column {
-        padding: 16px;
-        box-sizing: border-box;
-    }
-    .details-column {
-        width: 30%;
-        background-color: #1e1e1e;
-        border-right: 1px solid #444;
-        overflow-y: auto;
-    }
-    .dump-column {
-        width: 70%;
-        background-color: #282828;
-        overflow-x: auto;
-    }
-    .details-column ul {
-        list-style: none;
-        padding: 0;
-        margin: 0;
-    }
-    .details-column li {
-        margin-bottom: 10px;
-    }
-    pre {
-        margin: 0;
-        word-wrap: normal;
-        white-space: pre;
-        direction: ltr;
-        line-height: 1.2;
-    }
-    </style>";
-
-    echo "<div class='dump-container'>
-            <div class='details-column'>
-                <ul>";
-
-    foreach ($frameworkDetails as $key => $detail) {
-        echo "<li><strong>$key:</strong> $detail</li>";
-    }
-
-    echo "    </ul>
-            </div>
-            <div class='dump-column'>
-                <pre>";
-
-    var_dump($value);
-
-    echo "    </pre>
-            </div>
-          </div>";
-
-    if ($die) {
-        die;
-    }
+    return Debug::dump($value);
 }
+
+// function dump($value, $die = true)
+// {
+//     $frameworkDetails = [
+//         'Framework' => 'Bolt PHP Framework',
+//         'Version' => '1.0.8',
+//         'Environment' => 'Development',
+//         'PHP Version' => phpversion(),
+//         'Timestamp' => date('Y-m-d H:i:s')
+//     ];
+
+//     echo "<style>
+//     body {
+//         background-color: #282828;
+//         color: #52e3f6;
+//         font-family: Menlo, Monaco, monospace;
+//         margin: 0;
+//         padding: 16px;
+//     }
+//     .dump-container {
+//         display: flex;
+//         border-radius: 6px;
+//         overflow: hidden;
+//         margin-bottom: 5px;
+//     }
+//     .details-column, .dump-column {
+//         padding: 16px;
+//         box-sizing: border-box;
+//     }
+//     .details-column {
+//         width: 30%;
+//         background-color: #1e1e1e;
+//         border-right: 1px solid #444;
+//         overflow-y: auto;
+//     }
+//     .dump-column {
+//         width: 70%;
+//         background-color: #282828;
+//         overflow-x: auto;
+//     }
+//     .details-column ul {
+//         list-style: none;
+//         padding: 0;
+//         margin: 0;
+//     }
+//     .details-column li {
+//         margin-bottom: 10px;
+//     }
+//     pre {
+//         margin: 0;
+//         word-wrap: normal;
+//         white-space: pre;
+//         direction: ltr;
+//         line-height: 1.2;
+//     }
+//     </style>";
+
+//     echo "<div class='dump-container'>
+//             <div class='details-column'>
+//                 <ul>";
+
+//     foreach ($frameworkDetails as $key => $detail) {
+//         echo "<li><strong>$key:</strong> $detail</li>";
+//     }
+
+//     echo "    </ul>
+//             </div>
+//             <div class='dump-column'>
+//                 <pre>";
+
+//     var_dump($value);
+
+//     echo "    </pre>
+//             </div>
+//           </div>";
+
+//     if ($die) {
+//         die;
+//     }
+// }
 
 function redirect($url, $status_code = 302, $headers = [], $query_params = [], $exit = true)
 {
