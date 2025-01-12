@@ -26,7 +26,7 @@ class Error
         // Framework and system details
         $phpVersion = phpversion();
         $serverSoftware = $_SERVER['SERVER_SOFTWARE'] ?? 'Unknown';
-        $frameworkVersion = 'Bolt v1.0.0'; // Replace with your framework's version dynamically.
+        $frameworkVersion = 'Bolt v2.0.0'; // Replace with your framework's version dynamically.
 
         $errorDetailsHtml = '';
         if (!empty($errorDetails)) {
@@ -80,28 +80,32 @@ HTML : '';
             margin-bottom: 20px;
         }
         .error-code {
-            font-size: 120px;
+            font-size: 30px;
             font-weight: bold;
             color: tomato;
             margin: 0;
         }
         .error-message {
-            font-size: 24px;
+            font-size: 18px;
             color: #555;
             margin: 10px 0 20px;
         }
         .error-details {
-            margin-top: 20px;
+            margin-top: 10px;
             text-align: left;
-            background: #f9f9f9;
-            padding: 20px;
+            background: transparent;
+            padding: 10px;
             border-radius: 8px;
             box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
         }
+        .error-details h3 {
+            text-align: center;
+        }
         .error-details ul {
-            list-style: none;
-            padding: 0;
+            list-style: square;
+            padding: 0 15px;
             margin: 0;
+            color: limegreen;
         }
         .error-details ul li {
             margin: 8px 0;
