@@ -6,6 +6,7 @@ use celionatti\Bolt\Bolt;
 use celionatti\Bolt\View\View;
 use celionatti\Bolt\Helpers\CSRF\Csrf;
 use celionatti\Bolt\Debug\Debug;
+use celionatti\Bolt\Debug\Error;
 use celionatti\Bolt\BoltException\BoltException;
 use celionatti\Bolt\Sessions\Handlers\DefaultSessionHandler;
 
@@ -318,6 +319,11 @@ function bolt_die($value, $message = '', $title = 'BOLT Error - Oops! Something 
     die;
 }
 
+function bv_error($errorCode = 404, $errorMessage = 'Page Not Found', $errorDetails = [])
+{
+    return Error::render($errorCode, $errorMessage, $errorDetails);
+}
+
 function dump($value)
 {
     return Debug::dump($value);
@@ -410,11 +416,18 @@ function redirect($url, $status_code = 302, $headers = [], $query_params = [], $
         $status_code = 302; // Default to a temporary (302) redirect
     }
 
-    // Set the HTTP status code
-    http_response_code($status_code);
+    // Check if headers have already been sent
+    if (headers_sent($file, $line)) {
+        // Optionally log or handle the situation
+        error_log("Headers already sent in $file on line $line.");
+        return; // Stop further execution
+    }
 
     // Build the query string from the provided query parameters
     $query_string = !empty($query_params) ? '?' . http_build_query($query_params) : '';
+
+    // Set the HTTP status code
+    http_response_code($status_code);
 
     // Set the Location header for the redirect
     header('Location: ' . $url . $query_string, true, $status_code);
