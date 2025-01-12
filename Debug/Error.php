@@ -37,7 +37,7 @@ class Error
 
         $errorDetailsSection = !empty($errorDetails) ? <<<HTML
         <div class="error-details">
-            <h3>Error Details</h3>
+            <h3>More Information</h3>
             <ul>
                 {$errorDetailsHtml}
             </ul>

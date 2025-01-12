@@ -77,7 +77,7 @@ class Debug
             'Framework Version' => '1.0.0', // Example version, update this dynamically if possible
             'PHP Version' => phpversion(),
             'Server Time' => date('Y-m-d H:i:s'),
-            'OS' => PHP_OS,
+            'OS' => php_uname(),
             'Memory Usage' => self::formatBytes(memory_get_usage(true)),
             'Loaded Extensions' => implode(', ', get_loaded_extensions())
         ];
@@ -139,6 +139,14 @@ class Debug
             max-width: 90%;
             padding: 20px;
             border: 1px solid tomato;
+        }
+        .header {
+            padding: 15px;
+            margin-bottom: 5px;
+            background: tomato;
+            color: #fff;
+            font-size: 1.5rem;
+            text-align: center;
         }
         .tabs {
             display: flex;
@@ -208,6 +216,7 @@ class Debug
 </head>
 <body>
 <div class="debug-container">
+    <div class="header">BOLT DEBUG</div>
     <div class="tabs">
         <div class="tab active" data-tab="variables">Variables</div>
         <div class="tab" data-tab="stack-trace">Stack Trace</div>
