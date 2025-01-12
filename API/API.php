@@ -2,6 +2,12 @@
 
 declare(strict_types=1);
 
+/**
+ * ===================================
+ * Bolt - API ========================
+ * ===================================
+ */
+
 namespace celionatti\Bolt\API;
 
 use GuzzleHttp\Client;
