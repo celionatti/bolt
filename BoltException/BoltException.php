@@ -90,8 +90,21 @@ class BoltException extends Exception
 
     private function getFrameworkDetails(): array
     {
+        $composerFile = get_root_dir() . '/composer.lock'; // Adjust path as needed
+        $frameworkVersion = 'Unknown';
+
+        if (file_exists($composerFile)) {
+            $composerData = json_decode(file_get_contents($composerFile), true);
+            foreach ($composerData['packages'] as $package) {
+                if ($package['name'] === 'celionatti/bolt') {
+                    $frameworkVersion = $package['version'];
+                    break;
+                }
+            }
+        }
+
         return [
-            'Framework Version' => '1.0.0', // Replace with dynamic values
+            'BOLT (PhpStrike) Version' => $frameworkVersion,
             'PHP Version' => phpversion(),
             'OS' => php_uname(),
         ];

@@ -23,10 +23,23 @@ class Error
 
     private static function generateHtml($errorCode, $errorMessage, $errorDetails)
     {
+        $composerFile = get_root_dir() . '/composer.lock'; // Adjust path as needed
+        $frameworkVersion = 'Unknown';
+
+        if (file_exists($composerFile)) {
+            $composerData = json_decode(file_get_contents($composerFile), true);
+            foreach ($composerData['packages'] as $package) {
+                if ($package['name'] === 'celionatti/bolt') {
+                    $frameworkVersion = $package['version'];
+                    break;
+                }
+            }
+        }
+
         // Framework and system details
         $phpVersion = phpversion();
         $serverSoftware = $_SERVER['SERVER_SOFTWARE'] ?? 'Unknown';
-        $frameworkVersion = 'Bolt v2.0.0'; // Replace with your framework's version dynamically.
+        $frameworkVersion = "BOLT (PhpStrike) {$frameworkVersion}"; // Replace with your framework's version dynamically.
 
         $errorDetailsHtml = '';
         if (!empty($errorDetails)) {

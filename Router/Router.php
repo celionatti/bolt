@@ -16,6 +16,7 @@ use ReflectionParameter;
 use celionatti\Bolt\Http\Request;
 use celionatti\Bolt\Http\Response;
 use celionatti\Bolt\BoltException\BoltException;
+use celionatti\Bolt\Debug\Error;
 
 class Router
 {
@@ -124,7 +125,8 @@ class Router
             }
         }
 
-        throw new BoltException('Route not found');
+        // throw new BoltException('Route not found');
+        Error::render("Route Not Found", 404);
     }
 
     public function url(string $name, array $parameters = []): string

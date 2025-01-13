@@ -73,8 +73,21 @@ class Debug
 
     private static function getFrameworkDetails()
     {
+        $composerFile = get_root_dir() . '/composer.lock'; // Adjust path as needed
+        $frameworkVersion = 'Unknown';
+
+        if (file_exists($composerFile)) {
+            $composerData = json_decode(file_get_contents($composerFile), true);
+            foreach ($composerData['packages'] as $package) {
+                if ($package['name'] === 'celionatti/bolt') {
+                    $frameworkVersion = $package['version'];
+                    break;
+                }
+            }
+        }
+
         return [
-            'Framework Version' => '1.0.0', // Example version, update this dynamically if possible
+            'BOLT (PhpStrike) Version' => $frameworkVersion, // Example version, update this dynamically if possible
             'PHP Version' => phpversion(),
             'Server Time' => date('Y-m-d H:i:s'),
             'OS' => php_uname(),
