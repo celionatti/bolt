@@ -71,7 +71,21 @@ class BoltException extends Exception
 
     private function getDefinedVariables(): array
     {
-        return isset($GLOBALS) ? $GLOBALS : [];
+        $excludedKeys = ['_ENV', '_SERVER', 'GLOBALS', '__composer_autoload_files'];
+        $variables = $GLOBALS;
+
+        foreach ($excludedKeys as $key) {
+            if (isset($variables[$key])) {
+                unset($variables[$key]);
+            }
+        }
+
+        return $variables;
+    }
+
+    private function isDevelopment(): bool
+    {
+        return in_array(getenv('APP_ENV'), ['development', 'local'], true);
     }
 
     private function getFrameworkDetails(): array
