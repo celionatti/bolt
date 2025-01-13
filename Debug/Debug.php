@@ -87,7 +87,7 @@ class Debug
         }
 
         return [
-            'BOLT (PhpStrike) Version' => $frameworkVersion, // Example version, update this dynamically if possible
+            'Framework Version' => "BOLT (PhpStrike) {$frameworkVersion}", // Example version, update this dynamically if possible
             'PHP Version' => phpversion(),
             'Server Time' => date('Y-m-d H:i:s'),
             'OS' => php_uname(),
@@ -151,19 +151,19 @@ class Debug
             margin: 20px auto;
             max-width: 90%;
             padding: 20px;
-            border: 1px solid tomato;
+            border: 1px solid #1A2732;
         }
         .header {
             padding: 15px;
             margin-bottom: 5px;
-            background: tomato;
+            background: #1A2732;
             color: #fff;
             font-size: 1.5rem;
             text-align: center;
         }
         .tabs {
             display: flex;
-            background: tomato;
+            background: #2E3E50;
             border-radius: 8px;
             overflow: hidden;
             margin-bottom: 20px;
@@ -176,9 +176,9 @@ class Debug
             color: white;
         }
         .tab.active {
-            background: white;
-            color: tomato;
-            border-bottom: 2px solid tomato;
+            background: #E1E8F0;
+            color: #1A2732;
+            border-bottom: 2px solid #2E3E50;
         }
         .tab-content {
             display: none;
@@ -187,9 +187,14 @@ class Debug
         .tab-content.active {
             display: block;
         }
+        #variables {
+            margin: 0;
+            background: #E1E8F0;
+            font-weight: bold;
+        }
         .stack-trace {
             font-family: monospace;
-            background: #ffe8e5;
+            background: #E1E8F0;
             padding: 10px;
             border-radius: 8px;
             white-space: pre-wrap;
@@ -221,9 +226,13 @@ class Debug
         }
         .detail {
             margin-bottom: 10px;
+            color: #E1E8F0;
+            background: #2E3E50;
+            padding: 10px;
+            border-bottom: 1px solid #2E3E50;
         }
         .detail strong {
-            color: tomato;
+            color: #E1E8F0;
         }
     </style>
 </head>

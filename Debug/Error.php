@@ -85,17 +85,17 @@ HTML : '';
             box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
             max-width: 1200px;
             width: 90%;
-            border: 3px solid tomato;
+            border: 3px solid #1A2732;
         }
         .error-icon {
             font-size: 80px;
-            color: tomato;
+            color: red;
             margin-bottom: 20px;
         }
         .error-code {
             font-size: 30px;
             font-weight: bold;
-            color: tomato;
+            color: #1A2732;
             margin: 0;
         }
         .error-message {
@@ -133,14 +133,14 @@ HTML : '';
         .error-actions a {
             text-decoration: none;
             padding: 12px 25px;
-            background: tomato;
+            background: #1A2732;
             color: white;
             border-radius: 5px;
             font-size: 16px;
             transition: background 0.3s;
         }
         .error-actions a:hover {
-            background: darkred;
+            background: #2E3E50;
         }
         .error-system-info {
             margin-top: 20px;

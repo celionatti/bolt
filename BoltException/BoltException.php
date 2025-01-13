@@ -104,7 +104,7 @@ class BoltException extends Exception
         }
 
         return [
-            'BOLT (PhpStrike) Version' => $frameworkVersion,
+            'Framework Version' => "BOLT (PhpStrike) {$frameworkVersion}",
             'PHP Version' => phpversion(),
             'OS' => php_uname(),
         ];
@@ -179,14 +179,14 @@ class BoltException extends Exception
             max-width: 90%;
             margin: 20px auto;
             background: #fff;
-            border: 1px solid tomato;
+            border: 1px solid #1A2732;
             border-radius: 10px;
             overflow: hidden;
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
         }
         .header {
             padding: 15px;
-            background: tomato;
+            background: #1A2732;
             color: #fff;
             font-size: 1.5rem;
             text-align: center;
@@ -205,11 +205,28 @@ class BoltException extends Exception
         }
         .tab:hover, .tab.active {
             background: #fff;
-            border-bottom: 3px solid tomato;
+            border-bottom: 3px solid #2E3E50;
         }
         .tab-content {
             display: none;
             padding: 15px;
+        }
+        .tab-content > p {
+            margin: 0;
+            padding: 5px 25px;
+            background: #f9f9f9;
+            border-bottom: 2px solid #2E3E50;
+            text-wrap: wrap;
+        }
+        .tab-content > ul {
+            list-style: square;
+        }
+        .tab-content > ul > li {
+            color: #E1E8F0;
+            background: #2E3E50;
+            padding: 10px;
+            margin: 5px;
+            border-bottom: 1px solid #2E3E50;
         }
         .tab-content.active {
             display: block;
@@ -229,6 +246,16 @@ class BoltException extends Exception
             color: #999;
             margin-right: 10px;
         }
+        .flex {
+            background: #2E3E50;
+            color: #fff;
+            margin: 5px 0;
+            font-family: monospace;
+            display: flex;
+            justify-content: space-evenly;
+            align-items: center;
+            text-align: center;
+        }
     </style>
     <script>
         function switchTab(tabId) {
@@ -241,7 +268,7 @@ class BoltException extends Exception
 </head>
 <body>
 <div class="exception-container">
-    <div class="header">Unhandled Exception: {$message}</div>
+    <div class="header">BOLT Exception</div>
     <div class="tabs">
         <div class="tab active" data-tab="error-details" onclick="switchTab('error-details')">Error Details</div>
         <div class="tab" data-tab="stack-trace" onclick="switchTab('stack-trace')">Stack Trace</div>
@@ -250,10 +277,14 @@ class BoltException extends Exception
     </div>
     <div id="error-details" class="tab-content active">
         <p><strong>Message:</strong> {$message}</p>
-        <p><strong>Code:</strong> {$code}</p>
-        <p><strong>File:</strong> {$file}</p>
-        <p><strong>Line:</strong> {$line}</p>
-        <p><strong>Class/Method:</strong> {$classOrMethod}</p>
+        <div class="flex">
+            <p><strong>Code:</strong> {$code}</p>
+            <p><strong>Line:</strong> {$line}</p>
+        </div>
+        <div class="flex">
+            <p><strong>File:</strong> {$file}</p>
+            <p><strong>Class/Method:</strong> {$classOrMethod}</p>
+        </div>
         <div class="code">{$codeHtml}</div>
     </div>
     <div id="stack-trace" class="tab-content">
