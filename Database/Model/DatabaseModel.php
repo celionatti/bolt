@@ -127,12 +127,17 @@ abstract class DatabaseModel
     {
         $queryBuilder = new QueryBuilder($this->connection);
         if ($id) {
-            $queryBuilder->update($this->table, $attributes)->where($key, '=', $id)->execute();
-            return $this->find($id);
+            $queryBuilder->update($this->table, $attributes)->where($key ?? $this->primaryKey, '=', $id)->execute();
+            return $this->findById($id);
         } else {
             $queryBuilder->insert($this->table, $attributes)->execute();
-            return $this->find($this->connection->lastInsertId());
+            return $this->findById($this->connection->lastInsertId());
         }
+    }
+
+    public function findById($id): ?self
+    {
+        return $this->findBy(['id' => $id]);
     }
 
     public function find($id): ?self
