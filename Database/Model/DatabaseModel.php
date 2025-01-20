@@ -128,7 +128,7 @@ abstract class DatabaseModel
         $queryBuilder = new QueryBuilder($this->connection);
         if ($id) {
             $queryBuilder->update($this->table, $attributes)->where($key ?? $this->primaryKey, '=', $id)->execute();
-            return $this->findById($id);
+            return $this->find($id);
         } else {
             $queryBuilder->insert($this->table, $attributes)->execute();
             return $this->findById($this->connection->lastInsertId());
