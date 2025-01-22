@@ -1,0 +1,13 @@
+use celionatti\Bolt\Helpers\Countries\CountrySelector;
+
+// Add a new country
+CountrySelector::addCountry('US', 'United States', 'North America');
+
+// Exclude specific countries by their codes
+CountrySelector::excludeCountries(['AO', 'BJ']); // Exclude Angola and Benin
+
+// Exclude all countries in a specific continent (e.g., Africa)
+CountrySelector::excludeByContinent('Africa');
+
+// Get all countries (after exclusion and addition)
+$countries = CountrySelector::getAll();
