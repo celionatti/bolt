@@ -168,40 +168,43 @@ class Countries
     ];
 
     /**
-     * Get countries based on criteria.
+     * Get countries with optional filtering and output format.
      *
-     * @param array $include Continents or countries to include (optional).
-     * @param array $exclude Countries to exclude (optional).
-     * @param string $filterBy Filter by 'continent' or 'country' (optional).
-     * @return array
+     * @param array $include Only include these countries by code.
+     * @param array $exclude Exclude these countries by code.
+     * @param string $filterBy Filter countries by a specific key.
+     * @param bool $simplified Return only code and name if true.
+     * @return array Filtered and formatted countries.
      */
-    public static function getCountries(array $include = [], array $exclude = [], string $filterBy = 'continent'): array
+    public static function getCountries(array $include = [], array $exclude = [], string $filterBy = 'continent', bool $simplified = false): array
     {
-        $result = self::$countries;
+        $countries = self::$countries;
 
-        // Filter by include criteria
+        // Include specific countries if $include is not empty
         if (!empty($include)) {
-            $result = array_filter($result, function ($details, $code) use ($include, $filterBy) {
-                if ($filterBy === 'continent') {
-                    return in_array($details['continent'], $include);
-                } elseif ($filterBy === 'name') {
-                    return in_array($code, $include);
-                }
-                return false;
-            }, ARRAY_FILTER_USE_BOTH);
+            $countries = array_filter($countries, fn($code) => in_array($code, $include, true), ARRAY_FILTER_USE_KEY);
         }
 
-        // Exclude specific countries
+        // Exclude specific countries if $exclude is not empty
         if (!empty($exclude)) {
-            $result = array_filter($result, function ($details, $code) use ($exclude) {
-                return !in_array($code, $exclude);
-            }, ARRAY_FILTER_USE_BOTH);
+            $countries = array_filter($countries, fn($code) => !in_array($code, $exclude, true), ARRAY_FILTER_USE_KEY);
         }
 
-        // Format result as an array of names
-        return array_map(function ($details) {
-            return $details['name'];
-        }, $result);
+        // Filter by a specific key if $filterBy exists
+        if ($filterBy) {
+            $countries = array_filter($countries, fn($data) => isset($data[$filterBy]));
+        }
+
+        // Return simplified format if $simplified is true
+        if ($simplified) {
+            return array_map(
+                fn($code, $data) => ['code' => $code, 'name' => $data['name']],
+                array_keys($countries),
+                $countries
+            );
+        }
+
+        return $countries;
     }
 
     /**
