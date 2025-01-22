@@ -14,8 +14,6 @@ namespace celionatti\Bolt\Helpers\Countries;
 
 class Countries
 {
-    class CountrySelector
-{
     private static $countries = [
         // Africa
         'DZ' => ['name' => 'Algeria', 'continent' => 'Africa'],
