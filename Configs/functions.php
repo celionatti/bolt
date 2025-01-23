@@ -9,6 +9,7 @@ use celionatti\Bolt\Debug\Debug;
 use celionatti\Bolt\Debug\Error;
 use celionatti\Bolt\BoltException\BoltException;
 use celionatti\Bolt\Sessions\Handlers\DefaultSessionHandler;
+use celionatti\Bolt\Uuid\UUID;
 
 function bolt_env($data)
 {
@@ -19,33 +20,38 @@ function bolt_env($data)
     return false;
 }
 
-function bv_uuid()
+function bv_uuid($metadata = [])
 {
-    // Generate 16 bytes of random data
-    $data = random_bytes(16);
-
-    // Set the version (4) and variant (10xxxxxx) bits
-    $data[6] = chr(ord($data[6]) & 0x0F | 0x40);
-    $data[8] = chr(ord($data[8]) & 0x3F | 0x80);
-
-    // Get the current timestamp in microseconds
-    $timestamp = microtime(true) * 10000;
-
-    // Convert the timestamp to a 64-bit binary string without zero padding
-    $timestampBinary = substr(pack('J', $timestamp), 2);
-
-    // Replace the first 8 bytes with the timestamp
-    $data = substr_replace($data, $timestampBinary, 0, 8);
-
-    // Add some additional randomness
-    $randomBytes = random_bytes(8);
-    $data .= $randomBytes;
-
-    // Format the UUID without dashes
-    $uuid = vsprintf('%s%s%s%s%s%s%s%s', str_split(bin2hex($data), 4));
-
-    return "bv_{$uuid}";
+    return UUID::generate($metadata);
 }
+
+// function bv_uuid()
+// {
+//     // Generate 16 bytes of random data
+//     $data = random_bytes(16);
+
+//     // Set the version (4) and variant (10xxxxxx) bits
+//     $data[6] = chr(ord($data[6]) & 0x0F | 0x40);
+//     $data[8] = chr(ord($data[8]) & 0x3F | 0x80);
+
+//     // Get the current timestamp in microseconds
+//     $timestamp = microtime(true) * 10000;
+
+//     // Convert the timestamp to a 64-bit binary string without zero padding
+//     $timestampBinary = substr(pack('J', $timestamp), 2);
+
+//     // Replace the first 8 bytes with the timestamp
+//     $data = substr_replace($data, $timestampBinary, 0, 8);
+
+//     // Add some additional randomness
+//     $randomBytes = random_bytes(8);
+//     $data .= $randomBytes;
+
+//     // Format the UUID without dashes
+//     $uuid = vsprintf('%s%s%s%s%s%s%s%s', str_split(bin2hex($data), 4));
+
+//     return "bv_{$uuid}";
+// }
 
 function findFile($dir, $targetFile)
 {
