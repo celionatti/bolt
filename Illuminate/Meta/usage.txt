@@ -1,0 +1,12 @@
+// Generate meta tags
+$metaTags = Meta::generateMetaTags([
+    'title' => 'My Blog Post',
+    'description' => Meta::metaDescription($content),
+    'keywords' => Meta::metaKeywords($title, $content),
+    'canonical' => Meta::canonicalUrl('https://example.com', 'blog/post'),
+    'og' => [
+        'title' => 'My Blog Post',
+        'description' => 'Short description',
+        'image' => 'https://example.com/image.jpg'
+    ]
+]);

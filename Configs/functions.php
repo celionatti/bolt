@@ -10,6 +10,23 @@ use celionatti\Bolt\Debug\Error;
 use celionatti\Bolt\BoltException\BoltException;
 use celionatti\Bolt\Sessions\Handlers\DefaultSessionHandler;
 use celionatti\Bolt\Uuid\UUID;
+use celionatti\Bolt\Authentication\Auth;
+
+function auth_user()
+{
+    $auth = new Auth();
+    return $auth->user();
+}
+
+function is_auth()
+{
+    $auth = new Auth();
+
+    if($auth->user()) {
+        return true;
+    }
+    return false;
+}
 
 function bolt_env($data)
 {
@@ -334,86 +351,6 @@ function dump($value)
 {
     return Debug::dump($value);
 }
-
-// function dump($value, $die = true)
-// {
-//     $frameworkDetails = [
-//         'Framework' => 'Bolt PHP Framework',
-//         'Version' => '1.0.8',
-//         'Environment' => 'Development',
-//         'PHP Version' => phpversion(),
-//         'Timestamp' => date('Y-m-d H:i:s')
-//     ];
-
-//     echo "<style>
-//     body {
-//         background-color: #282828;
-//         color: #52e3f6;
-//         font-family: Menlo, Monaco, monospace;
-//         margin: 0;
-//         padding: 16px;
-//     }
-//     .dump-container {
-//         display: flex;
-//         border-radius: 6px;
-//         overflow: hidden;
-//         margin-bottom: 5px;
-//     }
-//     .details-column, .dump-column {
-//         padding: 16px;
-//         box-sizing: border-box;
-//     }
-//     .details-column {
-//         width: 30%;
-//         background-color: #1e1e1e;
-//         border-right: 1px solid #444;
-//         overflow-y: auto;
-//     }
-//     .dump-column {
-//         width: 70%;
-//         background-color: #282828;
-//         overflow-x: auto;
-//     }
-//     .details-column ul {
-//         list-style: none;
-//         padding: 0;
-//         margin: 0;
-//     }
-//     .details-column li {
-//         margin-bottom: 10px;
-//     }
-//     pre {
-//         margin: 0;
-//         word-wrap: normal;
-//         white-space: pre;
-//         direction: ltr;
-//         line-height: 1.2;
-//     }
-//     </style>";
-
-//     echo "<div class='dump-container'>
-//             <div class='details-column'>
-//                 <ul>";
-
-//     foreach ($frameworkDetails as $key => $detail) {
-//         echo "<li><strong>$key:</strong> $detail</li>";
-//     }
-
-//     echo "    </ul>
-//             </div>
-//             <div class='dump-column'>
-//                 <pre>";
-
-//     var_dump($value);
-
-//     echo "    </pre>
-//             </div>
-//           </div>";
-
-//     if ($die) {
-//         die;
-//     }
-// }
 
 function redirect($url, $status_code = 302, $headers = [], $query_params = [], $exit = true)
 {
@@ -1212,20 +1149,6 @@ function renderComponent(string $componentClass, array $data = [], array $slots 
     return $component->render();
 }
 
-// function route($to)
-// {
-//     // Sanitize the passed-in parameter
-//     $to = filter_var($to, FILTER_SANITIZE_URL);
-
-//     // Check if the request method is GET
-//     if ($_SERVER['REQUEST_METHOD'] === 'GET') {
-//         return $to;
-//     }
-
-//     // Throw an exception if the request method is not GET
-//     throw new BoltException("Method Not Allowed", 405, "info");
-// }
-
 function route($to, array $params = [])
 {
     // Sanitize the base URL
@@ -1261,14 +1184,3 @@ function active_nav($position, $value)
     // Check if the position exists and if its value matches
     return isset($segments[$position - 1]) && $segments[$position - 1] === $value;
 }
-
-// function active_nav($position, $compare)
-// {
-//     $request = explode("/", $_SERVER['REQUEST_URI']);
-//     if($request) {
-//         if($request[$position] === $compare) {
-//             return true;
-//         }
-//     }
-//     return false;
-// }

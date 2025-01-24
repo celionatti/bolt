@@ -15,26 +15,26 @@ class Meta
     /**
      * Generate an SEO-friendly meta title.
      */
-    public static function MetaTitle(string $title, string $content): string
+    public static function metaTitle(string $title, string $content, int $maxLength = 60): string
     {
         // Extract primary keywords from content
         $keywords = self::extractKeywords($content, 3);
 
-        // Check if keywords are present in the title, if not, append them
+        // Combine title with relevant keywords
         foreach ($keywords as $keyword) {
             if (stripos($title, $keyword) === false) {
                 $title .= " - " . ucfirst($keyword);
             }
         }
 
-        // Limit title to 60 characters for SEO best practices
-        return strlen($title) > 60 ? substr($title, 0, 57) . '...' : $title;
+        // Limit title length for SEO best practices
+        return self::truncateText($title, $maxLength);
     }
 
     /**
      * Generate a meta description based on the article content.
      */
-    public static function MetaDescription(string $content): string
+    public static function metaDescription(string $content, int $maxLength = 160): string
     {
         // Clean HTML tags and get plain text
         $cleanedContent = strip_tags($content);
@@ -42,18 +42,14 @@ class Meta
         // Summarize content to get first few sentences
         $summary = self::summarizeContent($cleanedContent);
 
-        // Check if the summary is more than 160 characters; trim without cutting off words or sentences
-        if (strlen($summary) > 160) {
-            $summary = self::trimSentence($summary, 160);
-        }
-
-        return $summary;
+        // Trim summary to specified length
+        return self::truncateText($summary, $maxLength);
     }
 
     /**
      * Generate meta keywords by extracting the most important words and phrases.
      */
-    public static function MetaKeywords(string $title, string $content): string
+    public static function metaKeywords(string $title, string $content, int $limit = 10): string
     {
         // Combine the title and content for keyword extraction
         $text = strtolower($title . ' ' . $content);
@@ -72,17 +68,29 @@ class Meta
 
         // Count word frequency
         $wordCount = array_count_values($filteredWords);
-        arsort($wordCount); // Sort by frequency in descending order
+        arsort($wordCount);
 
-        // Take the top 10 most frequent keywords
-        $topKeywords = array_slice(array_keys($wordCount), 0, 10);
+        // Take the top keywords
+        $topKeywords = array_slice(array_keys($wordCount), 0, $limit);
 
         // Join keywords into a comma-separated string
         return implode(', ', $topKeywords);
     }
 
     /**
-     * Extract the most important keywords from the content using NLP-like logic.
+     * Generate canonical meta tag URL
+     */
+    public static function canonicalUrl(string $baseUrl, ?string $additionalPath = null): string
+    {
+        $url = rtrim($baseUrl, '/');
+        if ($additionalPath) {
+            $url .= '/' . trim($additionalPath, '/');
+        }
+        return $url;
+    }
+
+    /**
+     * Extract the most important keywords from the content.
      */
     protected static function extractKeywords(string $text, int $limit = 10): array
     {
@@ -107,7 +115,7 @@ class Meta
     }
 
     /**
-     * Summarize the content by extracting key sentences or sections.
+     * Summarize the content by extracting key sentences.
      */
     protected static function summarizeContent(string $content): string
     {
@@ -119,24 +127,24 @@ class Meta
     }
 
     /**
-     * Trim the content to fit within a given length without cutting off words or sentences.
+     * Truncate text to a specific length without cutting words or sentences.
      */
-    protected static function trimSentence(string $text, int $maxLength): string
+    protected static function truncateText(string $text, int $maxLength): string
     {
-        // Trim only after complete sentences or words, ensuring we don't cut mid-word or sentence
-        if (strlen($text) > $maxLength) {
-            $trimmedText = substr($text, 0, $maxLength);
-
-            // Ensure we end with a complete sentence or word
-            if (preg_match('/.*[.!?](\s+|$)/', $trimmedText, $matches)) {
-                return rtrim($trimmedText) . '...';
-            }
-
-            // Otherwise trim to the last space so no word is cut
-            return substr($trimmedText, 0, strrpos($trimmedText, ' ')) . '...';
+        if (strlen($text) <= $maxLength) {
+            return $text;
         }
 
-        return $text;
+        // Trim to max length
+        $truncated = substr($text, 0, $maxLength);
+
+        // Ensure we end with a complete word
+        $lastSpace = strrpos($truncated, ' ');
+        if ($lastSpace !== false) {
+            $truncated = substr($truncated, 0, $lastSpace);
+        }
+
+        return trim($truncated) . '...';
     }
 
     /**
@@ -149,5 +157,49 @@ class Meta
             'that', 'which', 'as', 'but', 'or', 'are', 'from', 'has', 'had', 'were', 'was', 'have', 'also',
             'an', 'its', 'not', 'can', 'will', 'about', 'more', 'there', 'their', 'so', 'some', 'brings', 'together'
         ];
+    }
+
+    /**
+     * Generate complete meta tags for SEO
+     */
+    public static function generateMetaTags(array $options): string
+    {
+        $tags = [];
+
+        // Title tag
+        if (isset($options['title'])) {
+            $tags[] = "<title>{$options['title']}</title>";
+        }
+
+        // Description tag
+        if (isset($options['description'])) {
+            $tags[] = "<meta name=\"description\" content=\"{$options['description']}\">";
+        }
+
+        // Keywords tag
+        if (isset($options['keywords'])) {
+            $tags[] = "<meta name=\"keywords\" content=\"{$options['keywords']}\">";
+        }
+
+        // Canonical URL
+        if (isset($options['canonical'])) {
+            $tags[] = "<link rel=\"canonical\" href=\"{$options['canonical']}\">";
+        }
+
+        // Open Graph tags
+        if (isset($options['og'])) {
+            $og = $options['og'];
+            if (isset($og['title'])) {
+                $tags[] = "<meta property=\"og:title\" content=\"{$og['title']}\">";
+            }
+            if (isset($og['description'])) {
+                $tags[] = "<meta property=\"og:description\" content=\"{$og['description']}\">";
+            }
+            if (isset($og['image'])) {
+                $tags[] = "<meta property=\"og:image\" content=\"{$og['image']}\">";
+            }
+        }
+
+        return implode("\n", $tags);
     }
 }
