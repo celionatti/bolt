@@ -28,6 +28,14 @@ function is_auth()
     return false;
 }
 
+function auth_role($userRole, array $roles = [])
+{
+    if (in_array($userRole, $roles, true)) {
+        return true;
+    }
+    return false;
+}
+
 function bolt_env($data)
 {
     if (isset($_ENV[$data])) {
