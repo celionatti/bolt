@@ -1,0 +1,16 @@
+// Basic email
+$mailService->to('recipient@example.com')
+    ->subject('Welcome!')
+    ->template('emails/welcome.php', [
+        'username' => 'John',
+        'link' => 'https://example.com/verify'
+    ])
+    ->send();
+
+// More complex email with attachments
+$mailService->to('user@example.com')
+    ->from('sender@company.com', 'Company Name')
+    ->subject('Report Attached')
+    ->template('emails/report.php', ['reportDate' => date('Y-m-d')])
+    ->attach('/path/to/report.pdf', 'Monthly_Report.pdf')
+    ->send();
