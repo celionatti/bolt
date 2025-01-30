@@ -80,49 +80,49 @@ class Validator
     protected function validateString($field)
     {
         if (!is_string($this->data[$field])) {
-            $this->errors[$field] = "{$field} must be a string.";
+            $this->errors[$field] = $this->formatFieldName($field) . " must be a string.";
         }
     }
 
     protected function validateMin($field, $value)
     {
         if (!isset($this->data[$field]) || is_null($this->data[$field]) || strlen($this->data[$field]) < $value) {
-            $this->errors[$field] = "{$field} must be at least {$value} characters.";
+            $this->errors[$field] = $this->formatFieldName($field) . " must be at least {$value} characters.";
         }
     }
 
     protected function validateMax($field, $value)
     {
         if (!isset($this->data[$field]) || is_null($this->data[$field]) || strlen($this->data[$field]) > $value) {
-            $this->errors[$field] = "{$field} must not exceed {$value} characters.";
+            $this->errors[$field] = $this->formatFieldName($field) . " must not exceed {$value} characters.";
         }
     }
 
     protected function validateNumeric($field)
     {
         if (!is_numeric($this->data[$field])) {
-            $this->errors[$field] = "{$field} must be a number.";
+            $this->errors[$field] = $this->formatFieldName($field) . " must be a number.";
         }
     }
 
     protected function validateBoolean($field)
     {
         if (!is_bool($this->data[$field])) {
-            $this->errors[$field] = "{$field} must be true or false.";
+            $this->errors[$field] = $this->formatFieldName($field) . " must be true or false.";
         }
     }
 
     protected function validateArray($field)
     {
         if (!is_array($this->data[$field])) {
-            $this->errors[$field] = "{$field} must be an array.";
+            $this->errors[$field] = $this->formatFieldName($field) . " must be an array.";
         }
     }
 
     protected function validateDatetime($field)
     {
         if (!strtotime($this->data[$field])) {
-            $this->errors[$field] = "{$field} must be a valid datetime.";
+            $this->errors[$field] = $this->formatFieldName($field) . " must be a valid datetime.";
         }
     }
 
@@ -131,7 +131,7 @@ class Validator
         $confirmationField = "{$field}_confirm";
 
         if (!isset($this->data[$confirmationField]) || $this->data[$field] !== $this->data[$confirmationField]) {
-            $this->errors[$field] = "{$field} confirm does not match.";
+            $this->errors[$field] = $this->formatFieldName($field) . " confirm does not match.";
         }
     }
 
@@ -195,7 +195,7 @@ class Validator
 
         // Check if any records match
         if ($result->count > 0) {
-            $this->errors[$field] = "{$field} must be unique.";
+            $this->errors[$field] = $this->formatFieldName($field) . " must be unique.";
         }
     }
 
@@ -203,7 +203,7 @@ class Validator
     {
         $values = explode(',', $values);
         if (!in_array($this->data[$field], $values)) {
-            $this->errors[$field] = "{$field} must be one of " . implode(', ', $values) . ".";
+            $this->errors[$field] = $this->formatFieldName($field) . " must be one of " . implode(', ', $values) . ".";
         }
     }
 
