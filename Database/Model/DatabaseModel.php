@@ -261,6 +261,50 @@ abstract class DatabaseModel
         ];
     }
 
+    public function rawPaginate(string $query, array $params = [], int $page = 1, int $itemsPerPage = 15): array
+    {
+        try {
+            // Calculate the offset
+            $offset = ($page - 1) * $itemsPerPage;
+
+            // Modify the original query to add LIMIT and OFFSET
+            $paginatedQuery = $query . " LIMIT $itemsPerPage OFFSET $offset";
+
+            // Execute the paginated query
+            $results = $this->query($paginatedQuery, $params);
+
+            // Create a query to count total rows
+            $countQuery = "SELECT COUNT(*) as total FROM ($query) as count_table";
+            $totalResult = $this->query($countQuery, $params);
+
+            $totalItems = $totalResult[0]->total;
+            $totalPages = ceil($totalItems / $itemsPerPage);
+
+            return [
+                'data' => $results,
+                'pagination' => [
+                    'total_items' => (int)$totalItems,
+                    'current_page' => $page,
+                    'items_per_page' => $itemsPerPage,
+                    'total_pages' => $totalPages,
+                ],
+            ];
+        } catch (\Exception $e) {
+            throw new DatabaseException(
+                "Failed to execute raw pagination query: {$e->getMessage()}",
+                $e->getCode(),
+                "error"
+            );
+        }
+    }
+
+    // Static version of the method
+    public static function rawPaginateStatic(string $query, array $params = [], int $page = 1, int $itemsPerPage = 15): array
+    {
+        $instance = new static();
+        return $instance->rawPaginate($query, $params, $page, $itemsPerPage);
+    }
+
     public function join(string $table, string $first, string $operator, string $second, string $type = 'INNER'): self
     {
         $queryBuilder = new QueryBuilder($this->connection);
