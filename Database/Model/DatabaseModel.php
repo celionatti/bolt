@@ -271,13 +271,13 @@ abstract class DatabaseModel
             $paginatedQuery = $query . " LIMIT $itemsPerPage OFFSET $offset";
 
             // Execute the paginated query
-            $results = $this->query($paginatedQuery, $params);
+            $results = $this->query($paginatedQuery, $params, "assoc");
 
             // Create a query to count total rows
             $countQuery = "SELECT COUNT(*) as total FROM ($query) as count_table";
-            $totalResult = $this->query($countQuery, $params);
+            $totalResult = $this->query($countQuery, $params, "assoc");
 
-            $totalItems = $totalResult[0]->total;
+            $totalItems = $totalResult[0]['total'];
             $totalPages = ceil($totalItems / $itemsPerPage);
 
             return [
