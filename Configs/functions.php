@@ -394,6 +394,18 @@ function redirect($url, $status_code = 302, $headers = [], $query_params = [], $
     }
 }
 
+function back()
+{
+    if (!empty($_SERVER['HTTP_REFERER'])) {
+        $previousPage = $_SERVER['HTTP_REFERER'];
+        echo "<script>window.location.href = '$previousPage';</script>";
+        exit;
+    } else {
+        echo '<script>window.history.back();</script>';
+        exit;
+    }
+}
+
 function old_value(string $key, $default = '', string $type = 'post', string $dataType = 'string'): mixed
 {
     // Define the input sources and their corresponding arrays
