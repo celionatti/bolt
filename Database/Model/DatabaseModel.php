@@ -164,6 +164,22 @@ abstract class DatabaseModel
         return null;
     }
 
+    public function findAllBy(array $conditions): array
+    {
+        $queryBuilder = new QueryBuilder($this->connection);
+        $queryBuilder->select()->from($this->table);
+
+        foreach ($conditions as $column => $value) {
+            $queryBuilder->where($column, '=', $value);
+        }
+
+        $result = $queryBuilder->execute();
+        if ($result) {
+            return $result;
+        }
+        return null;
+    }
+
     public function get(): array
     {
         $queryBuilder = new QueryBuilder($this->connection);
