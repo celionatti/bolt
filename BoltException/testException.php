@@ -16,77 +16,33 @@ use Exception;
 use Throwable;
 use celionatti\Bolt\Helpers\Logger;
 
-class BoltException extends Exception
+class testException extends Exception
 {
-    private bool $isDebug;
-
     public function __construct(string $message = "", int $code = 0, ?Exception $previous = null)
     {
         parent::__construct($message, $code, $previous);
 
-        // Get debug status from environment
-        $this->isDebug = strtolower(bolt_env('APP_DEBUG')) === 'true';
-
-        // Render the exception details
+        // Render the exception details automatically
         $this->render();
     }
 
     private function render(): void
     {
-        if ($this->isDebug) {
-            $file = $this->getFile();
-            $line = $this->getLine();
-            $message = $this->getMessage();
-            $code = $this->getCode();
-            $trace = $this->getTrace();
-            $variables = $this->getDefinedVariables();
-            $frameworkDetails = $this->getFrameworkDetails();
-            $codeSnippet = $this->getCodeSnippet($file, $line);
-            $classOrMethod = $this->getClassOrMethod($trace);
+        $file = $this->getFile();
+        $line = $this->getLine();
+        $message = $this->getMessage();
+        $code = $this->getCode();
+        $trace = $this->getTrace();
+        $variables = $this->getDefinedVariables();
+        $frameworkDetails = $this->getFrameworkDetails();
+        $codeSnippet = $this->getCodeSnippet($file, $line);
+        $classOrMethod = $this->getClassOrMethod($trace);
 
-            $codeHtml = '';
-            foreach ($codeSnippet as $lineNumber => $lineContent) {
-                $isHighlighted = $lineNumber + 1 === $line;
-                $codeHtml .= sprintf(
-                    '<div class="%s"><span class="line-number">%d</span> <span class="code-text">%s</span></div>',
-                    $isHighlighted ? 'highlight' : '',
-                    $lineNumber + 1,
-                    htmlspecialchars($lineContent, ENT_QUOTES | ENT_HTML5, 'UTF-8')
-                );
-            }
+        // Generate the HTML
+        $html = $this->generateHtml($message, $code, $file, $line, $codeSnippet, $trace, $variables, $frameworkDetails, $classOrMethod);
 
-            $traceHtml = '';
-            foreach ($trace as $item) {
-                $traceHtml .= sprintf(
-                    '<li>%s in %s:%d</li>',
-                    htmlspecialchars($item['function'] ?? 'unknown', ENT_QUOTES | ENT_HTML5),
-                    htmlspecialchars($item['file'] ?? 'unknown', ENT_QUOTES | ENT_HTML5),
-                    $item['line'] ?? 0
-                );
-            }
-
-            $variablesHtml = '';
-            foreach ($variables as $key => $value) {
-                $variablesHtml .= sprintf(
-                    '<li><strong>%s:</strong> %s</li>',
-                    htmlspecialchars($key, ENT_QUOTES | ENT_HTML5),
-                    htmlspecialchars(json_encode($value), ENT_QUOTES | ENT_HTML5)
-                );
-            }
-
-            $frameworkHtml = '';
-            foreach ($frameworkDetails as $key => $value) {
-                $frameworkHtml .= sprintf(
-                    '<li><strong>%s:</strong> %s</li>',
-                    htmlspecialchars($key, ENT_QUOTES | ENT_HTML5),
-                    htmlspecialchars((string) $value, ENT_QUOTES | ENT_HTML5)
-                );
-            }
-
-            echo $this->generateDebugHtml($message, $code, $file, $line, $codeHtml, $traceHtml, $variablesHtml, $frameworkHtml, $classOrMethod);
-        } else {
-            echo $this->generateProductionHtml();
-        }
+        // Output and terminate execution
+        echo $html;
         exit;
     }
 
@@ -127,19 +83,22 @@ class BoltException extends Exception
         return $variables;
     }
 
+    private function isDevelopment(): bool
+    {
+        return in_array(getenv('APP_ENV'), ['development', 'local'], true);
+    }
+
     private function getFrameworkDetails(): array
     {
-        $composerFile = get_root_dir() . '/composer.lock';
+        $composerFile = get_root_dir() . '/composer.lock'; // Adjust path as needed
         $frameworkVersion = 'Unknown';
 
         if (file_exists($composerFile)) {
             $composerData = json_decode(file_get_contents($composerFile), true);
-            if ($composerData && isset($composerData['packages'])) {
-                foreach ($composerData['packages'] as $package) {
-                    if ($package['name'] === 'celionatti/bolt') {
-                        $frameworkVersion = $package['version'];
-                        break;
-                    }
+            foreach ($composerData['packages'] as $package) {
+                if ($package['name'] === 'celionatti/bolt') {
+                    $frameworkVersion = $package['version'];
+                    break;
                 }
             }
         }
@@ -151,87 +110,56 @@ class BoltException extends Exception
         ];
     }
 
-    private function generateProductionHtml(): string
-    {
-        return <<<HTML
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Error</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-            background: #f4f4f4;
-        }
-        .error-container {
-            text-align: center;
-            padding: 2rem;
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            max-width: 500px;
-            width: 90%;
-        }
-        h1 { color: #2E3E50; margin-bottom: 1rem; }
-        p { color: #666; line-height: 1.5; }
-        .reload-btn {
-            display: inline-block;
-            padding: 10px 20px;
-            background-color: #2E3E50;
-            color: white;
-            text-decoration: none;
-            border-radius: 4px;
-            margin-top: 1rem;
-            cursor: pointer;
-            border: none;
-            transition: background-color 0.3s ease;
-        }
-        .reload-btn:hover {
-            background-color: #1A2732;
-        }
-    </style>
-    <script>
-        function goBack() {
-            if (window.history.length > 1) {
-                window.history.back();
-            } else {
-                window.location.href = '/'; // Fallback to home page if no history
-            }
-        }
-    </script>
-</head>
-<body>
-    <div class="error-container">
-        <h1>Oops! Something went wrong</h1>
-        <p>We're sorry, but there was an error processing your request.</p>
-        <p>Please try again later or contact support if the problem persists.</p>
-        <button onclick="goBack()" class="reload-btn">
-            Reload Page
-        </button>
-    </div>
-</body>
-</html>
-HTML;
-    }
-
-    private function generateDebugHtml(
+    private function generateHtml(
         string $message,
         int $code,
         string $file,
         int $line,
-        string $codeHtml,
-        string $traceHtml,
-        string $variablesHtml,
-        string $frameworkHtml,
+        array $codeSnippet,
+        array $trace,
+        array $variables,
+        array $frameworkDetails,
         string $classOrMethod
     ): string {
+        $codeHtml = '';
+        foreach ($codeSnippet as $lineNumber => $lineContent) {
+            $isHighlighted = $lineNumber + 1 === $line;
+            $codeHtml .= sprintf(
+                '<div class="%s"><span class="line-number">%d</span> <span class="code-text">%s</span></div>',
+                $isHighlighted ? 'highlight' : '',
+                $lineNumber + 1,
+                htmlspecialchars($lineContent, ENT_QUOTES | ENT_HTML5, 'UTF-8')
+            );
+        }
+
+        $traceHtml = '';
+        foreach ($trace as $item) {
+            $traceHtml .= sprintf(
+                '<li>%s in %s:%d</li>',
+                htmlspecialchars($item['function'] ?? 'unknown', ENT_QUOTES | ENT_HTML5),
+                htmlspecialchars($item['file'] ?? 'unknown', ENT_QUOTES | ENT_HTML5),
+                $item['line'] ?? 0
+            );
+        }
+
+        $variablesHtml = '';
+        foreach ($variables as $key => $value) {
+            $variablesHtml .= sprintf(
+                '<li><strong>%s:</strong> %s</li>',
+                htmlspecialchars($key, ENT_QUOTES | ENT_HTML5),
+                htmlspecialchars(json_encode($value), ENT_QUOTES | ENT_HTML5)
+            );
+        }
+
+        $frameworkHtml = '';
+        foreach ($frameworkDetails as $key => $value) {
+            $frameworkHtml .= sprintf(
+                '<li><strong>%s:</strong> %s</li>',
+                htmlspecialchars($key, ENT_QUOTES | ENT_HTML5),
+                htmlspecialchars((string) $value, ENT_QUOTES | ENT_HTML5)
+            );
+        }
+
         return <<<HTML
 <!DOCTYPE html>
 <html lang="en">
@@ -334,7 +262,7 @@ HTML;
             document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
             document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
             document.getElementById(tabId).classList.add('active');
-            document.querySelector(`.tab[data-tab="\${tabId}"]`).classList.add('active');
+            document.querySelector(`.tab[data-tab="${tabId}"]`).classList.add('active');
         }
     </script>
 </head>
