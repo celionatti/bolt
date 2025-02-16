@@ -5,7 +5,7 @@ declare(strict_types=1);
 /**
  * ========================================================
  * =====================            =======================
- * Mail Class
+ * Bolt - MailService Class
  * =====================            =======================
  * ========================================================
  */
@@ -14,73 +14,167 @@ namespace celionatti\Bolt\Mailer;
 
 use PHPMailer\PHPMailer\Exception;
 use PHPMailer\PHPMailer\PHPMailer;
-use celionatti\Bolt\Localization\Translation;
+use Closure;
 
-
-class Mail
+class MailService
 {
-    private $mail;
-    private $translator;
+    protected PHPMailer $mailer;
+    protected ?string $templatePath = null;
+    protected array $templateData = [];
+    protected array $config;
+    protected bool $pretend;
 
-    public function __construct($locale = 'en')
+    public function __construct(array $config = [])
     {
-        $this->mail = new PHPMailer(true);
-        $this->configure();
-        $this->translator = new Translation($locale);
+        $this->config = $this->mergeConfig($config);
+        $this->pretend = (bool)($this->config['pretend'] ?? false);
+        $this->initializeMailer();
     }
 
-    private function configure()
+    protected function mergeConfig(array $config): array
     {
-        // Server settings
-        $this->mail->isSMTP();
-        $this->mail->Host = 'smtp.example.com';
-        $this->mail->SMTPAuth = true;
-        $this->mail->Username = 'your-email@example.com';
-        $this->mail->Password = 'your-password';
-        $this->mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-        $this->mail->Port = 587;
+        return array_merge([
+            'driver' => bolt_env('MAIL_DRIVER', 'smtp'),
+            'host' => bolt_env('MAIL_HOST', 'smtp.gmail.com'),
+            'port' => bolt_env('MAIL_PORT', 587),
+            'username' => bolt_env('MAIL_USERNAME'),
+            'password' => bolt_env('MAIL_PASSWORD'),
+            'encryption' => bolt_env('MAIL_ENCRYPTION', 'tls'),
+            'from' => [
+                'address' => bolt_env('MAIL_FROM_ADDRESS', 'support@eventlyy.com.ng'),
+                'name' => bolt_env('MAIL_FROM_NAME', 'Eventlyy'),
+            ],
+            'debug' => (bool)bolt_env('MAIL_DEBUG', false),
+        ], $config);
     }
 
-    public function setFrom($address, $name = '')
+    protected function initializeMailer(): void
     {
-        $this->mail->setFrom($address, $name);
-    }
+        $this->mailer = new PHPMailer(true);
+        $this->mailer->CharSet = 'UTF-8';
+        $this->mailer->XMailer = ' '; // Remove X-Mailer header
 
-    public function addRecipient($address, $name = '')
-    {
-        $this->mail->addAddress($address, $name);
-    }
-
-    public function addAttachment($filePath, $fileName = '')
-    {
-        $this->mail->addAttachment($filePath, $fileName);
-    }
-
-    public function setLocale($locale)
-    {
-        $this->translator->setLocale($locale);
-    }
-
-    public function addTranslation($locale, $messages)
-    {
-        $this->translator->addTranslation($locale, $messages);
-    }
-
-    public function sendMail($subjectKey, $bodyKey, $isHtml = true)
-    {
-        try {
-            $subject = $this->translator->translate($subjectKey);
-            $body = $this->translator->translate($bodyKey);
-
-            $this->mail->isHTML($isHtml);
-            $this->mail->Subject = $subject;
-            $this->mail->Body = $body;
-
-            $this->mail->send();
-            return true;
-        } catch (Exception $e) {
-            echo "Message could not be sent. Mailer Error: {$this->mail->ErrorInfo}";
-            return false;
+        if ($this->config['driver'] === 'smtp') {
+            $this->configureSmtp();
+        } else {
+            $this->mailer->isMail();
         }
+
+        $this->setDefaultFrom();
+    }
+
+    protected function configureSmtp(): void
+    {
+        $this->mailer->isSMTP();
+        $this->mailer->Host = $this->config['host'];
+        $this->mailer->SMTPAuth = true;
+        $this->mailer->Username = $this->config['username'];
+        $this->mailer->Password = $this->config['password'];
+        $this->mailer->SMTPSecure = $this->config['encryption'];
+        $this->mailer->Port = $this->config['port'];
+        $this->mailer->SMTPDebug = $this->config['debug'] ? 2 : 0;
+    }
+
+    protected function setDefaultFrom(): void
+    {
+        $this->from(
+            $this->config['from']['address'],
+            $this->config['from']['name']
+        );
+    }
+
+    public function from(string $email, string $name = ''): self
+    {
+        $this->mailer->setFrom($email, $name);
+        return $this;
+    }
+
+    public function to($email, string $name = ''): self
+    {
+        $this->mailer->addAddress($email, $name);
+        return $this;
+    }
+
+    public function cc($email, string $name = ''): self
+    {
+        $this->mailer->addCC($email, $name);
+        return $this;
+    }
+
+    public function bcc($email, string $name = ''): self
+    {
+        $this->mailer->addBCC($email, $name);
+        return $this;
+    }
+
+    public function subject(string $subject): self
+    {
+        $this->mailer->Subject = $subject;
+        return $this;
+    }
+
+    public function template(string $path): self
+    {
+        $this->templatePath = $path;
+        return $this;
+    }
+
+    public function send(): bool
+    {
+        if ($this->pretend) {
+            $this->logEmail();
+            return true;
+        }
+
+        try {
+            if ($this->templatePath) {
+                $this->renderTemplate();
+            }
+
+            if (empty($this->mailer->Body)) {
+                throw new \RuntimeException('Email body is empty');
+            }
+
+            return $this->mailer->send();
+        } catch (Exception $e) {
+            throw new \RuntimeException("Email sending failed: " . $e->getMessage(), 0, $e);
+        }
+    }
+
+    protected function logEmail(): void
+    {
+        $log = sprintf(
+            "Pretend email sent:\nFrom: %s\nTo: %s\nSubject: %s\nBody: %s\n",
+            $this->mailer->From,
+            implode(', ', array_column($this->mailer->getToAddresses(), 0)),
+            $this->mailer->Subject,
+            $this->mailer->Body
+        );
+        error_log($log);
+    }
+
+    protected function renderTemplate(): void
+    {
+        if (!file_exists($this->templatePath)) {
+            throw new \InvalidArgumentException("Template file not found: {$this->templatePath}");
+        }
+
+        extract($this->templateData, EXTR_SKIP);
+        ob_start();
+        include $this->templatePath;
+        $content = ob_get_clean();
+
+        $this->mailer->isHTML(true);
+        $this->mailer->Body = $content;
+        $this->mailer->AltBody = strip_tags($content);
+    }
+
+    public function reset(): self
+    {
+        $this->mailer = new PHPMailer(true);
+        $this->configureDefaultSettings();
+        $this->templatePath = null;
+        $this->templateData = [];
+        return $this;
     }
 }
