@@ -39,137 +39,89 @@ class Auth
         }
 
         $userId = $this->session->get("user_id");
-        $sessionToken = $this->session->get("session_token");
 
-        if ($userId && $sessionToken) {
-            $user = $this->user->find($userId);
-
-            if ($user && $user->session_token === $sessionToken) {
-                $this->loggedInUser = $user->toArray();
+        if (!$userId) {
+            $user = $this->autoLogin();
+            if ($user) {
+                $this->loggedInUser = $user;
                 return $this->loggedInUser;
-            } else {
-                $this->logout();
-                return null;
             }
+
+            return null;
         }
 
-        $user = $this->autoLogin();
+        $user = $this->user->find($userId);
         if ($user) {
-            $this->loggedInUser = $user;
+            $this->loggedInUser = $user->toArray();
             return $this->loggedInUser;
         }
 
         return null;
     }
 
-    public function login(string $email, string $password, bool $rememberMe = false, string $redirect = null): array
+    public function login(string $email, string $password, bool $rememberMe = false): array
     {
         if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL) || empty($password)) {
-            return [
-                'success' => false,
-                'message' => 'Invalid or empty credentials.',
-                'type' => 'error',
-                'redirect' => URL_ROOT . "{$redirect}"
-            ];
+            setFormMessage(["email" => "Invalid or empty credentials.", "password" => ""]);
+            redirect(URL_ROOT . "/login");
         }
 
         $user = $this->user->findBy(['email' => $email]);
 
-        if (!$user) {
+        if (!$user || !is_array($user) && !is_object($user)) {
             return $this->handleFailedLogin($email, 'User does not exist.');
         }
 
-        $userArray = $user->toArray();
-
-        if ($userArray['is_blocked'] && $this->isBlocked($email)) {
-            return [
-                'success' => false,
-                'message' => 'Account is currently blocked.',
-                'type' => 'warning',
-                'redirect' => URL_ROOT . "{$redirect}"
-            ];
+        if (is_object($user)) {
+            $user = $user->toArray();
         }
 
-        if (!password_verify($password, $userArray['password'])) {
+        if ($user['is_blocked'] && $this->isBlocked($email)) {
+            return ['success' => false, 'message' => 'Account is currently blocked.', 'type' => 'warning'];
+        }
+
+        if (!password_verify($password, $user['password'])) {
             return $this->handleFailedLogin($email, 'Invalid credentials.');
         }
 
         $this->resetFailedLogins($email);
 
         session_regenerate_id(true);
-        $this->session->set("user_id", $userArray['user_id']);
-
-        $sessionToken = bin2hex(random_bytes(32));
-        $this->user->update(['session_token' => $sessionToken], $userArray['user_id'], "user_id");
-        $this->session->set("session_token", $sessionToken);
+        $this->session->set("user_id", $user['user_id']);
 
         if ($rememberMe) {
-            // Clear any existing remember tokens before setting new one
-            $this->user->update(['remember_token' => null], $userArray['user_id'], "user_id");
-            $this->setRememberMeToken($userArray['user_id']);
+            $this->setRememberMeToken($user['user_id']);
         }
 
-        return [
-            'success' => true,
-            'message' => 'Login successful.',
-            'type' => 'success',
-            'redirect' => $redirect ?? URL_ROOT . '/dashboard'
-        ];
-    }
-
-    private function isProductionEnvironment(): bool
-    {
-        return $_SERVER['APP_ENV'] === 'production' || bolt_env('APP_ENV') === 'production' ||
-               $_SERVER['HTTP_HOST'] !== 'localhost' &&
-               !str_contains($_SERVER['HTTP_HOST'], '.test');
-    }
-
-    private function clearRememberMeCookie(): void
-    {
-        $params = session_get_cookie_params();
-        setcookie(REMEMBER_ME_NAME, '', [
-            'expires' => time() - 3600,
-            'path' => $params['path'],
-            'domain' => $params['domain'],
-            'secure' => $params['secure'],
-            'httponly' => true,
-            'samesite' => $params['samesite']
-        ]);
+        return ['success' => true, 'message' => 'Login successful.', 'type' => 'success'];
     }
 
     protected function setRememberMeToken($userId): void
     {
-        // Clear existing remember token first
-        $this->user->update(['remember_token' => null], $userId, "user_id");
-
         $token = bin2hex(random_bytes(32));
         $hashedToken = hash('sha256', $token);
 
         $this->user->update(['remember_token' => $hashedToken], $userId, "user_id");
 
-        $isProduction = $this->isProductionEnvironment();
-        $cookieParams = [
+        setcookie(REMEMBER_ME_NAME, $token, [
             'expires' => time() + (30 * 24 * 60 * 60),
             'path' => '/',
-            'domain' => $_SERVER['HTTP_HOST'] ?? 'localhost',
-            'secure' => $isProduction,
             'httponly' => true,
-            'samesite' => 'Lax',
-        ];
-
-        // Adjust for localhost development
-        if (!$isProduction) {
-            $cookieParams['secure'] = false;
-            if ($_SERVER['HTTP_HOST'] === 'localhost') {
-                $cookieParams['domain'] = false;
-            }
-        }
-
-        setcookie(REMEMBER_ME_NAME, $token, $cookieParams);
+            'secure' => false, // Set to true in production with HTTPS
+            'samesite' => 'Lax', // Or 'Strict'/'None' based on your requirements
+        ]);
     }
 
     public function autoLogin(): ?array
     {
+        if ($this->session->get("user_id")) {
+            $user = $this->user->find($this->session->get("user_id"));
+            if ($user) {
+                $this->loggedInUser = $user->toArray();
+                return $this->loggedInUser;
+            }
+        }
+
         if (isset($_COOKIE[REMEMBER_ME_NAME])) {
             $token = $_COOKIE[REMEMBER_ME_NAME];
             $hashedToken = hash('sha256', $token);
@@ -177,24 +129,14 @@ class Auth
             $user = $this->user->findBy(['remember_token' => $hashedToken]);
 
             if ($user) {
-                // Generate new session token and update user
-                $sessionToken = bin2hex(random_bytes(32));
-                $this->user->update([
-                    'session_token' => $sessionToken,
-                    'remember_token' => $hashedToken // Keep current token
-                ], $user->user_id, "user_id");
-
                 session_regenerate_id(true);
-                $this->session->set("user_id", $user->user_id);
-                $this->session->set("session_token", $sessionToken);
+                $this->session->set("user_id", $user['user_id']);
                 $this->loggedInUser = $user->toArray();
 
                 return $this->loggedInUser;
-            } else {
-                // Invalid token - clear cookie
-                $this->clearRememberMeCookie();
             }
         }
+
         return null;
     }
 
@@ -203,20 +145,17 @@ class Auth
         $userId = $this->session->get("user_id");
 
         if ($userId) {
-            $this->user->update([
-                'remember_token' => null,
-                'session_token' => null
-            ], $userId, "user_id");
+            // Regenerate remember token to invalidate old one
+            $this->user->update(['remember_token' => null], $userId, "user_id");
         }
 
         $this->session->remove("user_id");
-        $this->session->remove("session_token");
 
         if (isset($_COOKIE[REMEMBER_ME_NAME])) {
             setcookie(REMEMBER_ME_NAME, '', time() - 3600, '/');
         }
 
-        session_regenerate_id(true);
+        session_regenerate_id(true); // Prevent session fixation
     }
 
     protected function handleFailedLogin(string $email, string $reason): array
