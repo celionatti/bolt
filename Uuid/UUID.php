@@ -13,72 +13,97 @@ namespace celionatti\Bolt\Uuid;
 class UUID
 {
     /**
-     * Generate a more advanced UUID with additional metadata
+     * Generate a MongoDB-like ID with "bv_" prefix
      */
-    public static function generate(array $metadata = [])
+    public static function generate(): string
     {
-        // Base UUID generation
-        $data = random_bytes(16);
-        $data[6] = chr(ord($data[6]) & 0x0F | 0x40);
-        $data[8] = chr(ord($data[8]) & 0x3F | 0x80);
+        // 4-byte timestamp (seconds since Unix epoch)
+        $timestamp = pack('N', time());
 
-        // Timestamp with microsecond precision
-        $timestamp = microtime(true) * 10000;
-        $timestampBinary = substr(pack('J', $timestamp), 2);
-        $data = substr_replace($data, $timestampBinary, 0, 8);
+        // 5-byte combination of machine/process identifiers
+        $machinePid = substr(hash('sha1', gethostname() . php_uname('n'), true), 0, 5);
 
-        // Add machine/process identifiers
-        $machineId = substr(sha1(gethostname() . php_uname('n')), 0, 4);
-        $processId = substr(pack('n', getmypid()), 0, 2);
-        $data .= hex2bin($machineId . bin2hex($processId));
+        // 3-byte counter/random value
+        $random = random_bytes(3);
 
-        // Incorporate optional metadata
-        if (!empty($metadata)) {
-            $metadataHash = substr(sha1(json_encode($metadata)), 0, 8);
-            $data .= hex2bin($metadataHash);
-        }
+        // Combine all components
+        $binary = $timestamp . $machinePid . $random;
 
-        // Additional randomness
-        $data .= random_bytes(8);
-
-        // Format UUID
-        $uuid = vsprintf('%s%s%s%s%s%s%s%s', str_split(bin2hex($data), 4));
-
-        return "bv_{$uuid}";
+        // Format with "bv_" prefix and hexadecimal encoding
+        return 'bv_' . bin2hex($binary);
     }
 
     /**
-     * Validate UUID integrity
+     * Validate UUID format and structure
      */
-    public static function validate($uuid)
+    public static function validate(string $uuid): bool
     {
-        // Remove prefix
-        $hexUuid = substr($uuid, 3);
-
-        // Check length and format
-        if (strlen($hexUuid) !== 64) {
+        // Basic format validation
+        if (!preg_match('/^bv_[a-f0-9]{24}$/i', $uuid)) {
             return false;
         }
 
-        // Check version and variant bits
-        $versionByte = hexdec(substr($hexUuid, 12, 2));
-        $variantByte = hexdec(substr($hexUuid, 16, 2));
+        // Extract timestamp for additional validation
+        $hex = substr($uuid, 3, 8);
+        $timestamp = unpack('N', hex2bin($hex))[1];
 
-        return (($versionByte & 0xF0) === 0x40) && (($variantByte & 0xC0) === 0x80);
+        // Validate timestamp range (1970-2106)
+        return $timestamp > 0 && $timestamp < 0xFFFFFFFF;
     }
 
     /**
-     * Extract comprehensive UUID information
+     * Parse UUID components
      */
-    public static function parseUUID($uuid)
+    public static function parse(string $uuid): array
     {
-        $hexUuid = substr($uuid, 3);
-        $binaryUuid = hex2bin($hexUuid);
+        if (!self::validate($uuid)) {
+            throw new \InvalidArgumentException('Invalid UUID format');
+        }
+
+        $binary = hex2bin(substr($uuid, 3));
 
         return [
-            'timestamp' => unpack('J', "\0\0" . substr($binaryUuid, 0, 8))[1] / 10000,
-            'machineId' => bin2hex(substr($binaryUuid, 8, 4)),
-            'processId' => unpack('n', substr($binaryUuid, 12, 2))[1]
+            'timestamp' => unpack('N', substr($binary, 0, 4))[1],
+            'machine_id' => bin2hex(substr($binary, 4, 5)),
+            'random' => bin2hex(substr($binary, 9, 3))
         ];
+    }
+
+    /**
+     * Generate ordered UUID (for database indexing benefits)
+     */
+    public static function orderedGenerate(): string
+    {
+        // 4-byte timestamp (seconds since epoch)
+        $timestamp = pack('N', time());
+
+        // 8-byte random data
+        $random = random_bytes(8);
+
+        // Combine and format
+        return 'bv_' . bin2hex($timestamp . $random);
+    }
+
+    /**
+     * Get timestamp from ordered UUID
+     */
+    public static function getTimestamp(string $uuid): int
+    {
+        if (!self::validate($uuid)) {
+            throw new \InvalidArgumentException('Invalid UUID format');
+        }
+
+        $hex = substr($uuid, 3, 8);
+        return unpack('N', hex2bin($hex))[1];
+    }
+
+    /**
+     * Generate short ID (16 characters) for URLs
+     */
+    public static function shortGenerate(): string
+    {
+        // 8-byte timestamp (milliseconds) + 4-byte random
+        $binary = pack('J', (int)(microtime(true) * 1000)) . random_bytes(4);
+        return 'bv_' . bin2hex($binary);
     }
 }

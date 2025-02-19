@@ -18,255 +18,241 @@ use celionatti\Bolt\CLI\Strike\GenerateCommand;
 use celionatti\Bolt\CLI\Strike\MigrationCommand;
 use celionatti\Bolt\CLI\Strike\SchedulerCommand;
 use celionatti\Bolt\CLI\Strike\AuthenticationCommand;
+use RuntimeException;
 
 class BoltCLI
 {
-    protected $commands = [];
-    protected $aliases = [];
-    protected $interactiveMode = false;
-    protected $verbosity = 1; // 0: silent, 1: normal, 2: verbose
+    private const COLOR_PRIMARY = "\033[1;36m";
+    private const COLOR_SECONDARY = "\033[0;35m";
+    private const COLOR_SUCCESS = "\033[1;32m";
+    private const COLOR_ERROR = "\033[1;31m";
+    private const COLOR_RESET = "\033[0m";
 
-    public function registerCommand($name, $description, CommandInterface $commandInstance)
+    private array $commands = [];
+    private array $aliases = [];
+    private bool $interactive = false;
+    private int $verbosity = 1;
+    private CliActions $cli;
+
+    public function __construct()
+    {
+        $this->cli = new CliActions();
+        $this->registerCoreCommands();
+    }
+
+    public function registerCommand(string $name, string $description, CommandInterface $command): void
     {
         $this->commands[$name] = [
             'description' => $description,
-            'command' => $commandInstance,
+            'instance' => $command,
+            'help' => $command->getHelp()
         ];
     }
 
-
-    public function registerAlias($alias, $commandName)
+    public function registerAlias(string $alias, string $commandName): void
     {
+        if (!isset($this->commands[$commandName])) {
+            throw new RuntimeException("Cannot alias unknown command: {$commandName}");
+        }
         $this->aliases[$alias] = $commandName;
     }
 
-    public function setInteractiveMode($enabled)
+    public function run(array $args = []): void
     {
-        $this->interactiveMode = $enabled;
+        try {
+            $args = empty($args) ? $_SERVER['argv'] : $args;
+            $parsed = $this->parseArguments($args);
+
+            $this->handleGlobalOptions($parsed['options']);
+
+            if (empty($parsed['command']) && $this->interactive) {
+                $this->startInteractiveSession();
+                return;
+            }
+
+            $this->executeCommand($parsed);
+        } catch (RuntimeException $e) {
+            $this->cli->message($e->getMessage(), 'error', true);
+        }
     }
 
-    public function setVerbosity($level)
+    private function parseArguments(array $args): array
     {
-        $this->verbosity = $level;
-    }
+        array_shift($args); // Remove script name
+        $result = ['command' => null, 'args' => [], 'options' => []];
 
-    public function parseArguments(array $args)
-    {
-        $parsedArgs = ['command' => null, 'args' => [], 'options' => []];
-        $currentOption = null;
+        while (!empty($args)) {
+            $arg = array_shift($args);
 
-        array_shift($args);
-        foreach ($args as $arg) {
-            // Check if the argument is a command or an option
-            if ($arg && $arg[0] === '-') {
-                // This is an option
-                if ($currentOption !== null) {
-                    // If an option is already in progress, store it
-                    $parsedArgs['options'][$currentOption] = true;
-                }
-                $currentOption = ltrim($arg, '-');
-            } elseif ($currentOption !== null) {
-                // This argument belongs to the current option
-                $parsedArgs['options'][$currentOption] = $arg;
-                $currentOption = null;
-            } elseif ($parsedArgs['command'] === null) {
-                // This is the command
-                $parsedArgs['command'] = $arg;
+            if ($arg === '--') {
+                break; // Stop parsing options
+            }
+
+            if (str_starts_with($arg, '--')) {
+                $this->parseLongOption($arg, $args, $result);
+            } elseif (str_starts_with($arg, '-')) {
+                $this->parseShortOption($arg, $args, $result);
+            } elseif ($result['command'] === null) {
+                $result['command'] = $arg;
             } else {
-                // This is a regular argument
-                $parsedArgs['args'][] = $arg;
+                $result['args'][] = $arg;
             }
         }
 
-        // If an option is still in progress at the end, store it
-        if ($currentOption !== null) {
-            $parsedArgs['options'][$currentOption] = true;
-        }
-
-        return $parsedArgs;
+        return $result;
     }
 
-    public function run($inputArgs = null): void
+    private function executeCommand(array $parsed): void
     {
-        if ($inputArgs !== null && is_array($inputArgs)) {
-            $args = $inputArgs;
-        } else {
-            $args = $_SERVER['argv'];
-        }
-
-        // Advanced argument parsing
-        $parsedArgs = $this->parseArguments($args);
-
-        // Determine the command to execute
-        $commandName = $parsedArgs['command'] ?? null;
-
-        if (!$commandName) {
-            if ($this->interactiveMode) {
-                // Enter interactive mode
-                $this->runInteractiveMode();
-            } else {
-                $this->output("No Command Provided.", 2);
-                $this->printHelp();
-                exit;
-            }
-        }
-
-        // Resolve aliases to actual command names
-        $commandName = $this->aliases[$commandName] ?? $commandName;
+        $commandName = $this->resolveCommandName($parsed['command']);
 
         if (!isset($this->commands[$commandName])) {
-            $this->output("Unknown Command: $commandName", 2);
-            $this->printHelp();
-            exit;
+            $this->showError("Unknown command: {$parsed['command']}");
+            $this->showAvailableCommands();
+            return;
         }
 
-        $commandInfo = $this->commands[$commandName];
-        $commandInstance = $commandInfo['command'];
-        $commandArgs = $parsedArgs['args'] ?? [];
-
-        if ($commandInstance instanceof CommandInterface) {
-            // Execute the command's execute method
-            $commandInstance->execute($parsedArgs);
-            // $commandInstance->execute($commandArgs);
-        } else {
-            $this->output("Invalid command instance: $commandName", 2);
-            exit;
-        }
+        $command = $this->commands[$commandName]['instance'];
+        $command->execute(
+            $parsed['args'],
+            $parsed['options']
+        );
     }
 
-    protected function runInteractiveMode()
+    private function resolveCommandName(?string $name): ?string
     {
-        $this->welcomeMessage();
-
-        if (function_exists('readline_read_history')) {
-            readline_read_history();
+        if ($name === null) {
+            return null;
         }
+        return $this->aliases[$name] ?? $name;
+    }
+
+    private function startInteractiveSession(): void
+    {
+        $this->showWelcome();
+        $this->cli->message("Interactive mode activated", 'success');
 
         while (true) {
-            $input = function_exists('readline') ? readline("Strike ⚡︎> ") : $this->simplePrompt("Strike ⚡︎> ");
-
-            if ($input === false) {
-                break; // User pressed Ctrl+D or an error occurred
-            }
-
-            $input = trim($input);
-
-            if ($input !== '') {
-                if (function_exists('readline_add_history')) {
-                    readline_add_history($input);
-                }
-            }
+            $input = $this->cli->prompt("bolt", "Enter command");
 
             if ($input === 'exit' || $input === 'quit') {
-                $confirm = function_exists('readline') ? readline("Are you sure you want to exit? (y/n): ") : $this->simplePrompt("Are you sure you want to exit? (y/n): ");
-                if (strtolower($confirm) === 'y') {
-                    break;
-                } else {
-                    continue; // Skip running any command if the exit was not confirmed
-                }
-            } elseif ($input === 'help') {
-                $this->printHelp();
-            } else {
-                // Parse and execute the entered command
-                $inputArgs = explode(' ', $input);
-                $this->run($inputArgs);
+                break;
             }
+
+            if ($input === 'help') {
+                $this->showInteractiveHelp();
+                continue;
+            }
+
+            $this->executeCommand(
+                $this->parseArguments(explode(' ', $input))
+            );
         }
 
-        if (function_exists('readline_write_history')) {
-            readline_write_history();
+        $this->cli->message("Exiting interactive mode", 'info');
+    }
+
+    private function registerCoreCommands(): void
+    {
+        $commands = [
+            'migration' => [
+                'class' => MigrationCommand::class,
+                'desc' => 'Database migration management. migrate, rollback, refresh, create.'
+            ],
+            'make' => [
+                'class' => MakeCommand::class,
+                'desc' => 'Code generation commands'
+            ],
+            'serve' => [
+                'class' => ServerCommand::class,
+                'desc' => 'Start development server'
+            ],
+            'database' => [
+                'class' => DatabaseCommand::class,
+                'desc' => 'Start database commands'
+            ],
+            'generate' => [
+                'class' => GenerateCommand::class,
+                'desc' => 'Code generation commands - Keys'
+            ],
+            // ... other commands
+        ];
+
+        foreach ($commands as $name => $config) {
+            $this->registerCommand(
+                $name,
+                $config['desc'],
+                new $config['class']()
+            );
         }
 
-        $this->output("Exiting interactive mode.");
-        exit;
+        $this->registerAliases();
     }
 
-    protected function simplePrompt(string $prompt): string
+    private function registerAliases(): void
     {
-        echo $prompt;
-        return trim(fgets(STDIN));
+        $aliases = [
+            'mk' => 'make',
+            'db' => 'database',
+            'gen' => 'generate',
+            'auth' => 'authentication'
+        ];
+
+        foreach ($aliases as $alias => $command) {
+            $this->registerAlias($alias, $command);
+        }
     }
 
-    protected function printHelp(): void
+    private function showWelcome(): void
     {
-        $this->output("Available commands:", 1);
+        $this->cli->message(
+            "PHPStrike(Bolt) Framework CLI v2",
+            'info'
+        );
+        $this->cli->message(
+            "Type 'help' for available commands",
+            'secondary'
+        );
+    }
+
+    private function showInteractiveHelp(): void
+    {
+        $this->cli->message("Available Commands:", 'info');
+        foreach ($this->commands as $name => $cmd) {
+            $this->cli->output(
+                sprintf("%-15s %s", $name, $cmd['description'])
+            );
+        }
+        $this->cli->output("\nUse 'help <command>' for detailed usage");
+    }
+
+    private function handleGlobalOptions(array $options): void
+    {
+        $this->interactive = $options['interactive'] ?? false;
+        $this->verbosity = (int)($options['verbose'] ?? 1);
+
+        if (isset($options['quiet'])) {
+            $this->verbosity = 0;
+        }
+    }
+
+    private function showError(string $message): void
+    {
+        $this->cli->message($message, 'error');
+    }
+
+    private function showAvailableCommands(): void
+    {
+        $this->cli->message("Available commands:", 'info');
         foreach ($this->commands as $name => $command) {
-            $this->output("  \033[0;32m$name\033[0m: {$command['description']}", 1); // Green command names
+            $this->cli->output(
+                sprintf("  %s%-20s%s %s",
+                    self::COLOR_PRIMARY,
+                    $name,
+                    self::COLOR_RESET,
+                    $command['description']
+                )
+            );
         }
-    }
-
-    protected function output($message, $verbosityLevel = 1)
-    {
-        if ($verbosityLevel <= $this->verbosity) {
-            $this->message($message, false, false);
-        }
-    }
-
-    public function message(string $message, bool $die = false, bool $timestamp = true, string $level = 'info'): void
-    {
-        $output = '';
-
-        if ($timestamp) {
-            $output .= "[" . date("Y-m-d H:i:s") . "] - ";
-        }
-
-        $output .= ucfirst($message) . PHP_EOL;
-
-        switch ($level) {
-            case 'info':
-                $output = "\033[0;32m{$output}"; // Green color for info
-                break;
-            case 'warning':
-                $output = "\033[0;33m{$output}"; // Yellow color for warning
-                break;
-            case 'error':
-                $output = "\033[0;31m{$output}"; // Red color for error
-                break;
-            default:
-                break;
-        }
-
-        $output .= "\033[0m"; // Reset color
-
-        echo $output . PHP_EOL;
-
-        if ($die) {
-            die();
-        }
-    }
-
-    public function activeCommands($strike)
-    {
-        $strike->registerCommand('migration', 'Create a migration file, migrate, rollback, refresh, create', new MigrationCommand);
-        $strike->registerCommand('make', 'Make Command is for creating complete Package, commands like Resource,', new MakeCommand);
-        $strike->registerCommand('serve', 'Serve Bolt Framework with the PHP web server,', new ServerCommand);
-        $strike->registerCommand('schedule', 'Create new Schedule file', new SchedulerCommand);
-        $strike->registerCommand('generate', 'Generate Command is for , commands like app key,', new GenerateCommand);
-        $strike->registerCommand('database', 'Create a seeder file, generate, drop', new DatabaseCommand);
-        $strike->registerCommand('authentication', 'Create an authentication Resources. For the users Model, User Sessions, Migrations - users, login_attempts, and user_sessions. Also auth controller, view - login and signup page.', new AuthenticationCommand);
-
-        // Register an alias
-        $strike->registerAlias('seed', 'seeder');
-        $strike->registerAlias('auth', 'authentication');
-        $strike->registerAlias('gen', 'generate');
-        $strike->registerAlias('db', 'database');
-    }
-
-    public function welcomeMessage()
-    {
-        $this->output("\033[0;36m********************************************\033[0m", 1);
-        $this->output("\033[0;36m*                                          *\033[0m", 1);
-        $this->output("\033[0;36m*" . str_pad("*** Strike ⚡︎ ***", 42, " ", STR_PAD_BOTH) . "*\033[0m", 1);
-        $this->output("\033[0;36m*" . str_pad("Welcome to Strike CLI Interactive Mode.", 42, " ", STR_PAD_BOTH) . "*\033[0m", 1);
-        $this->output("\033[0;36m*" . str_pad("Type 'help' to see a list of available", 42, " ", STR_PAD_BOTH) . "*\033[0m", 1);
-        $this->output("\033[0;36m*" . str_pad("commands.", 42, " ", STR_PAD_BOTH) . "*\033[0m", 1);
-        $this->output("\033[0;36m*" . str_pad("Type 'exit' to quit the interactive", 42, " ", STR_PAD_BOTH) . "*\033[0m", 1);
-        $this->output("\033[0;36m*" . str_pad("mode.", 42, " ", STR_PAD_BOTH) . "*\033[0m", 1);
-        $this->output("\033[0;36m*" . str_pad("For detailed command descriptions, type", 42, " ", STR_PAD_BOTH) . "*\033[0m", 1);
-        $this->output("\033[0;36m*" . str_pad("'help [command]'.", 42, " ", STR_PAD_BOTH) . "*\033[0m", 1);
-        $this->output("\033[0;36m*" . str_pad("You can also use aliases for quicker", 42, " ", STR_PAD_BOTH) . "*\033[0m", 1);
-        $this->output("\033[0;36m*" . str_pad("access to commands.", 42, " ", STR_PAD_BOTH) . "*\033[0m", 1);
-        $this->output("\033[0;36m*                                          *\033[0m", 1);
-        $this->output("\033[0;36m********************************************\033[0m", 1);
     }
 }

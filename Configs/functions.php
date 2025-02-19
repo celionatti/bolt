@@ -45,38 +45,10 @@ function bolt_env($data)
     return false;
 }
 
-function bv_uuid($metadata = [])
+function bv_uuid()
 {
-    return UUID::generate($metadata);
+    return UUID::orderedGenerate();
 }
-
-// function bv_uuid()
-// {
-//     // Generate 16 bytes of random data
-//     $data = random_bytes(16);
-
-//     // Set the version (4) and variant (10xxxxxx) bits
-//     $data[6] = chr(ord($data[6]) & 0x0F | 0x40);
-//     $data[8] = chr(ord($data[8]) & 0x3F | 0x80);
-
-//     // Get the current timestamp in microseconds
-//     $timestamp = microtime(true) * 10000;
-
-//     // Convert the timestamp to a 64-bit binary string without zero padding
-//     $timestampBinary = substr(pack('J', $timestamp), 2);
-
-//     // Replace the first 8 bytes with the timestamp
-//     $data = substr_replace($data, $timestampBinary, 0, 8);
-
-//     // Add some additional randomness
-//     $randomBytes = random_bytes(8);
-//     $data .= $randomBytes;
-
-//     // Format the UUID without dashes
-//     $uuid = vsprintf('%s%s%s%s%s%s%s%s', str_split(bin2hex($data), 4));
-
-//     return "bv_{$uuid}";
-// }
 
 function findFile($dir, $targetFile)
 {
@@ -185,169 +157,156 @@ function isCurrentPage($pageUrl)
     return $compareUrl === $pageUrl;
 }
 
-function bolt_die($value, $message = '', $title = 'BOLT Error - Oops! Something went wrong.', $status_code = 500)
+/**
+ * Display error page and terminate execution
+ */
+function bolt_die(mixed $value, string $message = '', string $title = 'BOLT Error - Oops! Something went wrong.', int $status_code = 500): never
 {
     http_response_code($status_code);
+    header('Content-Type: text/html; charset=UTF-8');
 
-    $value = str_replace('"', '', $value);
+    // Sanitize output
+    $safe_title = htmlspecialchars($title, ENT_QUOTES, 'UTF-8');
+    $safe_message = htmlspecialchars($message, ENT_QUOTES, 'UTF-8');
+    $safe_value = is_string($value) ? htmlspecialchars($value, ENT_QUOTES, 'UTF-8') : $value;
 
-    echo "<!DOCTYPE html>
-    <html lang='en'>
+    // Format value display
+    $formatted_value = '<pre>' . print_r($safe_value, true) . '</pre>';
+
+    // Render template
+    $template = <<<HTML
+    <!DOCTYPE html>
+    <html lang="en">
     <head>
-        <meta charset='UTF-8'>
-        <meta name='viewport' content='width=device-width, initial-scale=1.0'>
-        <title>{$title}</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>{$safe_title}</title>
         <style>
-            body {
+            :root {
+                --primary: #1a73e8;
+                --error: #d93025;
+                --background: #f8f9fa;
+                --text: #202124;
+            }
+
+            * {
+                box-sizing: border-box;
                 margin: 0;
-                font-family: Arial, sans-serif;
-                background: rgb(21,69,152);
-                background: linear-gradient(90deg, rgba(21,69,152,1) 0%, rgba(22,155,173,1) 26%, rgba(235,230,232,1) 37%, rgba(99,156,173,1) 45%, rgba(37,78,149,1) 100%);
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                height: 100vh;
-                overflow: hidden;
+                padding: 0;
             }
-    
-            .error-container {
+
+            body {
+                font-family: 'Segoe UI', system-ui, sans-serif;
+                background: var(--background);
+                color: var(--text);
+                line-height: 1.6;
+                min-height: 100vh;
+                display: grid;
+                place-items: center;
+                padding: 1rem;
+            }
+
+            .error-card {
+                background: white;
+                border-radius: 1rem;
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                max-width: 800px;
                 width: 100%;
-                max-width: 900px;
-                height400px;
-                background-color: #fff;
-                border-radius: 5px;
-                box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
-                display: flex;
+                overflow: hidden;
+                border-left: 0.5rem solid var(--error);
             }
-    
-            .left-section {
-                flex: 2;
-                background-color: rgb(21,69,152);
-                background-image: linear-gradient(160deg, rgba(21,69,152,1) 0%, #80D0C7 50%, rgba(21,69,152,1) 100%);
-                padding: 60px;
-                text-align: center;
-            }
-    
-            .right-section {
-                flex: 1;
-                background: rgb(21,69,152);
-                background: linear-gradient(90deg, rgba(21,69,152,1) 0%, rgba(22,155,173,1) 26%, rgba(235,230,232,1) 37%, rgba(99,156,173,1) 45%, rgba(37,78,149,1) 100%);
-                padding: 20px;
-                text-align: center;
-                display: flex;
-                flex-direction: column;
-                justify-content: center;
-                align-items: center;
-            }
-    
-            h1 {
-                font-size: 36px;
-                color: #fff;
-            }
-    
-            p {
-                font-size: 28px;
-                color: #ccc;
-            }
-    
-            img {
-                max-width: 100px;
-            }
-    
-            a {
-                text-decoration: none;
-                color: #fff;
-            }
-            /* Style for the call-to-action button */
-            .btn-primary {
-                background-color: #054774;
-                color: #fff;
-                padding: 1rem 2rem;
-                font-size: 1.25rem;
-                border: none;
-                border-radius: 0.25rem;
-                cursor: pointer;
-                transition: background-color 0.3s;
-                text-decoration: none;
-            }
-        
-            .btn-primary:hover {
-                background-color: #054762;
+
+            .error-header {
+                padding: 1.5rem;
+                background: linear-gradient(135deg, var(--primary), #1557b0);
+                color: white;
             }
 
             .error-title {
-                color: #fff;
-                font-size: 20px;
+                font-size: 1.5rem;
+                margin-bottom: 0.5rem;
+            }
+
+            .error-content {
+                padding: 2rem;
+            }
+
+            .error-message {
+                font-size: 1.25rem;
+                color: var(--error);
+                margin-bottom: 1.5rem;
+            }
+
+            .error-details {
+                background: #f8f9fa;
+                border-radius: 0.5rem;
+                padding: 1rem;
+                font-family: monospace;
+                overflow-x: auto;
+            }
+
+            .error-actions {
+                margin-top: 2rem;
+                display: flex;
+                gap: 1rem;
+            }
+
+            .error-button {
+                padding: 0.75rem 1.5rem;
+                border-radius: 0.5rem;
+                text-decoration: none;
+                font-weight: 500;
+                transition: transform 0.1s ease;
+            }
+
+            .error-button--primary {
+                background: var(--primary);
+                color: white;
+            }
+
+            .error-button--secondary {
+                background: #e8f0fe;
+                color: var(--primary);
+            }
+
+            @media (max-width: 600px) {
+                .error-card {
+                    border-left: none;
+                    border-top: 0.5rem solid var(--error);
+                }
             }
         </style>
     </head>
     <body>
-        <div class='error-container'>
-            <div class='left-section'>
-            <div class='error-title'>{$title}</div>
-                <h1>{$message}</h1>
-                <p>" . print_r($value, true) . "</p>
+        <div class="error-card">
+            <div class="error-header">
+                <h1 class="error-title">{$safe_title}</h1>
+                <p>Bolt Framework - PHPStrike</p>
             </div>
-            <div class='right-section'>
-                <svg
-                    xmlns='http://www.w3.org/2000/svg'
-                    version='1.1'
-                    width='400'
-                    height='300'
-                    viewBox='0 0 400 300'
-                    xml:space='preserve'
-                >
-                    <defs>
-                        <linearGradient id='gradient1' x1='0%' y1='0%' x2='100%' y2='100%'>
-                            <stop offset='0%' style='stop-color:#00BFFF; stop-opacity:1' />
-                            <stop offset='100%' style='stop-color:#1E90FF; stop-opacity:1' />
-                        </linearGradient>
-                    </defs>
 
-                    <rect x='0' y='0' width='400' height='300' fill='url(#gradient1)' />
+            <div class="error-content">
+                <div class="error-message">{$safe_message}</div>
 
-                    <!-- Cartoonish Error Graphic -->
-                    <g transform='translate(150, 70)'>
-                        <ellipse cx='50' cy='50' rx='50' ry='50' fill='#fff' />
-                        <circle cx='35' cy='35' r='8' fill='#000' />
-                        <circle cx='65' cy='35' r='8' fill='#000' />
-                        <path d='M 30 70 Q 50 90, 70 70' stroke='#000' stroke-width='4' fill='none' />
-                    </g>
+                <div class="error-details">
+                    {$formatted_value}
+                </div>
 
-                    <!-- Dynamic Error Message -->
-                    <text
-                        x='50%'
-                        y='200'
-                        font-family='Arial Black, Gadget, sans-serif'
-                        font-size='20'
-                        font-weight='bold'
-                        font-style='italic'
-                        fill='#ffffff'
-                        text-anchor='middle'
-                    >
-                        Bolt Framework (PHPStrike)
-                    </text>
-
-                    <text
-                        x='50%'
-                        y='250'
-                        font-family='serif, sans-serif'
-                        font-size='18'
-                        font-weight='bold'
-                        font-style='italic'
-                        fill='#ffffff'
-                        text-anchor='middle'
-                    >
-                        Something Went Wrong!, But We Move!
-                    </text>
-                </svg>
+                <div class="error-actions">
+                    <a href="javascript:history.back()" class="error-button error-button--secondary">
+                        ← Go Back
+                    </a>
+                    <a href="/" class="error-button error-button--primary">
+                        🏠 Homepage
+                    </a>
+                </div>
             </div>
         </div>
     </body>
     </html>
-    ";
+    HTML;
 
-    die;
+    echo $template;
+    exit;
 }
 
 function bv_error($errorCode = 404, $errorMessage = 'Page Not Found', $errorDetails = [])
@@ -897,7 +856,7 @@ function randomizeNumber($existingIDs, $minID = 100000, $maxID = 999999)
 function stringToken($length = 64)
 {
     // Define the characters to be used in the token
-    $characters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    $characters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     $charactersLength = strlen($characters);
     $token = '';
 

@@ -192,6 +192,24 @@ class Request
         return $this;
     }
 
+    public function toast($type, $message)
+    {
+        // Validate the message type
+        $validTypes = ['success', 'error', 'info', 'warning'];
+        if (!in_array($type, $validTypes)) {
+            throw new BoltException('Invalid toastr message type');
+        }
+
+        // Store the message, type, and attributes in the session
+        $_SESSION['__bv_flash_toastr'] = [
+            'message' => $message,
+            'type' => $type,
+        ];
+
+        $_SESSION['__bv_flash_toastr'] ?? null;
+        return $this;
+    }
+
     public function back()
     {
         $_SERVER['HTTP_REFERER'] ?? '/';
@@ -372,6 +390,9 @@ class Request
             'getUserAgent' => 'Get the user agent string from the request.',
             'getReferer' => 'Get the referer from the request.',
             'validateFile' => 'Validate a file upload based on allowed types.',
+            'with' => 'Set a variable in the session.',
+            'toast' => 'Session toast method.',
+            'back' => 'Return back to the previous URL.',
         ];
     }
 }

@@ -13,80 +13,44 @@ namespace celionatti\Bolt\CLI;
 
 class CliActions
 {
-    protected $basePath;
+    private const COLOR_PRIMARY = "\033[1;36m";
+    private const COLOR_SECONDARY = "\033[0;35m";
+    private const COLOR_SUCCESS = "\033[1;32m";
+    private const COLOR_WARNING = "\033[1;33m";
+    private const COLOR_ERROR = "\033[1;31m";
+    private const COLOR_RESET = "\033[0m";
 
-    protected function simplePrompt(string $prompt): string
+    protected string $basePath;
+
+    public function __construct()
     {
-        echo $prompt;
-        return trim(fgets(STDIN));
+        $this->configure();
     }
 
-    protected function prompt($question, $default = null)
+    public function message(string $message, string $type = 'info', bool $die = false): void
     {
-        $prompt = $question;
-        if ($default !== null) {
-            $prompt .= " [$default]";
+        $formatted = $this->formatMessageBox($message, $type);
+        echo $formatted . PHP_EOL;
+
+        if ($die) {
+            exit(1);
         }
-        $prompt .= ": ";
-
-        $borderLength = strlen($prompt) + 6;
-        $border = str_repeat('**', $borderLength);
-
-        // Colors
-        $colorBorder = "\033[0;35m"; // Blue
-        $colorText = "\033[0;36m";   // Green
-        $resetColor = "\033[0m";     // Reset color
-
-        echo PHP_EOL . $colorBorder . $border . $resetColor . PHP_EOL;
-        echo $colorBorder . "** " . $colorText . $prompt . $colorBorder . " **" . $resetColor . PHP_EOL;
-        echo $colorBorder . $border . $resetColor . PHP_EOL;
-
-        $response = function_exists('readline') ? readline('> ') : $this->simplePrompt('> ');
-
-        if ($response === '') {
-            return $default;
-        }
-
-        return $response;
     }
 
-    protected function promptOptions($question, array $options, $default = null)
+    public function prompt(string $question, ?string $default = null): string
     {
-        $borderLength = strlen($question) + 6;
-        foreach ($options as $key => $value) {
-            $optionLine = "[$key] $value";
-            if (strlen($optionLine) + 6 > $borderLength) {
-                $borderLength = strlen($optionLine) + 6;
-            }
-        }
-        $border = str_repeat('**', $borderLength);
+        $this->displayQuestionHeader($question);
+        $response = $this->readInput('> ');
 
-        // Colors
-        $colorBorder = "\033[0;35m"; // Blue
-        $colorText = "\033[0;36m";   // Green
-        $resetColor = "\033[0m";     // Reset color
+        return $response !== '' ? $response : (string)$default;
+    }
 
-        echo PHP_EOL . $colorBorder . $border . $resetColor . PHP_EOL;
-        echo $colorBorder . "** " . $colorText . $question . $colorBorder . " **" . $resetColor . PHP_EOL;
-        echo " " . PHP_EOL;
-        foreach ($options as $key => $value) {
-            echo $colorBorder . "** " . $colorText . "[$key] $value" . $colorBorder . " **" . $resetColor . PHP_EOL;
-            echo " " . PHP_EOL;
-        }
-
-        $prompt = "Select an option";
-        if ($default !== null) {
-            $prompt .= " [$default]";
-        }
-        $prompt .= ": ";
-        $borderPrompt = str_repeat('**', strlen($prompt) + 6);
-
-        echo $colorBorder . $borderPrompt . $resetColor . PHP_EOL;
-        echo $colorBorder . "** " . $colorText . $prompt . $colorBorder . " **" . $resetColor . PHP_EOL;
-        echo $colorBorder . $borderPrompt . $resetColor . PHP_EOL;
+    public function choice(string $question, array $options, ?string $default = null): string
+    {
+        $this->displayChoiceHeader($question, $options);
 
         while (true) {
-            $response = function_exists('readline') ? readline('> ') : $this->simplePrompt('> ');
+            $response = $this->readInput('Select: ');
 
             if ($response === '' && $default !== null) {
                 return $default;
@@ -96,98 +60,108 @@ class CliActions
                 return $response;
             }
 
-            $this->output("Invalid option. Please try again.", 1);
+            $this->message("Invalid option: {$response}", 'error');
         }
     }
 
-    protected function output(string $message, int $indentation = 0): void
+    protected function formatMessageBox(string $message, string $type): string
     {
-        echo str_repeat(' ', $indentation * 2) . $message . PHP_EOL;
+        $color = match($type) {
+            'success' => self::COLOR_SUCCESS,
+            'warning' => self::COLOR_WARNING,
+            'error' => self::COLOR_ERROR,
+            default => self::COLOR_PRIMARY
+        };
+
+        $lines = explode("\n", wordwrap(ucfirst(trim($message)), 60));
+        $maxLength = max(array_map('mb_strlen', $lines));
+        $border = str_repeat('═', $maxLength + 4);
+
+        $output = [
+            $color . $border . self::COLOR_RESET,
+            ...array_map(fn($line) => $color . '  ' . str_pad($line, $maxLength) . '  ' . self::COLOR_RESET, $lines),
+            $color . $border . self::COLOR_RESET
+        ];
+
+        return implode(PHP_EOL, $output);
     }
 
-    public function message(string $message, bool $die = false, bool $timestamp = true, string $title = ''): void
+    private function displayQuestionHeader(string $question): void
     {
-        // Initialize output string
-        $output = '';
+        $this->displaySection(
+            'Question',
+            $question,
+            self::COLOR_SECONDARY,
+            self::COLOR_PRIMARY
+        );
+    }
 
-        // Format the message with initial uppercase
-        $formattedMessage = ucfirst($message);
+    private function displayChoiceHeader(string $question, array $options): void
+    {
+        $this->displaySection(
+            'Choice',
+            $question,
+            self::COLOR_SECONDARY,
+            self::COLOR_PRIMARY
+        );
 
-        // Calculate total message length for padding and borders
-        $messageLength = strlen($formattedMessage);
-        $borderLength = $messageLength + 6; // Borders on both sides
-
-        // Create the title section with light blue background color and padding
-        $title = strtoupper($title);
-        if ($title) {
-            $titlePadding = str_repeat(' ', 2);
-            $titleSection = "\033[1;37;46m{$titlePadding}{$title}{$titlePadding}\033[0m ";
-        } else {
-            $titleSection = '';
-        }
-
-        // Create the timestamp with a more friendly format
-        $friendlyTimestamp = $timestamp ? "[" . date("M d, Y - H:i:s") . "] - " : '';
-
-        // Build the top border with asterisks
-        $topBorder = str_repeat('*', $borderLength) . PHP_EOL;
-
-        // Calculate padding for centering the message
-        $padding = str_repeat(' ', intval(floor(($borderLength - $messageLength) / 2))); // Ensure integer value
-
-        // Build the middle content with borders and padding
-        $middleContent = "*{$padding}{$formattedMessage}{$padding}*" . PHP_EOL;
-
-        // Build the bottom border with asterisks
-        $bottomBorder = str_repeat('*', $borderLength) . PHP_EOL;
-
-        // Colorize output to light blue
-        $output .= "\033[1;36m"; // Light blue color
-
-        // Concatenate all parts: top border, title section, timestamp, middle content, bottom border
-        $output .= "{$topBorder}{$titleSection}\033[1;36m{$friendlyTimestamp}{$middleContent}{$bottomBorder}";
-
-        // Reset color after the message
-        $output .= "\033[0m";
-
-        // Output the formatted message
-        echo $output . PHP_EOL;
-
-        // Exit script if die flag is set
-        if ($die) {
-            die();
+        foreach ($options as $key => $value) {
+            echo self::COLOR_PRIMARY . "  [$key] " . self::COLOR_RESET . $value . PHP_EOL;
         }
     }
 
-    protected function rename_camel_case($value)
+    private function displaySection(string $title, string $content, string $titleColor, string $contentColor): void
     {
-        $name = preg_replace('/[_-]/', ' ', $value);
-        $parts = explode(' ', $name);
-        $value = '';
-        foreach ($parts as $part) {
-            $value .= ucfirst($part);
-        }
-
-        return $value;
+        $border = str_repeat('─', 60);
+        echo PHP_EOL . $titleColor . "┌{$border}┐" . self::COLOR_RESET . PHP_EOL;
+        echo $titleColor . "│ " . str_pad("[{$title}]", 58) . " │" . self::COLOR_RESET . PHP_EOL;
+        echo $titleColor . "├{$border}┤" . self::COLOR_RESET . PHP_EOL;
+        echo $contentColor . "│ " . str_pad($content, 58) . " │" . self::COLOR_RESET . PHP_EOL;
+        echo $titleColor . "└{$border}┘" . self::COLOR_RESET . PHP_EOL;
     }
 
-    protected function configure()
+    private function readInput(string $prompt): string
     {
-        // Get the current file's directory
-        $currentDirectory = __DIR__;
+        echo self::COLOR_PRIMARY . $prompt . self::COLOR_RESET;
+        return trim(fgets(STDIN) ?: '');
+    }
 
-        // Navigate up the directory tree until you reach the project's root
-        while (!file_exists("{$currentDirectory}/vendor")) {
-            // Go up one level
-            $currentDirectory = dirname($currentDirectory);
+    protected function pascalCase(string $value): string
+    {
+        if ($value === '') {
+            return '';
+        }
 
-            // Check if you have reached the filesystem root (to prevent infinite loop)
-            if ($currentDirectory === '/') {
-                $this->message("Error: Could not find project root. Please ensure you are running this command from within a Bolt project.", true, true, "error");
-                return;
+        return str_replace(' ', '', ucwords(
+            preg_replace('/[^a-zA-Z0-9\x7f-\xff]++/', ' ', $value)
+        ));
+    }
+
+    protected function configure(): void
+    {
+        $this->basePath = $this->findProjectRoot(__DIR__);
+    }
+
+    private function findProjectRoot(string $startingDir): string
+    {
+        $currentDir = $startingDir;
+        $maxDepth = 10;
+
+        while ($maxDepth-- > 0) {
+            if (file_exists("{$currentDir}/composer.json")) {
+                return $currentDir;
             }
+
+            $parentDir = dirname($currentDir);
+            if ($parentDir === $currentDir) {
+                break;
+            }
+
+            $currentDir = $parentDir;
         }
 
-        $this->basePath = $currentDirectory;
+        throw new RuntimeException(
+            "Project root not found. Ensure you're within a Bolt project."
+        );
     }
 }
