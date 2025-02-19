@@ -321,3 +321,34 @@ class FileUploadController extends Controller
 ### Conclusion
 
 The `Upload` class is a versatile tool for managing file uploads in PHP applications. By following the steps outlined above, you can effectively integrate it into your project, customize it to your needs, and handle various file-related operations with ease. Remember to handle exceptions appropriately to ensure a smooth user experience and maintain the security and integrity of your application.
+
+
+$uploader = new Upload('/path/to/uploads');
+$result = $uploader->uploadFile('file_input');
+
+if (!$result['success']) {
+    // Handle error
+    $error = $result['message'];
+    return;
+}
+
+// Handle successful upload
+$filePath = $result['path'];
+
+// In controller
+$uploader = new Upload('/uploads');
+
+// Handle thumbnail generation
+$result = $uploader->generateThumbnail('image.jpg', 200, 200);
+if (!$result['success']) {
+    // Handle error
+    $error = $result['message'];
+    return;
+}
+$thumbnailPath = $result['path'];
+
+// Handle encryption
+$encryptResult = $uploader->encryptFile('document.pdf', 'secret-key');
+if (!$encryptResult['success']) {
+    // Handle error
+}

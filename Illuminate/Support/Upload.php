@@ -26,264 +26,116 @@ class Upload
         $this->uploadDir = rtrim($uploadDir, '/') . '/';
         $this->maxFileSize = $maxFileSize;
         $this->allowedFileTypes = $allowedFileTypes;
-        $this->ensureUploadDirectoryExists($this->uploadDir);
+
+        if (!$this->ensureUploadDirectoryExists($this->uploadDir)) {
+            throw new Exception("Failed to create upload directory: {$this->uploadDir}");
+        }
     }
 
-    protected function ensureUploadDirectoryExists(string $directory): void
+    protected function ensureUploadDirectoryExists(string $directory): bool
     {
-        if (!is_dir($directory)) {
-            mkdir($directory, 0755, true);
+        if (!is_dir($directory) && !mkdir($directory, 0755, true)) {
+            return false;
         }
+        return is_writable($directory);
     }
 
     public function uploadFile(string $fileInputName, bool $rename = true): array
     {
-        $file = $_FILES[$fileInputName];
-        $this->validateFile($fileInputName);
+        if (!isset($_FILES[$fileInputName])) {
+            return ['success' => false, 'message' => 'No file uploaded'];
+        }
 
-        $filename = $rename ? uniqid() . '.' . pathinfo($file['name'], PATHINFO_EXTENSION) : $file['name'];
+        $file = $_FILES[$fileInputName];
+
+        if ($error = $this->validateUpload($file)) {
+            return ['success' => false, 'message' => $error];
+        }
+
+        $filename = $rename
+            ? uniqid() . '.' . pathinfo($file['name'], PATHINFO_EXTENSION)
+            : $this->sanitizeFilename($file['name']);
+
         $filePath = $this->uploadDir . $filename;
 
-        $this->runBeforeUploadCallbacks($filename);
+        if ($error = $this->runBeforeUploadCallbacks($filename)) {
+            return ['success' => false, 'message' => $error];
+        }
 
         if (!move_uploaded_file($file['tmp_name'], $filePath)) {
-            throw new Exception('File upload failed.');
+            return ['success' => false, 'message' => 'Failed to move uploaded file'];
         }
 
         $this->runAfterUploadCallbacks($filename);
         $this->logUpload($filename);
 
-        return ['success' => true, 'file' => $filePath, 'message' => 'File uploaded successfully.'];
+        return [
+            'success' => true,
+            'path' => $filePath,
+            'filename' => $filename,
+            'message' => 'File uploaded successfully'
+        ];
     }
 
-    // public function delete(string $filename): bool
-    // {
-    //     $filepath = realpath($filename);
-
-    //     if (!file_exists($filepath)) {
-    //         throw new Exception('File not found: ' . $filename);
-    //     }
-
-    //     if (!is_writable($filepath)) {
-    //         throw new Exception('File is not writable and cannot be deleted: ' . $filename);
-    //     }
-
-    //     if (!unlink($filepath)) {
-    //         throw new Exception('Failed to delete the file: ' . $filename);
-    //     }
-
-    //     return true;
-    // }
-
-    public function delete(string $filename, bool $ignoreIfNotFound = false): bool
+    protected function validateUpload(array $file): ?string
     {
-        $filepath = realpath($filename);
+        $errorMessages = [
+            UPLOAD_ERR_INI_SIZE => 'File exceeds server size limit',
+            UPLOAD_ERR_FORM_SIZE => 'File exceeds form size limit',
+            UPLOAD_ERR_PARTIAL => 'File only partially uploaded',
+            UPLOAD_ERR_NO_FILE => 'No file was uploaded',
+            UPLOAD_ERR_NO_TMP_DIR => 'Missing temporary folder',
+            UPLOAD_ERR_CANT_WRITE => 'Failed to write to disk',
+            UPLOAD_ERR_EXTENSION => 'File upload stopped by extension',
+        ];
 
-        // If the file doesn't exist, either ignore or throw an exception based on the parameter.
-        if (!$filepath || !file_exists($filepath)) {
-            if ($ignoreIfNotFound) {
-                return false; // Continue silently
-            }
-            throw new Exception('File not found: ' . $filename);
+        if ($file['error'] !== UPLOAD_ERR_OK) {
+            return $errorMessages[$file['error']] ?? 'Unknown upload error';
         }
 
-        // Check if the file is writable
-        if (!is_writable($filepath)) {
-            throw new Exception('File is not writable and cannot be deleted: ' . $filename);
+        if ($file['size'] > $this->maxFileSize) {
+            return 'File exceeds maximum allowed size';
         }
 
-        // Attempt to delete the file
-        if (!unlink($filepath)) {
-            throw new Exception('Failed to delete the file: ' . $filename);
+        $mimeType = mime_content_type($file['tmp_name']);
+        if (!in_array($mimeType, $this->allowedFileTypes)) {
+            return 'Invalid file type. Allowed types: ' . implode(', ', $this->allowedFileTypes);
         }
 
-        return true;
+        return null;
+    }
+
+    public function delete(string $filename): array
+    {
+        $filePath = realpath($this->uploadDir . $filename);
+
+        if (!$filePath || strpos($filePath, realpath($this->uploadDir)) !== 0) {
+            return ['success' => false, 'message' => 'Invalid file path'];
+        }
+
+        if (!file_exists($filePath)) {
+            return ['success' => false, 'message' => 'File not found'];
+        }
+
+        if (!unlink($filePath)) {
+            return ['success' => false, 'message' => 'Failed to delete file'];
+        }
+
+        return ['success' => true, 'message' => 'File deleted successfully'];
     }
 
     public function uploadMultiple(array $fileInputNames, bool $rename = true): array
     {
-        $uploadedFiles = [];
-        foreach ($fileInputNames as $fileInputName) {
-            $uploadedFiles[] = $this->uploadFile($fileInputName, $rename);
+        $results = [];
+        foreach ($fileInputNames as $inputName) {
+            $results[] = $this->uploadFile($inputName, $rename);
         }
-        return $uploadedFiles;
+        return $results;
     }
 
-    public function uploadChunk(string $fileInputName, int $chunkIndex, int $totalChunks, string $uniqueId): array
+    protected function sanitizeFilename(string $filename): string
     {
-        $chunkDir = $this->uploadDir . 'chunks/' . $uniqueId . '/';
-        $this->ensureUploadDirectoryExists($chunkDir);
-
-        $file = $_FILES[$fileInputName];
-        $chunkFile = $chunkDir . $chunkIndex;
-
-        if (!move_uploaded_file($file['tmp_name'], $chunkFile)) {
-            return ['error' => 'Failed to upload chunk.'];
-        }
-
-        if ($chunkIndex == $totalChunks - 1) {
-            return $this->mergeChunks($chunkDir, $file['name'], $uniqueId);
-        }
-
-        return ['success' => 'Chunk uploaded successfully.'];
-    }
-
-    protected function mergeChunks(string $chunkDir, string $fileName, string $uniqueId): array
-    {
-        $finalPath = $this->uploadDir . $fileName;
-        $outputFile = fopen($finalPath, 'wb');
-
-        foreach (glob($chunkDir . '*') as $chunk) {
-            fwrite($outputFile, file_get_contents($chunk));
-            unlink($chunk);
-        }
-
-        fclose($outputFile);
-        rmdir($chunkDir);
-
-        return ['success' => 'File uploaded successfully.', 'file' => $finalPath];
-    }
-
-    public function generateThumbnail(string $filePath, int $width, int $height, string $thumbDir = 'thumbnails/'): string
-    {
-        $imageInfo = getimagesize($filePath);
-        $mime = $imageInfo['mime'];
-
-        switch ($mime) {
-            case 'image/jpeg':
-                $srcImage = imagecreatefromjpeg($filePath);
-                break;
-            case 'image/png':
-                $srcImage = imagecreatefrompng($filePath);
-                break;
-            default:
-                throw new Exception('Unsupported image type.');
-        }
-
-        $thumbnail = imagecreatetruecolor($width, $height);
-        imagecopyresampled($thumbnail, $srcImage, 0, 0, 0, 0, $width, $height, $imageInfo[0], $imageInfo[1]);
-
-        $thumbnailPath = $this->uploadDir . $thumbDir . basename($filePath);
-        imagejpeg($thumbnail, $thumbnailPath);
-
-        imagedestroy($srcImage);
-        imagedestroy($thumbnail);
-
-        return $thumbnailPath;
-    }
-
-    public function addWatermark(string $filePath, string $watermarkImage): void
-    {
-        $imageInfo = getimagesize($filePath);
-        $mime = $imageInfo['mime'];
-
-        switch ($mime) {
-            case 'image/jpeg':
-                $image = imagecreatefromjpeg($filePath);
-                break;
-            case 'image/png':
-                $image = imagecreatefrompng($filePath);
-                break;
-            default:
-                throw new Exception('Unsupported image type.');
-        }
-
-        $watermark = imagecreatefrompng($watermarkImage);
-        $watermarkWidth = imagesx($watermark);
-        $watermarkHeight = imagesy($watermark);
-
-        $x = imagesx($image) - $watermarkWidth - 10;
-        $y = imagesy($image) - $watermarkHeight - 10;
-
-        imagecopy($image, $watermark, $x, $y, 0, 0, $watermarkWidth, $watermarkHeight);
-        imagejpeg($image, $filePath);
-
-        imagedestroy($image);
-        imagedestroy($watermark);
-    }
-
-    public function compressImage(string $filePath, int $quality = 75): string
-    {
-        $imageInfo = getimagesize($filePath);
-        $mime = $imageInfo['mime'];
-
-        switch ($mime) {
-            case 'image/jpeg':
-                $image = imagecreatefromjpeg($filePath);
-                imagejpeg($image, $filePath, $quality);
-                break;
-            case 'image/png':
-                $image = imagecreatefrompng($filePath);
-                imagepng($image, $filePath, round($quality / 10));
-                break;
-            default:
-                throw new Exception('Unsupported image type.');
-        }
-
-        return $filePath;
-    }
-
-    public function validateFile(string $fileInputName): bool
-    {
-        $file = $_FILES[$fileInputName];
-
-        // Check file size
-        if ($file['size'] > $this->maxFileSize) {
-            throw new Exception('File exceeds maximum allowed size.');
-        }
-
-        // Ensure the file exists and can be accessed
-        if (!is_uploaded_file($file['tmp_name'])) {
-            throw new Exception('Uploaded file is missing or inaccessible.');
-        }
-
-        // Validate the MIME type
-        $fileMimeType = mime_content_type($file['tmp_name']);
-        if (empty($fileMimeType)) {
-            throw new Exception('Mime type cannot be empty.');
-        }
-
-        // Check if MIME type is allowed
-        if (!in_array($fileMimeType, $this->allowedFileTypes)) {
-            throw new Exception('Invalid file type. Allowed types are: ' . implode(', ', $this->allowedFileTypes));
-        }
-
-        // Disallow dangerous file types
-        $dangerousTypes = ['text/x-php', 'application/x-executable'];
-        if (in_array($fileMimeType, $dangerousTypes)) {
-            throw new Exception('Uploading dangerous file types is prohibited.');
-        }
-
-        return true;
-    }
-
-    protected function logUpload(string $filename): void
-    {
-        $logFile = $this->uploadDir . 'upload.log';
-        $logMessage = sprintf("%s - File uploaded: %s\n", date('Y-m-d H:i:s'), $filename);
-        file_put_contents($logFile, $logMessage, FILE_APPEND);
-    }
-
-    public function checkFileIntegrity(string $filePath, string $expectedHash, string $hashAlgo = 'sha256'): bool
-    {
-        $fileHash = hash_file($hashAlgo, $filePath);
-        return $fileHash === $expectedHash;
-    }
-
-    public function encryptFile(string $filePath, string $encryptionKey): string
-    {
-        $data = file_get_contents($filePath);
-        $encryptedData = openssl_encrypt($data, 'aes-256-cbc', $encryptionKey, 0, $this->generateIV());
-
-        $encryptedPath = $filePath . '.enc';
-        file_put_contents($encryptedPath, $encryptedData);
-
-        return $encryptedPath;
-    }
-
-    protected function generateIV(): string
-    {
-        return openssl_random_pseudo_bytes(openssl_cipher_iv_length('aes-256-cbc'));
+        return preg_replace('/[^a-zA-Z0-9\-_.]/', '', $filename);
     }
 
     public function beforeUpload(callable $callback): void
@@ -296,17 +148,271 @@ class Upload
         $this->afterUploadCallbacks[] = $callback;
     }
 
-    protected function runBeforeUploadCallbacks(string $filename): void
+    protected function runBeforeUploadCallbacks(string $filename): ?string
     {
         foreach ($this->beforeUploadCallbacks as $callback) {
-            call_user_func($callback, $filename);
+            $result = $callback($filename);
+            if ($result !== null && $result !== true) {
+                return is_string($result) ? $result : 'Upload canceled by callback';
+            }
         }
+        return null;
     }
 
     protected function runAfterUploadCallbacks(string $filename): void
     {
         foreach ($this->afterUploadCallbacks as $callback) {
-            call_user_func($callback, $filename);
+            $callback($filename);
         }
+    }
+
+    protected function logUpload(string $filename): void
+    {
+        error_log("Uploaded file: {$filename} at " . date('Y-m-d H:i:s'));
+    }
+
+    public function uploadChunk(string $fileInputName, int $chunkIndex, int $totalChunks, string $uniqueId): array
+    {
+        if (!isset($_FILES[$fileInputName])) {
+            return ['success' => false, 'message' => 'No chunk file uploaded'];
+        }
+
+        $chunkDir = $this->uploadDir . 'chunks/' . $uniqueId . '/';
+        if (!$this->ensureUploadDirectoryExists($chunkDir)) {
+            return ['success' => false, 'message' => 'Failed to create chunks directory'];
+        }
+
+        $file = $_FILES[$fileInputName];
+        $chunkFile = $chunkDir . $chunkIndex;
+
+        if (!move_uploaded_file($file['tmp_name'], $chunkFile)) {
+            return ['success' => false, 'message' => 'Failed to move chunk file'];
+        }
+
+        if ($chunkIndex === $totalChunks - 1) {
+            return $this->mergeChunks($chunkDir, $file['name'], $uniqueId);
+        }
+
+        return ['success' => true, 'message' => 'Chunk uploaded successfully'];
+    }
+
+    protected function mergeChunks(string $chunkDir, string $fileName, string $uniqueId): array
+    {
+        $finalPath = $this->uploadDir . $this->sanitizeFilename($fileName);
+        $outputFile = fopen($finalPath, 'wb');
+
+        if (!$outputFile) {
+            return ['success' => false, 'message' => 'Failed to create output file'];
+        }
+
+        $chunks = glob($chunkDir . '*');
+        if (empty($chunks)) {
+            return ['success' => false, 'message' => 'No chunks found to merge'];
+        }
+
+        foreach ($chunks as $chunk) {
+            $chunkContent = file_get_contents($chunk);
+            if ($chunkContent === false) {
+                continue;
+            }
+            fwrite($outputFile, $chunkContent);
+            unlink($chunk);
+        }
+
+        fclose($outputFile);
+        rmdir($chunkDir);
+
+        return [
+            'success' => true,
+            'path' => $finalPath,
+            'message' => 'File merged successfully'
+        ];
+    }
+
+    public function generateThumbnail(string $filename, int $width, int $height, string $thumbDir = 'thumbnails/'): array
+    {
+        $filePath = $this->validateFilePath($filename);
+        if (!$filePath) {
+            return ['success' => false, 'message' => 'Invalid file path'];
+        }
+
+        $imageInfo = @getimagesize($filePath);
+        if (!$imageInfo) {
+            return ['success' => false, 'message' => 'Unsupported image type'];
+        }
+
+        [$srcImage, $error] = $this->createImageResource($filePath, $imageInfo['mime']);
+        if ($error) {
+            return ['success' => false, 'message' => $error];
+        }
+
+        $thumbnail = imagecreatetruecolor($width, $height);
+        imagecopyresampled(
+            $thumbnail, $srcImage,
+            0, 0, 0, 0,
+            $width, $height,
+            $imageInfo[0], $imageInfo[1]
+        );
+
+        $thumbPath = $this->uploadDir . $thumbDir . basename($filePath);
+        if (!$this->ensureUploadDirectoryExists(dirname($thumbPath))) {
+            return ['success' => false, 'message' => 'Failed to create thumbnail directory'];
+        }
+
+        if (!imagejpeg($thumbnail, $thumbPath, 85)) {
+            return ['success' => false, 'message' => 'Failed to save thumbnail'];
+        }
+
+        imagedestroy($srcImage);
+        imagedestroy($thumbnail);
+
+        return ['success' => true, 'path' => $thumbPath];
+    }
+
+    public function addWatermark(string $filename, string $watermarkImage): array
+    {
+        $filePath = $this->validateFilePath($filename);
+        $watermarkPath = realpath($watermarkImage);
+
+        if (!$filePath || !$watermarkPath) {
+            return ['success' => false, 'message' => 'Invalid file paths'];
+        }
+
+        $imageInfo = @getimagesize($filePath);
+        $watermarkInfo = @getimagesize($watermarkPath);
+
+        if (!$imageInfo || !$watermarkInfo) {
+            return ['success' => false, 'message' => 'Unsupported image types'];
+        }
+
+        [$image, $error] = $this->createImageResource($filePath, $imageInfo['mime']);
+        if ($error) {
+            return ['success' => false, 'message' => $error];
+        }
+
+        [$watermark, $watermarkError] = $this->createImageResource($watermarkPath, $watermarkInfo['mime']);
+        if ($watermarkError) {
+            return ['success' => false, 'message' => $watermarkError];
+        }
+
+        $position = [
+            imagesx($image) - imagesx($watermark) - 10,
+            imagesy($image) - imagesy($watermark) - 10
+        ];
+
+        if (!imagecopy($image, $watermark, ...$position, 0, 0, imagesx($watermark), imagesy($watermark))) {
+            return ['success' => false, 'message' => 'Failed to apply watermark'];
+        }
+
+        if (!imagejpeg($image, $filePath)) {
+            return ['success' => false, 'message' => 'Failed to save watermarked image'];
+        }
+
+        imagedestroy($image);
+        imagedestroy($watermark);
+
+        return ['success' => true, 'path' => $filePath];
+    }
+
+    public function compressImage(string $filename, int $quality = 75): array
+    {
+        $filePath = $this->validateFilePath($filename);
+        if (!$filePath) {
+            return ['success' => false, 'message' => 'Invalid file path'];
+        }
+
+        $imageInfo = @getimagesize($filePath);
+        if (!$imageInfo) {
+            return ['success' => false, 'message' => 'Unsupported image type'];
+        }
+
+        [$image, $error] = $this->createImageResource($filePath, $imageInfo['mime']);
+        if ($error) {
+            return ['success' => false, 'message' => $error];
+        }
+
+        $result = match ($imageInfo['mime']) {
+            'image/jpeg' => imagejpeg($image, $filePath, $quality),
+            'image/png' => imagepng($image, $filePath, round(9 * $quality / 100)),
+            default => false
+        };
+
+        if (!$result) {
+            return ['success' => false, 'message' => 'Failed to compress image'];
+        }
+
+        return ['success' => true, 'path' => $filePath];
+    }
+
+    public function checkFileIntegrity(string $filename, string $expectedHash, string $hashAlgo = 'sha256'): array
+    {
+        $filePath = $this->validateFilePath($filename);
+        if (!$filePath) {
+            return ['success' => false, 'message' => 'Invalid file path'];
+        }
+
+        $calculatedHash = @hash_file($hashAlgo, $filePath);
+        if (!$calculatedHash) {
+            return ['success' => false, 'message' => 'Failed to calculate file hash'];
+        }
+
+        return [
+            'success' => true,
+            'valid' => hash_equals($expectedHash, $calculatedHash),
+            'hash' => $calculatedHash
+        ];
+    }
+
+    public function encryptFile(string $filename, string $encryptionKey): array
+    {
+        $filePath = $this->validateFilePath($filename);
+        if (!$filePath) {
+            return ['success' => false, 'message' => 'Invalid file path'];
+        }
+
+        $data = @file_get_contents($filePath);
+        if ($data === false) {
+            return ['success' => false, 'message' => 'Failed to read file'];
+        }
+
+        $iv = $this->generateIV();
+        $encryptedData = openssl_encrypt($data, 'aes-256-cbc', $encryptionKey, 0, $iv);
+
+        if ($encryptedData === false) {
+            return ['success' => false, 'message' => 'Encryption failed'];
+        }
+
+        $encryptedPath = $filePath . '.enc';
+        if (!file_put_contents($encryptedPath, $iv . $encryptedData)) {
+            return ['success' => false, 'message' => 'Failed to write encrypted file'];
+        }
+
+        return ['success' => true, 'path' => $encryptedPath];
+    }
+
+    protected function createImageResource(string $path, string $mime): array
+    {
+        return match ($mime) {
+            'image/jpeg' => [imagecreatefromjpeg($path), null],
+            'image/png' => [imagecreatefrompng($path), null],
+            default => [null, 'Unsupported image type']
+        };
+    }
+
+    protected function validateFilePath(string $filename): ?string
+    {
+        $filePath = realpath($this->uploadDir . $filename);
+        $uploadDirReal = realpath($this->uploadDir);
+
+        if (!$filePath || !$uploadDirReal || strpos($filePath, $uploadDirReal) !== 0) {
+            return null;
+        }
+
+        return $filePath;
+    }
+
+    protected function generateIV(): string
+    {
+        return random_bytes(openssl_cipher_iv_length('aes-256-cbc'));
     }
 }
