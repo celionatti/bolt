@@ -10,591 +10,328 @@ declare(strict_types=1);
 
 namespace celionatti\Bolt\CLI\Strike;
 
-use celionatti\Bolt\CLI\CliActions;
 use celionatti\Bolt\CLI\CommandInterface;
+use celionatti\Bolt\CLI\CliActions;
+use RuntimeException;
 
 class MakeCommand extends CliActions implements CommandInterface
 {
-    private const CONTROLLER = 'controller';
-    private const MODEL = 'model';
-    private const MIGRATION = 'migration';
-    private const VIEW = 'view';
-    private const LAYOUT = 'layout';
-    private const MIDDLEWARE = 'middleware';
-    private const SERVICE = 'service';
-    private const COMPONENT = 'component';
-
-    private const ACTIONS = [
-        self::CONTROLLER => 'Create a new controller class',
-        self::MODEL => 'Create a new model class',
-        self::MIGRATION => 'Create a new migration class',
-        self::VIEW => 'Create a new view file',
-        self::LAYOUT => 'Create a new layout file',
-        self::MIDDLEWARE => 'Create a new middleware class',
-        self::SERVICE => 'Create a new service class',
-        self::COMPONENT => 'Create a new component'
-        // Add other actions and their descriptions here
+    private const RESOURCE_TYPES = [
+        'controller' => [
+            'description' => 'Create a new controller class',
+            'subfolder' => 'app/controllers',
+            'suffix' => 'Controller'
+        ],
+        'model' => [
+            'description' => 'Create a new model class',
+            'subfolder' => 'app/models',
+            'suffix' => ''
+        ],
+        'middleware' => [
+            'description' => 'Create a new middleware class',
+            'subfolder' => 'app/middlewares',
+            'suffix' => 'Middleware'
+        ],
+        'service' => [
+            'description' => 'Create a new service class',
+            'subfolder' => 'app/providers',
+            'suffix' => 'ServiceProvider'
+        ],
+        'component' => [
+            'description' => 'Create a new component',
+            'subfolder' => 'app/components',
+            'suffix' => 'Component'
+        ],
+        'view' => [
+            'description' => 'Create a new view file',
+            'subfolder' => 'resources/views',
+            'suffix' => ''
+        ],
+        'layout' => [
+            'description' => 'Create a new layout file',
+            'subfolder' => 'resources/views/layouts',
+            'suffix' => ''
+        ]
     ];
 
-    public function __construct()
-    {
-        $this->configure();
-    }
+    private const VIEW_ENGINES = [
+        'php' => '.php',
+        'blade' => '.blade.php',
+        'twig' => '.twig'
+    ];
 
-    public function execute(array $args)
+    public function execute(array $args, array $options = []): void
     {
-        // Check if no action is provided
-        if (empty($args) || empty($args["args"])) {
-            $this->listAvailableActions();
+        $type = $args[0] ?? null;
+
+        if (!$type || !isset(self::RESOURCE_TYPES[$type])) {
+            $this->showAvailableTypes();
             return;
         }
 
-        $action = $args["args"][0] ?? null;
-
-        if (isset($action) && $action === "model" && isset($args["options"]["m"])) {
-            $this->createModel(true);
-            return;
-        }
-
-        if ($action === null) {
-            $this->listAvailableActions();
-            return;
-        }
-
-        $this->callAction($action);
-    }
-
-    private function callAction($action)
-    {
-        // Check for the action type.
-        switch ($action) {
-            case self::CONTROLLER:
-                $this->createController();
-                break;
-            case self::MODEL:
-                $this->createModel(false);
-                break;
-            case self::VIEW:
-                $this->createView();
-                break;
-            case self::LAYOUT:
-                $this->createLayout();
-                break;
-            case self::MIDDLEWARE:
-                $this->createMiddleware();
-                break;
-            case self::SERVICE:
-                $this->createService();
-                break;
-            case self::COMPONENT:
-                $this->createComponent();
-                break;
-            default:
-                $this->message("Unknown Command - You can check help or docs to see the list of commands and methods of calling.", true, true, 'warning');
+        $methodName = 'create' . ucfirst($type);
+        if (method_exists($this, $methodName)) {
+            $this->$methodName($args, $options);
+        } else {
+            $this->createGenericResource($type, $options);
         }
     }
 
-    private function createController()
+    public function getHelp(): string
     {
-        $controllerName = $this->prompt("Enter the controller name");
-
-        if (empty($controllerName)) {
-            $this->message("Controller name cannot be empty.", true, true, "warning");
-            return;
-        }
-
-        $controllerDir = $this->basePath . DIRECTORY_SEPARATOR . "app" . DIRECTORY_SEPARATOR . "controllers" . DIRECTORY_SEPARATOR;
-
-        if (!is_dir($controllerDir)) {
-            if (!mkdir($controllerDir, 0755, true)) {
-                $this->message("Unable to create the controller directory.", true, true, "error");
-                return;
-            }
-        }
-
-        $controllerFile = $controllerDir . ucfirst($controllerName) . 'Controller.php';
-
-        if (file_exists($controllerFile)) {
-            $this->message("Controller file already exists.", true, true, "warning");
-            return;
-        }
-
-        $sampleFile = __DIR__ . "/samples/controller/controller-sample.php";
-
-        if (!file_exists($sampleFile)) {
-            $this->message("Controller sample file not found.", true, true, "error");
-            return;
-        }
-
-        $className = ucfirst($controllerName) . 'Controller';
-
-        $content = file_get_contents($sampleFile);
-        $content = str_replace("{CLASSNAME}", $className, $content);
-
-        if (file_put_contents($controllerFile, $content) === false) {
-            $this->message("Unable to create the controller file.", true, true, "error");
-            return;
-        }
-
-        $this->message("Controller [{$controllerFile}] created successfully", false, true, "created");
+        return implode(PHP_EOL, [
+            "Usage: make <type> [options]",
+            "Available types:",
+            ...array_map(
+                fn($type, $config) => "  {$type}: {$config['description']}",
+                array_keys(self::RESOURCE_TYPES),
+                self::RESOURCE_TYPES
+            ),
+            "Options:",
+            "  --force    Overwrite existing files",
+        ]);
     }
 
-    private function createModel($migration = false)
+    private function createController(array $args, array $options): void
     {
-        $modelOptions = [
-            '1' => 'Empty Model',
-            '2' => 'Basic Model'
+        $name = $this->promptResourceName('controller');
+        $className = $this->pascalCase($name) . 'Controller';
+        $path = "app/controllers/{$className}.php";
+
+        // Ask for controller type
+        $controllerType = $this->choice(
+            "Select controller type:",
+            [
+                'basic' => 'Basic controller with common methods',
+                'resource' => 'Resource controller with CRUD methods',
+                'api' => 'API controller with JSON responses',
+                'empty' => 'Empty controller structure'
+            ],
+            'basic'
+        );
+
+        $templatePath = "controller/{$controllerType}";
+        $replacements = [
+            'CLASSNAME' => $className,
+            'NAMESPACE' => 'App\\Controllers',
+            'BASE_CONTROLLER' => 'BaseController',
+            'MODEL_NAME' => $this->pascalCase($name),
+            'VIEW_PATH' => strtolower($name)
         ];
 
-        $migrationOptions = [
-            '1' => 'No Migration',
-            '2' => 'Create Migration'
-        ];
+        $this->createFromTemplate(
+            $templatePath,
+            $path,
+            $replacements,
+            $options
+        );
 
-        $modelName = $this->prompt("Enter the model name: Post, User.");
-
-        if (empty($modelName)) {
-            $this->message("Model name cannot be empty.", true, true, "error");
-            return;
+        // If it's a resource controller, ask to create associated view files
+        if ($controllerType === 'resource' && $this->confirm("Create associated view files?")) {
+            $this->createResourceViews($name, $options);
         }
-
-        $choice = $this->promptOptions("Choose a model to create:", $modelOptions, '1');
-
-        // Check if the model directory already exists
-        $modelDir = $this->basePath . DIRECTORY_SEPARATOR . "app" . DIRECTORY_SEPARATOR . "models" . DIRECTORY_SEPARATOR;
-
-        if (!is_dir($modelDir)) {
-            // Create the model directory
-            if (!mkdir($modelDir, 0755, true)) {
-                $this->message("Unable to create the model directory.", true, true, "error");
-                return;
-            }
-        }
-
-        // Check if Model file already exists.
-        $modelFile = $modelDir . ucfirst($modelName) . '.php';
-        if (file_exists($modelFile)) {
-            $m = ucfirst($modelName);
-            $this->message("Model File {$m} already exists.", true, true, "warning");
-            return;
-        }
-
-        // Create the model file, if not existing.
-        touch($modelFile);
-
-        // Customize the content of model class here from the sample class.
-        if ($choice === 2) {
-            $sample_file = __DIR__ . "/samples/model/basic-sample.php";
-        } else {
-            $sample_file = __DIR__ . "/samples/model/empty-sample.php";
-        }
-
-        if (!file_exists($sample_file)) {
-            $this->message("Model Sample file not found in: {$sample_file}", true, true, "error");
-            return;
-        }
-
-        $class_name = $this->rename_camel_case($modelName);
-
-        $table_name = strtolower("{$class_name}s");
-
-        $content = file_get_contents($sample_file);
-        $content = str_replace("{TABLENAME}", $table_name, $content);
-        $content = str_replace("{CLASSNAME}", $class_name, $content);
-
-        if (file_put_contents($modelFile, $content) === false) {
-            $this->message("Unable to create the model file.", true, true, "error");
-            return;
-        }
-
-        // Create Migration.
-        $migrationOpt = $this->promptOptions("Create Migration for Model?:", $migrationOptions, '1');
-
-        if ($migrationOpt === '2') {
-            $this->migrationFile($modelName);
-        }
-
-        $this->message("Model: [{$modelFile}] created successfully", false, true, "created");
     }
 
-    private function migrationFile($modelName)
+    private function createGenericResource(string $type, array $options): void
     {
-        // Check if the model directory already exists
-        $migrationDir = $this->basePath . DIRECTORY_SEPARATOR . "database" . DIRECTORY_SEPARATOR . "migrations" . DIRECTORY_SEPARATOR;
+        $config = self::RESOURCE_TYPES[$type];
+        $name = $this->promptResourceName($type);
+        $className = $this->pascalCase($name) . $config['suffix'];
 
-        if (!is_dir($migrationDir)) {
-            // Create the model directory
-            if (!mkdir($migrationDir, 0755, true)) {
-                $this->message("Unable to create the migration directory.", true, true, "error");
-                return;
-            }
-        }
+        $path = "{$config['subfolder']}/{$className}.php";
 
-        // Check if Migration file already exists.
-        $migrationFile = $migrationDir . date("Y_m_d_His_") . 'create_' . strtolower($modelName) . '_table' . '.php';
-        if (file_exists($migrationFile)) {
-            $mg = ucfirst($modelName);
-            $this->message("Migration File {$mg} already exists.", true, true, "warning");
-            return;
-        }
-
-        // Create the migration file
-        if (!touch($migrationFile)) {
-            $this->message("Unable to create the migration file.", true, true, "error");
-            return;
-        }
-
-        // Customize the content of migration class here from the sample class.
-        $sample_file = __DIR__ . "/samples/migration/migration-sample.php";
-
-        if (!file_exists($sample_file)) {
-            $this->message("Migration Sample file not found in: {$sample_file}", true, true, "error");
-            return;
-        }
-
-        $class_name = ucfirst($modelName);
-        $table_name = strtolower("{$modelName}s");
-
-        $content = file_get_contents($sample_file);
-        $content = str_replace("{TABLENAME}", $table_name, $content);
-        $content = str_replace("{CLASSNAME}", $class_name, $content);
-
-        if (file_put_contents($migrationFile, $content) === false) {
-            $this->message("Unable to write content to the migration file.", true, true, "error");
-            return;
-        }
-
-        $this->message("Migration: [{$migrationFile}] created successfully", false, true, "created");
+        $this->createFromTemplate(
+            $type,
+            $path,
+            [
+                'CLASSNAME' => $className,
+                'NAMESPACE' => $this->generateNamespace($config['subfolder'])
+            ],
+            $options
+        );
     }
 
-    private function createView()
+    private function createModel(array $args, array $options): void
     {
-        $filename = $this->prompt("Enter the view filename");
+        $name = $this->promptResourceName('model');
+        $className = $this->pascalCase($name);
+        $path = "app/models/{$className}.php";
 
-        if (empty($filename)) {
-            $this->message("Filename cannot be empty.", true, true, "error");
-            return;
+        $templateType = $this->choice(
+            "Select model type:",
+            [
+                'empty' => 'Empty model structure',
+                'basic' => 'Basic model with common methods'
+            ],
+            'basic'
+        );
+
+        $this->createFromTemplate(
+            "model/{$templateType}",
+            $path,
+            [
+                'CLASSNAME' => $className,
+                'TABLENAME' => strtolower($className . 's'),
+                'NAMESPACE' => 'App\\Models'
+            ],
+            $options
+        );
+
+        if ($this->confirm("Create migration for this model?")) {
+            $this->createMigration($name, $options);
         }
-
-        $createInFolder = $this->promptOptions("Do you want to create the view in a specific folder?", [
-            '1' => 'Yes',
-            '2' => 'No'
-        ], '2');
-
-        $folders = null;
-        if ($createInFolder === '1') {
-            $folders = $this->prompt("Enter the folder name");
-        }
-
-        $extension = $this->promptOptions("Choose the view file extension:", [
-            '1' => '.php',
-            '2' => '.blade.php',
-            '3' => '.twig'
-        ], '1');
-
-        $extension = match ($extension) {
-            '1' => '.php',
-            '2' => '.blade.php',
-            '3' => '.twig',
-            default => '.php',
-        };
-
-        // Determine where to create folders based on the extension
-        if ($extension === ".blade.php") {
-            $viewDir = $this->basePath . DIRECTORY_SEPARATOR . "resources" . DIRECTORY_SEPARATOR . "view" . DIRECTORY_SEPARATOR . "blade-views" . DIRECTORY_SEPARATOR . $folders;
-        } elseif ($extension === ".twig") {
-            $viewDir = $this->basePath . DIRECTORY_SEPARATOR . "resources" . DIRECTORY_SEPARATOR . "view" . DIRECTORY_SEPARATOR . "twig-views" . DIRECTORY_SEPARATOR . $folders;
-        } else {
-            $viewDir = $this->basePath . DIRECTORY_SEPARATOR . "resources" . DIRECTORY_SEPARATOR . "view" . DIRECTORY_SEPARATOR . $folders;
-        }
-
-        if (!is_dir($viewDir)) {
-            if (!mkdir($viewDir, 0755, true)) {
-                $this->message("Unable to create the view directory.", true, true, "error");
-                return;
-            }
-        }
-
-        $viewFile = $viewDir . DIRECTORY_SEPARATOR . $filename . $extension;
-        if (file_exists($viewFile)) {
-            $this->message("View File {$filename}{$extension} already exists.", true, true, "warning");
-            return;
-        }
-
-        touch($viewFile);
-
-        // Customize the content of the view file here
-        if ($extension === ".blade.php") {
-            $sampleFile = __DIR__ . "/samples/view/blade-view-sample.php";
-        } elseif ($extension === ".twig") {
-            $sampleFile = __DIR__ . "/samples/view/twig-view-sample.php";
-        } else {
-            $sampleFile = __DIR__ . "/samples/view/view-sample.php";
-        }
-
-        if (!file_exists($sampleFile)) {
-            $this->message("View Sample file not found in: {$sampleFile}", true, true, "error");
-            return;
-        }
-
-        $content = file_get_contents($sampleFile);
-
-        if (file_put_contents($viewFile, $content) === false) {
-            $this->message("Unable to create the view file.", true, true, "error");
-            return;
-        }
-
-        $this->message("View: [{$viewFile}] created successfully", false, true, "created");
     }
 
-    private function createLayout()
+    private function createView(array $args, array $options): void
     {
-        $filename = $this->prompt("Enter the layout filename");
-
-        if (empty($filename)) {
-            $this->message("Filename cannot be empty.", true, true, "error");
-            return;
-        }
-
-        $createInFolder = $this->promptOptions("Do you want to create the layout in a specific folder?", [
-            '1' => 'Yes',
-            '2' => 'No'
-        ], '2');
-
-        $folders = null;
-        if ($createInFolder === '1') {
-            $folders = $this->prompt("Enter the folder name");
-        }
-
-        $extension = $this->promptOptions("Choose the layout file extension:", [
-            '1' => '.php',
-            '2' => '.blade.php',
-            '3' => '.twig'
-        ], '1');
-
-        $extension = match ($extension) {
-            '1' => '.php',
-            '2' => '.blade.php',
-            '3' => '.twig',
-            default => '.php',
-        };
-
-        // Determine where to create folders based on the extension
-        if ($extension === ".blade.php") {
-            $layoutDir = $this->basePath . DIRECTORY_SEPARATOR . "resources" . DIRECTORY_SEPARATOR . "view" . DIRECTORY_SEPARATOR . "layouts" . DIRECTORY_SEPARATOR . "blade-views" . DIRECTORY_SEPARATOR . $folders;
-        } elseif ($extension === ".twig") {
-            $layoutDir = $this->basePath . DIRECTORY_SEPARATOR . "resources" . DIRECTORY_SEPARATOR . "view" . DIRECTORY_SEPARATOR . "layouts" . DIRECTORY_SEPARATOR . "twig-views" . DIRECTORY_SEPARATOR . $folders;
-        } else {
-            $layoutDir = $this->basePath . DIRECTORY_SEPARATOR . "resources" . DIRECTORY_SEPARATOR . "view" . DIRECTORY_SEPARATOR . "layouts" . DIRECTORY_SEPARATOR . $folders;
-        }
-
-        if (!is_dir($layoutDir)) {
-            if (!mkdir($layoutDir, 0755, true)) {
-                $this->message("Unable to create the layout directory.", true, true, "error");
-                return;
-            }
-        }
-
-        $layoutFile = $layoutDir . DIRECTORY_SEPARATOR . $filename . $extension;
-        if (file_exists($layoutFile)) {
-            $this->message("Layout File {$filename}{$extension} already exists.", true, true, "warning");
-            return;
-        }
-
-        touch($layoutFile);
-
-        // Customize the content of the view file here
-        $sampleFile = __DIR__ . "/samples/view/layout-sample.php";
-
-        if (!file_exists($sampleFile)) {
-            $this->message("Layout Sample file not found in: {$sampleFile}", true, true, "error");
-            return;
-        }
-
-        $content = file_get_contents($sampleFile);
-
-        if (file_put_contents($layoutFile, $content) === false) {
-            $this->message("Unable to create the layout file.", true, true, "error");
-            return;
-        }
-
-        $this->message("Layout: [{$layoutFile}] created successfully", false, true, "created");
+        $this->createViewResource('view', $options);
     }
 
-    private function createMiddleware()
+    private function createLayout(array $args, array $options): void
     {
-        $middlewareName = $this->prompt("Enter the middleware name");
-
-        if (empty($middlewareName)) {
-            $this->message("Middleware name cannot be empty.", true, true, "error");
-            return;
-        }
-
-        $middlewareDir = $this->basePath . DIRECTORY_SEPARATOR . "app" . DIRECTORY_SEPARATOR . "middlewares" . DIRECTORY_SEPARATOR;
-
-        if (!is_dir($middlewareDir)) {
-            if (!mkdir($middlewareDir, 0755, true)) {
-                $this->message("Unable to create the middleware directory.", true, true, "error");
-                return;
-            }
-        }
-
-        $middlewareFile = $middlewareDir . ucfirst($middlewareName) . 'Middleware.php';
-
-        if (file_exists($middlewareFile)) {
-            $this->message("Middleware file already exists.", true, true, "warning");
-            return;
-        }
-
-        $sampleFile = __DIR__ . "/samples/middleware/middleware-sample.php";
-
-        if (!file_exists($sampleFile)) {
-            $this->message("Middleware sample file not found.", true, true, "error");
-            return;
-        }
-
-        $className = ucfirst($middlewareName) . 'Middleware';
-
-        $content = file_get_contents($sampleFile);
-        $content = str_replace("{CLASSNAME}", $className, $content);
-
-        if (file_put_contents($middlewareFile, $content) === false) {
-            $this->message("Unable to create the middleware file.", true, true, "error");
-            return;
-        }
-
-        $this->message("Middleware: [{$middlewareFile}] created successfully", false, true, "created");
+        $this->createViewResource('layout', $options);
     }
 
-    private function createService()
+    private function createResourceViews(string $name, array $options): void
     {
-        $serviceName = $this->prompt("Enter service provider name");
+        $viewPath = 'resources/views/' . strtolower($name);
+        $views = ['index', 'create', 'edit', 'show'];
 
-        if (empty($serviceName)) {
-            $this->message("Service name cannot be empty.", true, true, "error");
-            return;
+        foreach ($views as $view) {
+            $this->createFromTemplate(
+                'view/resource',
+                "{$viewPath}/{$view}.php",
+                [
+                    'VIEW_TITLE' => ucfirst($name) . ' ' . ucfirst($view),
+                    'RESOURCE_NAME' => $name
+                ],
+                $options
+            );
         }
 
-        $serviceDir = $this->basePath . DIRECTORY_SEPARATOR . "app" . DIRECTORY_SEPARATOR . "providers" . DIRECTORY_SEPARATOR;
-
-        if (!is_dir($serviceDir)) {
-            if (!mkdir($serviceDir, 0755, true)) {
-                $this->message("Unable to create the services directory.", true, true, "error");
-                return;
-            }
-        }
-
-        $serviceFile = $serviceDir . ucfirst($serviceName) . 'ServiceProvider.php';
-
-        if (file_exists($serviceFile)) {
-            $this->message("Service file already exists.", true, true, "warning");
-            return;
-        }
-
-        $sampleFile = __DIR__ . "/samples/service/service-sample.php";
-
-        if (!file_exists($sampleFile)) {
-            $this->message("Service sample file not found.", true, true, "error");
-            return;
-        }
-
-        $className = ucfirst($serviceName) . 'ServiceProvider';
-        $tableName = strtolower($serviceName);
-
-        $content = file_get_contents($sampleFile);
-        $content = str_replace("{CLASSNAME}", $className, $content);
-        $content = str_replace("{TABLENAME}", $tableName, $content);
-
-        if (file_put_contents($serviceFile, $content) === false) {
-            $this->message("Unable to create the service file.", true, true, "error");
-            return;
-        }
-
-        $this->message("Service: [{$serviceFile}] created successfully", false, true, "created");
+        $this->message("Created resource views in: {$viewPath}", 'success');
     }
 
-    private function createComponent()
+    private function createViewResource(string $type, array $options): void
     {
-        $componentName = $this->prompt("Enter the component name");
+        $name = $this->promptResourceName($type);
+        $engine = $this->choice(
+            "Select template engine:",
+            self::VIEW_ENGINES,
+            'php'
+        );
 
-        if (empty($componentName)) {
-            $this->message("Component name cannot be empty.", true, true, "error");
-            return;
-        }
+        $subfolder = $this->prompt("Enter subfolder path (optional)");
+        $config = self::RESOURCE_TYPES[$type];
 
-        $componentDir = $this->basePath . DIRECTORY_SEPARATOR . "app" . DIRECTORY_SEPARATOR . "components" . DIRECTORY_SEPARATOR;
+        $path = $config['subfolder'] . '/' .
+                ($subfolder ? trim($subfolder, '/') . '/' : '') .
+                "{$name}" . self::VIEW_ENGINES[$engine];
 
-        if (!is_dir($componentDir)) {
-            if (!mkdir($componentDir, 0755, true)) {
-                $this->message("Unable to create the components directory.", true, true, "error");
-                return;
-            }
-        }
-
-        $componentFile = $componentDir . ucfirst($componentName) . 'Component.php';
-
-        if (file_exists($componentFile)) {
-            $this->message("Component file already exists.", true, true, "warning");
-            return;
-        }
-
-        $sampleFile = __DIR__ . "/samples/component/component-controller-sample.php";
-
-        if (!file_exists($sampleFile)) {
-            $this->message("Component sample file not found.", true, true, "error");
-            return;
-        }
-
-        $className = ucfirst($componentName) . 'Component';
-
-        $content = file_get_contents($sampleFile);
-        $content = str_replace("{CLASSNAME}", $className, $content);
-
-        if (file_put_contents($componentFile, $content) === false) {
-            $this->message("Unable to create the component file.", true, true, "error");
-            return;
-        }
-
-        $this->message("Component Controller: [{$componentFile}] created successfully", false, true, "created");
-
-        /** View Component */
-
-        $viewDir = $this->basePath . DIRECTORY_SEPARATOR . "resources" . DIRECTORY_SEPARATOR . "view" . DIRECTORY_SEPARATOR . "components";
-
-        if (!is_dir($viewDir)) {
-            if (!mkdir($viewDir, 0755, true)) {
-                $this->message("Unable to create the view directory.", true, true, "error");
-                return;
-            }
-        }
-
-        $viewFile = $viewDir . DIRECTORY_SEPARATOR . strtolower($componentName) . "-component.php";
-
-        if (file_exists($viewFile)) {
-            $this->message("Component view file already exists.", true, true, "warning");
-            return;
-        }
-
-        $viewSampleFile = __DIR__ . "/samples/component/component-view-sample.php";
-        if (!file_exists($viewSampleFile)) {
-            $this->message("Component view sample file not found.", true, true, "error");
-            return;
-        }
-
-        $viewContent = file_get_contents($viewSampleFile);
-        if (file_put_contents($viewFile, $viewContent) === false) {
-            $this->message("Unable to create the component view file.", true, true, "error");
-            return;
-        }
-
-        $this->message("Component View: [{$viewFile}] created successfully", false, true, "created");
+        $this->createFromTemplate(
+            "view/{$type}",
+            $path,
+            ['CONTENT' => "<h1>{$name}</h1>"],
+            $options
+        );
     }
 
-    private function listAvailableActions()
+    private function createMigration(string $modelName, array $options): void
     {
-        $this->message("Available Make Commands:", false, false, 'info');
-        foreach (self::ACTIONS as $action => $description) {
-            $this->output("  \033[0;37m{$action}\033[0m: \033[0;36m{$description}\033[0m", 1);
+        $className = 'Create' . $this->pascalCase($modelName) . 'Table';
+        $fileName = date('Y_m_d_His') . "_create_{$modelName}_table.php";
+        $path = "database/migrations/{$fileName}";
+
+        $this->createFromTemplate(
+            'migration',
+            $path,
+            [
+                'CLASSNAME' => $className,
+                'TABLENAME' => strtolower($modelName . 's')
+            ],
+            $options
+        );
+    }
+
+    private function createFromTemplate(string $template, string $path, array $replacements, array $options): void
+    {
+        $fullPath = $this->basePath . '/' . ltrim($path, '/');
+        $templatePath = __DIR__ . "/samples/{$template}.php";
+
+        if (!file_exists($templatePath)) {
+            throw new RuntimeException("Template not found: {$template}");
+        }
+
+        if (file_exists($fullPath) && !($options['force'] ?? false)) {
+            $this->message("File already exists: {$path}", 'warning');
+            return;
+        }
+
+        $content = strtr(
+            file_get_contents($templatePath),
+            array_map(
+                fn($value) => (string)$value,
+                array_combine(
+                    array_map(fn($key) => "{{{$key}}}", array_keys($replacements)),
+                    $replacements
+                )
+            )
+        );
+
+        $this->ensureDirectoryExists(dirname($fullPath));
+
+        if (file_put_contents($fullPath, $content) === false) {
+            throw new RuntimeException("Failed to create file: {$path}");
+        }
+
+        $this->message("Created successfully: {$path}", 'success');
+    }
+
+    private function showAvailableTypes(): void
+    {
+        $this->message("Available resource types:", 'info');
+        foreach (self::RESOURCE_TYPES as $type => $config) {
+            $this->output(sprintf(
+                "  %s%-12s%s %s",
+                self::COLORS['primary'],
+                $type,
+                self::COLORS['reset'],
+                $config['description']
+            ));
+        }
+    }
+
+    private function promptResourceName(string $type): string
+    {
+        while (true) {
+            $name = $this->prompt("Enter {$type} name");
+            $name = preg_replace('/[^a-zA-Z0-9_\-]/', '', $name);
+
+            if (!empty($name)) {
+                return $name;
+            }
+
+            $this->message(
+                "Invalid name. Please use only letters, numbers and underscores",
+                'warning'
+            );
+        }
+    }
+
+    private function generateNamespace(string $path): string
+    {
+        $namespace = str_replace(
+            ['app/', '/'],
+            ['App\\', '\\'],
+            $path
+        );
+        return rtrim($namespace, '\\');
+    }
+
+    private function ensureDirectoryExists(string $path): void
+    {
+        if (!is_dir($path) && !mkdir($path, 0755, true)) {
+            throw new RuntimeException("Failed to create directory: {$path}");
         }
     }
 }

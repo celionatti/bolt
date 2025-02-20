@@ -22,22 +22,72 @@ use RuntimeException;
 
 class BoltCLI
 {
-    private const COLOR_PRIMARY = "\033[1;36m";
-    private const COLOR_SECONDARY = "\033[0;35m";
-    private const COLOR_SUCCESS = "\033[1;32m";
-    private const COLOR_ERROR = "\033[1;31m";
-    private const COLOR_RESET = "\033[0m";
+    private const COLORS = [
+        'primary' => "\033[1;36m",
+        'secondary' => "\033[0;35m",
+        'success' => "\033[1;32m",
+        'error' => "\033[1;31m",
+        'reset' => "\033[0m"
+    ];
 
     private array $commands = [];
     private array $aliases = [];
-    private bool $interactive = false;
-    private int $verbosity = 1;
-    private CliActions $cli;
+    private readonly CliActions $cli;
+    private array $config = [
+        'interactive' => false,
+        'verbosity' => 1
+    ];
 
     public function __construct()
     {
         $this->cli = new CliActions();
         $this->registerCoreCommands();
+    }
+
+    private function registerCoreCommands(): void
+    {
+        $coreCommands = [
+            'migration' => [
+                'class' => MigrationCommand::class,
+                'desc' => 'Database migration management'
+            ],
+            'make' => [
+                'class' => MakeCommand::class,
+                'desc' => 'Code generation commands'
+            ],
+            'serve' => [
+                'class' => ServerCommand::class,
+                'desc' => 'Start development server'
+            ],
+            'database' => [
+                'class' => DatabaseCommand::class,
+                'desc' => 'Database management commands'
+            ],
+            'generate' => [
+                'class' => GenerateCommand::class,
+                'desc' => 'Generate application keys'
+            ]
+        ];
+
+        foreach ($coreCommands as $name => $config) {
+            $this->registerCommand($name, $config['desc'], new $config['class']());
+        }
+
+        $this->registerDefaultAliases();
+    }
+
+    private function registerDefaultAliases(): void
+    {
+        $defaultAliases = [
+            'mk' => 'make',
+            'db' => 'database',
+            'gen' => 'generate',
+            'mg' => 'migration'
+        ];
+
+        foreach ($defaultAliases as $alias => $command) {
+            $this->registerAlias($alias, $command);
+        }
     }
 
     public function registerCommand(string $name, string $description, CommandInterface $command): void
@@ -61,178 +111,104 @@ class BoltCLI
     {
         try {
             $args = empty($args) ? $_SERVER['argv'] : $args;
-            $parsed = $this->parseArguments($args);
+            $commandData = $this->parseCommandLine($args);
 
-            $this->handleGlobalOptions($parsed['options']);
+            $this->config = array_merge($this->config, $commandData['options']);
 
-            if (empty($parsed['command']) && $this->interactive) {
-                $this->startInteractiveSession();
+            if (empty($commandData['command']) && $this->config['interactive']) {
+                $this->runInteractiveMode();
                 return;
             }
 
-            $this->executeCommand($parsed);
+            $this->executeCommand($commandData);
         } catch (RuntimeException $e) {
             $this->cli->message($e->getMessage(), 'error', true);
         }
     }
 
-    private function parseArguments(array $args): array
+    private function parseCommandLine(array $args): array
     {
         array_shift($args); // Remove script name
-        $result = ['command' => null, 'args' => [], 'options' => []];
+        $parsed = ['command' => null, 'args' => [], 'options' => []];
 
-        while (!empty($args)) {
-            $arg = array_shift($args);
-
-            if ($arg === '--') {
-                break; // Stop parsing options
-            }
-
+        foreach ($args as $arg) {
             if (str_starts_with($arg, '--')) {
-                $this->parseLongOption($arg, $args, $result);
+                $option = substr($arg, 2);
+                $parsed['options'][$option] = true;
             } elseif (str_starts_with($arg, '-')) {
-                $this->parseShortOption($arg, $args, $result);
-            } elseif ($result['command'] === null) {
-                $result['command'] = $arg;
+                $chars = str_split(substr($arg, 1));
+                foreach ($chars as $char) {
+                    $parsed['options'][$char] = true;
+                }
+            } elseif ($parsed['command'] === null) {
+                $parsed['command'] = $arg;
             } else {
-                $result['args'][] = $arg;
+                $parsed['args'][] = $arg;
             }
         }
 
-        return $result;
+        return $parsed;
     }
 
-    private function executeCommand(array $parsed): void
+    private function executeCommand(array $commandData): void
     {
-        $commandName = $this->resolveCommandName($parsed['command']);
+        $commandName = $this->resolveCommandName($commandData['command']);
 
         if (!isset($this->commands[$commandName])) {
-            $this->showError("Unknown command: {$parsed['command']}");
+            $this->showError("Unknown command: {$commandData['command']}");
             $this->showAvailableCommands();
             return;
         }
 
         $command = $this->commands[$commandName]['instance'];
-        $command->execute(
-            $parsed['args'],
-            $parsed['options']
-        );
+        $command->execute($commandData['args'], $commandData['options']);
     }
 
     private function resolveCommandName(?string $name): ?string
     {
-        if ($name === null) {
-            return null;
-        }
-        return $this->aliases[$name] ?? $name;
+        return $name ? ($this->aliases[$name] ?? $name) : null;
     }
 
-    private function startInteractiveSession(): void
+    private function runInteractiveMode(): void
     {
         $this->showWelcome();
         $this->cli->message("Interactive mode activated", 'success');
 
         while (true) {
-            $input = $this->cli->prompt("bolt", "Enter command");
+            $input = $this->cli->prompt("bolt");
 
-            if ($input === 'exit' || $input === 'quit') {
+            if (in_array($input, ['exit', 'quit'])) {
                 break;
             }
 
             if ($input === 'help') {
-                $this->showInteractiveHelp();
+                $this->showHelp();
                 continue;
             }
 
-            $this->executeCommand(
-                $this->parseArguments(explode(' ', $input))
-            );
+            $this->executeCommand($this->parseCommandLine(explode(' ', $input)));
         }
 
         $this->cli->message("Exiting interactive mode", 'info');
     }
 
-    private function registerCoreCommands(): void
-    {
-        $commands = [
-            'migration' => [
-                'class' => MigrationCommand::class,
-                'desc' => 'Database migration management. migrate, rollback, refresh, create.'
-            ],
-            'make' => [
-                'class' => MakeCommand::class,
-                'desc' => 'Code generation commands'
-            ],
-            'serve' => [
-                'class' => ServerCommand::class,
-                'desc' => 'Start development server'
-            ],
-            'database' => [
-                'class' => DatabaseCommand::class,
-                'desc' => 'Start database commands'
-            ],
-            'generate' => [
-                'class' => GenerateCommand::class,
-                'desc' => 'Code generation commands - Keys'
-            ],
-            // ... other commands
-        ];
-
-        foreach ($commands as $name => $config) {
-            $this->registerCommand(
-                $name,
-                $config['desc'],
-                new $config['class']()
-            );
-        }
-
-        $this->registerAliases();
-    }
-
-    private function registerAliases(): void
-    {
-        $aliases = [
-            'mk' => 'make',
-            'db' => 'database',
-            'gen' => 'generate',
-            'auth' => 'authentication'
-        ];
-
-        foreach ($aliases as $alias => $command) {
-            $this->registerAlias($alias, $command);
-        }
-    }
-
     private function showWelcome(): void
     {
-        $this->cli->message(
-            "PHPStrike(Bolt) Framework CLI v2",
-            'info'
-        );
-        $this->cli->message(
-            "Type 'help' for available commands",
-            'secondary'
-        );
+        $this->cli->message("PHPStrike(Bolt) Framework CLI v2", 'info');
+        $this->cli->message("Type 'help' for available commands", 'secondary');
     }
 
-    private function showInteractiveHelp(): void
+    private function showHelp(): void
     {
         $this->cli->message("Available Commands:", 'info');
         foreach ($this->commands as $name => $cmd) {
-            $this->cli->output(
-                sprintf("%-15s %s", $name, $cmd['description'])
-            );
-        }
-        $this->cli->output("\nUse 'help <command>' for detailed usage");
-    }
-
-    private function handleGlobalOptions(array $options): void
-    {
-        $this->interactive = $options['interactive'] ?? false;
-        $this->verbosity = (int)($options['verbose'] ?? 1);
-
-        if (isset($options['quiet'])) {
-            $this->verbosity = 0;
+            $this->cli->output(sprintf(
+                "%s%-15s%s %s",
+                self::COLORS['primary'],
+                $name,
+                self::COLORS['reset'],
+                $cmd['description']
+            ));
         }
     }
 
@@ -245,14 +221,13 @@ class BoltCLI
     {
         $this->cli->message("Available commands:", 'info');
         foreach ($this->commands as $name => $command) {
-            $this->cli->output(
-                sprintf("  %s%-20s%s %s",
-                    self::COLOR_PRIMARY,
-                    $name,
-                    self::COLOR_RESET,
-                    $command['description']
-                )
-            );
+            $this->cli->output(sprintf(
+                "  %s%-20s%s %s",
+                self::COLORS['primary'],
+                $name,
+                self::COLORS['reset'],
+                $command['description']
+            ));
         }
     }
 }

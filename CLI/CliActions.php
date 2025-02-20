@@ -13,24 +13,25 @@ namespace celionatti\Bolt\CLI;
 
 class CliActions
 {
-    private const COLOR_PRIMARY = "\033[1;36m";
-    private const COLOR_SECONDARY = "\033[0;35m";
-    private const COLOR_SUCCESS = "\033[1;32m";
-    private const COLOR_WARNING = "\033[1;33m";
-    private const COLOR_ERROR = "\033[1;31m";
-    private const COLOR_RESET = "\033[0m";
+    protected const COLORS = [
+        'primary' => "\033[1;36m",
+        'secondary' => "\033[0;35m",
+        'success' => "\033[1;32m",
+        'warning' => "\033[1;33m",
+        'error' => "\033[1;31m",
+        'reset' => "\033[0m"
+    ];
 
-    protected string $basePath;
+    protected readonly string $basePath;
 
     public function __construct()
     {
-        $this->configure();
+        $this->basePath = $this->findProjectRoot(__DIR__);
     }
 
     public function message(string $message, string $type = 'info', bool $die = false): void
     {
-        $formatted = $this->formatMessageBox($message, $type);
-        echo $formatted . PHP_EOL;
+        echo $this->formatMessageBox($message, $type) . PHP_EOL;
 
         if ($die) {
             exit(1);
@@ -39,7 +40,8 @@ class CliActions
 
     public function prompt(string $question, ?string $default = null): string
     {
-        $this->displayQuestionHeader($question);
+        $this->displayBox('Question', $question);
+        echo PHP_EOL; // Add line break before input
         $response = $this->readInput('> ');
 
         return $response !== '' ? $response : (string)$default;
@@ -47,7 +49,9 @@ class CliActions
 
     public function choice(string $question, array $options, ?string $default = null): string
     {
-        $this->displayChoiceHeader($question, $options);
+        $this->displayBox('Choice', $question);
+        $this->displayOptions($options);
+        echo PHP_EOL; // Add line break before input
 
         while (true) {
             $response = $this->readInput('Select: ');
@@ -64,65 +68,70 @@ class CliActions
         }
     }
 
+    public function confirm(string $question, bool $default = true): bool
+    {
+        $suffix = $default ? ' [Y/n]' : ' [y/N]';
+        $response = strtolower($this->prompt($question . $suffix));
+
+        if ($response === '') {
+            return $default;
+        }
+
+        return str_starts_with($response, 'y');
+    }
+
+    public function output(string $message): void
+    {
+        echo $message . PHP_EOL;
+    }
+
     protected function formatMessageBox(string $message, string $type): string
     {
-        $color = match($type) {
-            'success' => self::COLOR_SUCCESS,
-            'warning' => self::COLOR_WARNING,
-            'error' => self::COLOR_ERROR,
-            default => self::COLOR_PRIMARY
-        };
-
+        $color = self::COLORS[$type] ?? self::COLORS['primary'];
         $lines = explode("\n", wordwrap(ucfirst(trim($message)), 60));
         $maxLength = max(array_map('mb_strlen', $lines));
         $border = str_repeat('═', $maxLength + 4);
 
+        return implode(PHP_EOL, [
+            $color . $border . self::COLORS['reset'],
+            ...array_map(
+                fn($line) => $color . '║ ' . str_pad($line, $maxLength) . ' ║' . self::COLORS['reset'],
+                $lines
+            ),
+            $color . $border . self::COLORS['reset']
+        ]);
+    }
+
+    protected function displayBox(string $title, string $content): void
+    {
+        $border = str_repeat('─', 60);
+        $titleColor = self::COLORS['secondary'];
+        $contentColor = self::COLORS['primary'];
+        $reset = self::COLORS['reset'];
+
         $output = [
-            $color . $border . self::COLOR_RESET,
-            ...array_map(fn($line) => $color . '  ' . str_pad($line, $maxLength) . '  ' . self::COLOR_RESET, $lines),
-            $color . $border . self::COLOR_RESET
+            $titleColor . "┌{$border}┐" . $reset,
+            $titleColor . "│ " . str_pad("[{$title}]", 58) . " │" . $reset,
+            $titleColor . "├{$border}┤" . $reset,
+            $contentColor . "│ " . str_pad($content, 58) . " │" . $reset,
+            $titleColor . "└{$border}┘" . $reset,
         ];
 
-        return implode(PHP_EOL, $output);
+        echo implode(PHP_EOL, $output);
     }
 
-    private function displayQuestionHeader(string $question): void
+    protected function displayOptions(array $options): void
     {
-        $this->displaySection(
-            'Question',
-            $question,
-            self::COLOR_SECONDARY,
-            self::COLOR_PRIMARY
-        );
-    }
-
-    private function displayChoiceHeader(string $question, array $options): void
-    {
-        $this->displaySection(
-            'Choice',
-            $question,
-            self::COLOR_SECONDARY,
-            self::COLOR_PRIMARY
-        );
-
+        echo PHP_EOL; // Add line break before options
         foreach ($options as $key => $value) {
-            echo self::COLOR_PRIMARY . "  [$key] " . self::COLOR_RESET . $value . PHP_EOL;
+            echo self::COLORS['primary'] . "  [$key] " .
+                 self::COLORS['reset'] . $value . PHP_EOL;
         }
     }
 
-    private function displaySection(string $title, string $content, string $titleColor, string $contentColor): void
+    protected function readInput(string $prompt): string
     {
-        $border = str_repeat('─', 60);
-        echo PHP_EOL . $titleColor . "┌{$border}┐" . self::COLOR_RESET . PHP_EOL;
-        echo $titleColor . "│ " . str_pad("[{$title}]", 58) . " │" . self::COLOR_RESET . PHP_EOL;
-        echo $titleColor . "├{$border}┤" . self::COLOR_RESET . PHP_EOL;
-        echo $contentColor . "│ " . str_pad($content, 58) . " │" . self::COLOR_RESET . PHP_EOL;
-        echo $titleColor . "└{$border}┘" . self::COLOR_RESET . PHP_EOL;
-    }
-
-    private function readInput(string $prompt): string
-    {
-        echo self::COLOR_PRIMARY . $prompt . self::COLOR_RESET;
+        echo self::COLORS['primary'] . $prompt . self::COLORS['reset'] . ' ';
         return trim(fgets(STDIN) ?: '');
     }
 
@@ -137,27 +146,22 @@ class CliActions
         ));
     }
 
-    protected function configure(): void
-    {
-        $this->basePath = $this->findProjectRoot(__DIR__);
-    }
-
     private function findProjectRoot(string $startingDir): string
     {
-        $currentDir = $startingDir;
+        $dir = $startingDir;
         $maxDepth = 10;
 
         while ($maxDepth-- > 0) {
-            if (file_exists("{$currentDir}/composer.json")) {
-                return $currentDir;
+            if (file_exists("{$dir}/composer.json")) {
+                return $dir;
             }
 
-            $parentDir = dirname($currentDir);
-            if ($parentDir === $currentDir) {
+            $parentDir = dirname($dir);
+            if ($parentDir === $dir) {
                 break;
             }
 
-            $currentDir = $parentDir;
+            $dir = $parentDir;
         }
 
         throw new RuntimeException(
