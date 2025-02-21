@@ -10,14 +10,14 @@ declare(strict_types=1);
 
 namespace celionatti\Bolt\Database\Model;
 
+use PDO;
+use Exception;
+use DateTime;
+use ReflectionClass;
 use celionatti\Bolt\Database\Database;
 use celionatti\Bolt\BoltException\BoltException;
-use celionatti\Bolt\BoltQueryBuilder\QueryBuilder;
-use celionatti\Bolt\Database\Relationships\HasOne;
-use celionatti\Bolt\Database\Relationships\HasMany;
-use celionatti\Bolt\Database\Relationships\BelongsTo;
 use celionatti\Bolt\Database\Exception\DatabaseException;
-use celionatti\Bolt\Database\Relationships\BelongsToMany;
+use celionatti\Bolt\BoltQueryBuilder\QueryBuilder;
 
 abstract class DatabaseModel
 {
@@ -29,7 +29,6 @@ abstract class DatabaseModel
     protected $hidden = [];
     protected $casts = [];
     protected $attributes = [];
-    protected $rules = [];
     protected $exists = false;
     protected $relations = [];
 
@@ -39,271 +38,264 @@ abstract class DatabaseModel
         $this->setTable();
     }
 
-    private function database()
-    {
-        return Database::getInstance();
-    }
-
-    private function setTable()
+    /**
+     * Set the table name based on the model name if not already provided.
+     */
+    protected function setTable(): void
     {
         if (!$this->table) {
-            $className = (new \ReflectionClass($this))->getShortName();
+            $className = (new ReflectionClass($this))->getShortName();
             $this->table = strtolower($className) . 's';
         }
     }
 
-    public function getConnection()
+    /**
+     * Get a new QueryBuilder instance pre-configured with the model's table.
+     */
+    protected function newQuery(): QueryBuilder
     {
-        return $this->connection;
+        return (new QueryBuilder($this->connection))
+            ->select()
+            ->from($this->table);
     }
 
-    public function query(string $query, array $params = [], string $data_type = 'object')
+    /**
+     * Fill the model with attributes.
+     */
+    public function fill(array $attributes): self
     {
-        return $this->database()->query($query, $params, $data_type);
-    }
-
-    public function getPrimaryKey()
-    {
-        return $this->primaryKey;
-    }
-
-    public function getPrimaryValue()
-    {
-        return $this->attributes[$this->primaryKey] ?? null;
-    }
-
-    public function getTable(): string
-    {
-        return $this->table;
-    }
-
-    // public function with(array $relations)
-    // {
-    //     $this->relations = $relations;
-    //     return $this;
-    // }
-    public function with($relations)
-    {
-        if (is_string($relations)) {
-            $relations = [$relations];
-        }
-
-        foreach ($relations as $relation) {
-            if (method_exists($this, $relation)) {
-                $this->relations[] = $relation;
-            }
-        }
-
+        $this->attributes = $this->castAttributes($attributes);
         return $this;
     }
 
+    /**
+     * Find a record by its primary key.
+     */
+    public function find($id): ?self
+    {
+        $result = $this->newQuery()
+            ->where($this->primaryKey, '=', $id)
+            ->limit(1)
+            ->execute();
 
+        if ($result) {
+            $this->fill($result[0]);
+            $this->exists = true;
+            return $this;
+        }
+        return null;
+    }
+
+    /**
+     * Find a record by its primary key or throw an exception.
+     */
+    public function findOrFail($id): self
+    {
+        $instance = $this->find($id);
+        if (!$instance) {
+            throw new DatabaseException("Record not found", 404, "error");
+        }
+        return $instance;
+    }
+
+    /**
+     * Find a record using an array of conditions.
+     */
+    public function findBy(array $conditions): ?self
+    {
+        $query = $this->newQuery();
+        foreach ($conditions as $column => $value) {
+            $query->where($column, '=', $value);
+        }
+        $result = $query->limit(1)->execute();
+        if ($result) {
+            $this->fill($result[0]);
+            $this->exists = true;
+            return $this;
+        }
+        return null;
+    }
+
+    /**
+     * Find all records matching the given conditions.
+     */
+    public function findAllBy(array $conditions): array
+    {
+        $query = $this->newQuery();
+        foreach ($conditions as $column => $value) {
+            $query->where($column, '=', $value);
+        }
+        return $query->execute();
+    }
+
+    /**
+     * Get all records (with optional eager loaded relations).
+     */
+    public function get(): array
+    {
+        $results = $this->newQuery()->execute();
+        if (!empty($this->relations)) {
+            $results = $this->eagerLoadRelations($results);
+        }
+        return $results;
+    }
+
+    /**
+     * Get the first record.
+     */
+    public function first(): ?self
+    {
+        $result = $this->newQuery()->limit(1)->execute();
+        if ($result) {
+            $this->fill($result[0]);
+            $this->exists = true;
+            return $this;
+        }
+        return null;
+    }
+
+    /**
+     * Get the first record or throw an exception.
+     */
+    public function firstOrFail(): self
+    {
+        $instance = $this->first();
+        if (!$instance) {
+            throw new DatabaseException("Record not found", 404, "error");
+        }
+        return $instance;
+    }
+
+    /**
+     * Create a new record.
+     */
     public function create(array $attributes): ?self
     {
         $attributes = $this->filterAttributes($attributes);
         $attributes = $this->castAttributes($attributes);
 
-        try {
-            return $this->saveAttributes($attributes);
-        } catch (\Exception $e) {
-            // Handle the exception or log it.
-            throw new DatabaseException("Failed to create record: {$e->getMessage()}", $e->getCode(), "info");
-        }
+        $query = new QueryBuilder($this->connection);
+        $query->insert($this->table, $attributes)->execute();
+
+        $id = $this->connection->lastInsertId();
+        return $this->find($id);
     }
 
-    public function update(array $attributes, $id, $key = null): ?self
+    /**
+     * Update an existing record.
+     */
+    public function update(array $attributes, $id = null): ?self
     {
         $attributes = $this->filterAttributes($attributes);
         $attributes = $this->castAttributes($attributes);
-        try {
-            return $this->saveAttributes($attributes, $id, $key ?? $this->primaryKey);
-        } catch (\Exception $e) {
-            // Handle the exception or log it.
-            throw new DatabaseException("Failed to update record: {$e->getMessage()}", $e->getCode(), "info");
-        }
-    }
+        $id = $id ?? $this->getPrimaryValue();
 
-    private function saveAttributes(array $attributes, $id = null, $key = null): ?self
-    {
-        $queryBuilder = new QueryBuilder($this->connection);
-        if ($id) {
-            $queryBuilder->update($this->table, $attributes)->where($key ?? $this->primaryKey, '=', $id)->execute();
-            return $this->find($id);
-        } else {
-            $queryBuilder->insert($this->table, $attributes)->execute();
-            return $this->findById($this->connection->lastInsertId());
-        }
-    }
-
-    public function findById($id): ?self
-    {
-        return $this->findBy(['id' => $id]);
-    }
-
-    public function find($id): ?self
-    {
-        return $this->findBy([$this->primaryKey => $id]);
-    }
-
-    public function findBy(array $conditions): ?self
-    {
-        $queryBuilder = new QueryBuilder($this->connection);
-        $queryBuilder->select()->from($this->table);
-
-        foreach ($conditions as $column => $value) {
-            $queryBuilder->where($column, '=', $value);
+        if (!$id) {
+            throw new DatabaseException("No primary key value found for update", 400, "error");
         }
 
-        $result = $queryBuilder->execute();
-        if ($result) {
-            $this->attributes = (array)$result[0];
-            $this->attributes = $this->castAttributes($this->attributes);
-            $this->exists = true;
-            return $this;
-        }
-        return null;
+        $query = new QueryBuilder($this->connection);
+        $query->update($this->table, $attributes)
+              ->where($this->primaryKey, '=', $id)
+              ->execute();
+
+        return $this->find($id);
     }
 
-    public function findAllBy(array $conditions): array
+    /**
+     * Delete a record.
+     */
+    public function delete($id = null): bool
     {
-        $queryBuilder = new QueryBuilder($this->connection);
-        $queryBuilder->select()->from($this->table);
-
-        foreach ($conditions as $column => $value) {
-            $queryBuilder->where($column, '=', $value);
+        $id = $id ?? $this->getPrimaryValue();
+        if (!$id) {
+            throw new DatabaseException("No primary key value found for delete", 400, "error");
         }
 
-        $result = $queryBuilder->execute();
-        if ($result) {
-            return $result;
-        }
-        return null;
-    }
+        $query = new QueryBuilder($this->connection);
+        $query->delete($this->table)
+              ->where($this->primaryKey, '=', $id)
+              ->execute();
 
-    public function get(): array
-    {
-        $queryBuilder = new QueryBuilder($this->connection);
-        $results = $queryBuilder->select()->from($this->table)->execute();
-
-        if (!empty($this->relations)) {
-            $results = $this->eagerLoadRelations($results);
-        }
-
-        return $results;
-    }
-
-    public function first(): ?self
-    {
-        $queryBuilder = new QueryBuilder($this->connection);
-        $result = $queryBuilder->select()->from($this->table)->limit(1)->execute();
-        if ($result) {
-            $this->attributes = (array)$result[0];
-            $this->attributes = $this->castAttributes($this->attributes);
-            $this->exists = true;
-            return $this;
-        }
-        return null;
-    }
-
-    public function delete($id, $key = null): bool
-    {
-        $queryBuilder = new QueryBuilder($this->connection);
-        $queryBuilder->delete($this->table)->where($key ?? $this->primaryKey, '=', $id)->execute();
         return true;
     }
 
-    public static function allBy($column, $value): array
+    /**
+     * Update an existing record or create a new one if not exists.
+     */
+    public function updateOrCreate(array $conditions, array $attributes): self
     {
-        $instance = new static();
-        $queryBuilder = new QueryBuilder($instance->connection);
-        return $queryBuilder->select()->from($instance->table)->where($column, '=', $value)->execute();
-    }
-
-    public static function all(): array
-    {
-        $instance = new static();
-        $queryBuilder = new QueryBuilder($instance->connection);
-        return $queryBuilder->select()->from($instance->table)->execute();
-    }
-
-    public static function paginate(int $page = 1, int $itemsPerPage = 15, array $conditions = [], $order = []): array
-    {
-        $instance = new static();
-        $queryBuilder = new QueryBuilder($instance->connection);
-
-        $offset = ($page - 1) * $itemsPerPage;
-
-        // Apply conditions if provided
-        $queryBuilder->select()->from($instance->table);
-
-        if (!empty($conditions)) {
-            foreach ($conditions as $column => $value) {
-                $queryBuilder->where($column, '=', $value);
-            }
+        $instance = $this->findBy($conditions);
+        if ($instance) {
+            return $instance->update($attributes);
         }
+        $data = array_merge($conditions, $attributes);
+        return $this->create($data);
+    }
 
-        $queryBuilder->limit($itemsPerPage)->offset($offset);
+    /**
+     * Paginate results.
+     */
+    public static function paginate(int $page = 1, int $itemsPerPage = 15, array $conditions = [], array $order = []): array
+    {
+        $instance = new static();
+        $query = $instance->newQuery();
 
+        foreach ($conditions as $column => $value) {
+            $query->where($column, '=', $value);
+        }
         if (!empty($order)) {
-            foreach ($order as $column => $value) {
-                $queryBuilder->orderBy($column, $value);
+            foreach ($order as $column => $direction) {
+                $query->orderBy($column, $direction);
             }
         }
+        $offset = ($page - 1) * $itemsPerPage;
+        $query->limit($itemsPerPage)->offset($offset);
+        $results = $query->execute();
 
-        $results = $queryBuilder->execute();
-
-        // Calculate total items considering the conditions
-        $countQuery = (new QueryBuilder($instance->connection))->select("COUNT(*) as total")->from($instance->table);
-
-        if (!empty($conditions)) {
-            foreach ($conditions as $column => $value) {
-                $countQuery->where($column, '=', $value);
-            }
+        // Count total items
+        $countQuery = (new QueryBuilder($instance->connection))
+            ->select("COUNT(*) as total")
+            ->from($instance->table);
+        foreach ($conditions as $column => $value) {
+            $countQuery->where($column, '=', $value);
         }
-
-        $totalItemsQuery = $countQuery->execute();
-        $totalItems = $totalItemsQuery[0]['total'];
-
-        $totalPages = ceil($totalItems / $itemsPerPage);
+        $totalResult = $countQuery->execute();
+        $totalItems = $totalResult[0]['total'] ?? 0;
 
         return [
             'data' => $results,
             'pagination' => [
-                'total_items' => $totalItems,
-                'current_page' => $page,
-                'items_per_page' => $itemsPerPage,
-                'total_pages' => $totalPages,
-            ],
+                'total_items'   => (int)$totalItems,
+                'current_page'  => $page,
+                'items_per_page'=> $itemsPerPage,
+                'total_pages'   => (int)ceil($totalItems / $itemsPerPage)
+            ]
         ];
     }
 
+    /**
+     * Execute a raw pagination query.
+     */
     public function rawPaginate(string $query, array $params = [], int $page = 1, int $itemsPerPage = 15): array
     {
         try {
-            // Calculate the offset
             $offset = ($page - 1) * $itemsPerPage;
-
-            // Modify the original query to add LIMIT and OFFSET
             $paginatedQuery = $query . " LIMIT $itemsPerPage OFFSET $offset";
-
-            // Execute the paginated query
             $results = $this->query($paginatedQuery, $params, "assoc");
 
-            // Create a query to count total rows
             $countQuery = "SELECT COUNT(*) as total FROM ($query) as count_table";
             $totalResult = $this->query($countQuery, $params, "assoc");
 
-            $totalItems = $totalResult[0]['total'];
-            $totalPages = ceil($totalItems / $itemsPerPage);
-
+            $totalItems = $totalResult[0]['total'] ?? 0;
             return [
                 'data' => $results,
                 'pagination' => [
-                    'total_items' => (int)$totalItems,
-                    'current_page' => $page,
-                    'items_per_page' => $itemsPerPage,
-                    'total_pages' => $totalPages,
-                ],
+                    'total_items'   => (int)$totalItems,
+                    'current_page'  => $page,
+                    'items_per_page'=> $itemsPerPage,
+                    'total_pages'   => (int)ceil($totalItems / $itemsPerPage)
+                ]
             ];
         } catch (\Exception $e) {
             throw new DatabaseException(
@@ -314,42 +306,52 @@ abstract class DatabaseModel
         }
     }
 
-    // Static version of the method
+    /**
+     * Static version of rawPaginate.
+     */
     public static function rawPaginateStatic(string $query, array $params = [], int $page = 1, int $itemsPerPage = 15): array
     {
         $instance = new static();
         return $instance->rawPaginate($query, $params, $page, $itemsPerPage);
     }
 
-    public function join(string $table, string $first, string $operator, string $second, string $type = 'INNER'): self
+    /**
+     * Delegate dynamic calls to the QueryBuilder instance.
+     */
+    public function __call($method, $parameters)
     {
-        $queryBuilder = new QueryBuilder($this->connection);
-
-        $queryBuilder->select()
-            ->from($this->table)
-            ->join($table, $first, $operator, $second, $type);
-
-        $results = $queryBuilder->execute();
-
-        if ($results) {
-            $this->attributes = (array) $results[0];
-            $this->attributes = $this->castAttributes($this->attributes);
-            $this->exists = true;
-            return $this;
+        $query = $this->newQuery();
+        if (method_exists($query, $method)) {
+            return $query->$method(...$parameters);
         }
-
-        throw new DatabaseException("No matching records found for join operation.", 404, "error");
+        throw new DatabaseException("Method {$method} not found.", 404, "error");
     }
 
-    // public function paginate(int $perPage, int $page = 1): array
-    // {
-    //     $queryBuilder = new QueryBuilder($this->connection);
-    //     $queryBuilder->select()->from($this->table)->limit($perPage)->offset(($page - 1) * $perPage);
-    //     $results = $queryBuilder->execute();
-    //     return $results;
-    // }
+    /**
+     * Delegate static calls to the QueryBuilder instance.
+     */
+    public static function __callStatic($method, $parameters)
+    {
+        $instance = new static();
+        $query = $instance->newQuery();
+        if (method_exists($query, $method)) {
+            return $query->$method(...$parameters);
+        }
+        throw new DatabaseException("Static method {$method} not found.", 404, "error");
+    }
 
-    private function filterAttributes(array $attributes): array
+    /**
+     * Get the primary key value.
+     */
+    public function getPrimaryValue()
+    {
+        return $this->attributes[$this->primaryKey] ?? null;
+    }
+
+    /**
+     * Filter attributes based on fillable and guarded.
+     */
+    protected function filterAttributes(array $attributes): array
     {
         if (!empty($this->fillable)) {
             $attributes = array_intersect_key($attributes, array_flip($this->fillable));
@@ -360,21 +362,10 @@ abstract class DatabaseModel
         return $attributes;
     }
 
-    public function __get($key)
-    {
-        return $this->attributes[$key] ?? null;
-    }
-
-    public function __set($key, $value)
-    {
-        if (in_array($key, $this->fillable) && !in_array($key, $this->guarded)) {
-            $this->attributes[$key] = $this->castAttribute($key, $value);
-        } else {
-            throw new DatabaseException("Attribute $key is not fillable or is guarded.");
-        }
-    }
-
-    private function castAttributes(array $attributes): array
+    /**
+     * Cast attributes based on defined casts.
+     */
+    protected function castAttributes(array $attributes): array
     {
         foreach ($attributes as $key => $value) {
             $attributes[$key] = $this->castAttribute($key, $value);
@@ -382,7 +373,10 @@ abstract class DatabaseModel
         return $attributes;
     }
 
-    private function castAttribute(string $key, $value)
+    /**
+     * Cast an individual attribute.
+     */
+    protected function castAttribute(string $key, $value)
     {
         if (!isset($this->casts[$key])) {
             return $value;
@@ -410,67 +404,63 @@ abstract class DatabaseModel
         }
     }
 
+    /**
+     * Convert the model attributes to an array (excluding hidden attributes).
+     */
     public function toArray(): array
     {
         $attributes = $this->attributes;
-
         foreach ($this->hidden as $hiddenAttribute) {
             unset($attributes[$hiddenAttribute]);
         }
-
         return $attributes;
     }
 
-    public function save(): ?self
+    /**
+     * Eager load a single relation.
+     */
+    protected function eagerLoadRelation($relation, $results)
     {
-        $this->attributes = $this->castAttributes($this->attributes);
+        $relationInstance = $this->$relation();
+        $relatedModel = $relationInstance->getRelatedModel();
+        $foreignKey = $relationInstance->getForeignKey();
 
-        if ($this->exists) {
-            return $this->update($this->attributes[$this->primaryKey], $this->attributes);
-        } else {
-            return $this->create($this->attributes);
-        }
-    }
+        $keys = array_column($results, $this->primaryKey);
+        $relatedResults = $relatedModel->whereIn($foreignKey, $keys)->get();
 
-    public function where($column, $operator = '=', $value): ?self
-    {
-        $queryBuilder = new QueryBuilder($this->connection);
-        $result = $queryBuilder->select()->from($this->table)->where($column, $operator, $value)->execute();
-
-        if ($result) {
-            $this->attributes = (array)$result[0];
-            $this->attributes = $this->castAttributes($this->attributes);
-            $this->exists = true;
-            return $this;
+        $mappedResults = [];
+        foreach ($relatedResults as $relatedResult) {
+            $mappedResults[$relatedResult->$foreignKey][] = $relatedResult;
         }
 
-        throw new DatabaseException("Record not found", 404, "error");
-    }
-
-    public function whereIn($column, $value): ?self
-    {
-        $queryBuilder = new QueryBuilder($this->connection);
-        $result = $queryBuilder->select()->from($this->table)->whereIn($column, $value)->execute();
-
-        if ($result) {
-            $this->attributes = (array)$result[0];
-            $this->attributes = $this->castAttributes($this->attributes);
-            $this->exists = true;
-            return $this;
+        foreach ($results as &$result) {
+            $result->$relation = $mappedResults[$result->{$this->primaryKey}] ?? [];
         }
-
-        throw new DatabaseException("Record not found", 404, "error");
+        return $results;
     }
 
-    // public static function factory()
-    // {
-    //     $factoryClass = 'PhpStrike\\database\\factories\\' . get_called_class() . 'Factory';
-    //     if (class_exists($factoryClass)) {
-    //         return new $factoryClass();
-    //     }
+    /**
+     * Eager load multiple relations.
+     */
+    protected function eagerLoadRelations($results)
+    {
+        foreach ($this->relations as $relation) {
+            $results = $this->eagerLoadRelation($relation, $results);
+        }
+        return $results;
+    }
 
-    //     throw new BoltException('Factory class not found for ' . get_called_class());
-    // }
+    /**
+     * Execute a raw query (delegated to the Database class).
+     */
+    public function query(string $query, array $params = [], string $data_type = 'object')
+    {
+        return Database::getInstance()->query($query, $params, $data_type);
+    }
+
+    /**
+     * Static factory method to obtain a model factory.
+     */
     public static function factory()
     {
         $modelClass = (new \ReflectionClass(static::class))->getShortName();
@@ -483,102 +473,16 @@ abstract class DatabaseModel
         throw new \Exception('Factory class not found for ' . static::class);
     }
 
-    public static function whereStatic($column, $operator = '=', $value): array|int
-    {
-        $instance = new static();
-        $queryBuilder = new QueryBuilder($instance->connection);
-        return $queryBuilder->select()->from($instance->table)->where($column, $operator, $value)->execute();
-    }
-
-    public function exists(): bool
-    {
-        return $this->exists;
-    }
-
-    protected function eagerLoadRelation($relation, $results)
-    {
-        $relationInstance = $this->$relation();
-        $relatedModel = $relationInstance->getRelatedModel();
-        $relatedPrimaryKey = $relatedModel->getPrimaryKey();
-        $foreignKey = $relationInstance->getForeignKey();
-
-        $keys = array_column($results, $this->getPrimaryKey());
-        $relatedResults = $relatedModel->whereIn($foreignKey, $keys)->get();
-
-        $mappedResults = [];
-        foreach ($relatedResults as $relatedResult) {
-            $mappedResults[$relatedResult->$foreignKey][] = $relatedResult;
-        }
-
-        foreach ($results as &$result) {
-            $result->$relation = $mappedResults[$result->{$this->getPrimaryKey()}] ?? [];
-        }
-
-        return $results;
-    }
-
-    protected function eagerLoadRelations($results)
-    {
-        foreach ($this->relations as $relation) {
-            $results = $this->eagerLoadRelation($relation, $results);
-        }
-
-        return $results;
-    }
-
-
-    public function pluck($column)
-    {
-        return array_map(function ($item) use ($column) {
-            return $item->{$column};
-        }, $this->items);
-    }
-
-    /** Relationship Section */
-
-    // public function hasOne($related, $foreignKey = null, $localKey = null)
-    // {
-    //     $foreignKey = $foreignKey ?? strtolower(class_basename($this)) . '_id';
-    //     $localKey = $localKey ?? $this->primaryKey;
-    //     return new HasOne($this, $related, $foreignKey, $localKey);
-    // }
-
-    // public function hasMany($related, $foreignKey = null, $localKey = null)
-    // {
-    //     // If the foreign key is not provided, assume it's the related model's table name with '_id' suffix.
-    //     $foreignKey = $foreignKey ?? strtolower(class_basename($this)) . '_id';
-
-    //     // If the local key is not provided, use the primary key of the current model.
-    //     $localKey = $localKey ?? $this->primaryKey;
-
-    //     // Return a new HasMany relationship instance.
-    //     return new HasMany($this, $related, $foreignKey, $localKey);
-    // }
-
-    // public function belongsTo($related, $foreignKey = null, $ownerKey = null)
-    // {
-    //     $foreignKey = $foreignKey ?? strtolower(class_basename($this)) . '_id';
-    //     $ownerKey = $ownerKey ?? $this->primaryKey;
-    //     return new BelongsTo($this, $related, $foreignKey, $ownerKey);
-    // }
-
-    // public function belongsToMany($related, $pivotTable = null, $foreignKey = null, $relatedPivotKey = null, $parentKey = null, $relatedKey = null)
-    // {
-    //     $pivotTable = $pivotTable ?? $this->getPivotTableName($related);
-    //     $foreignPivotKey = $foreignKey ?? strtolower(class_basename($this)) . '_id';
-    //     $relatedPivotKey = $relatedKey ?? $this->primaryKey;
-    //     return new BelongsToMany($this, $related, $pivotTable, $foreignPivotKey, $relatedPivotKey, $parentKey, $relatedKey);
-    // }
-
+    /**
+     * Get the pivot table name for many-to-many relationships.
+     */
     protected function getPivotTableName($related)
     {
         $tables = [
-            $this->getTable(),
+            $this->table,
             (new $related())->getTable(),
         ];
-
         sort($tables);
-
         return strtolower(implode('_', $tables));
     }
 }

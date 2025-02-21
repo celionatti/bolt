@@ -107,7 +107,7 @@ class MakeCommand extends CliActions implements CommandInterface
                 'api' => 'API controller with JSON responses',
                 'empty' => 'Empty controller structure'
             ],
-            'basic'
+            'empty'
         );
 
         $templatePath = "controller/{$controllerType}";
@@ -255,7 +255,7 @@ class MakeCommand extends CliActions implements CommandInterface
 
     private function createFromTemplate(string $template, string $path, array $replacements, array $options): void
     {
-        $fullPath = $this->basePath . '/' . ltrim($path, '/');
+        $fullPath = $this->basePath . DIRECTORY_SEPARATOR . ltrim($path, '/');
         $templatePath = __DIR__ . "/samples/{$template}.php";
 
         if (!file_exists($templatePath)) {

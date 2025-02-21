@@ -5,7 +5,7 @@ declare(strict_types=1);
 /**
  * ===============================================
  * ==================           ==================
- * ****** {CLASSNAME}
+ * ****** {{CLASSNAME}}
  * ==================           ==================
  * ===============================================
  */
@@ -13,25 +13,11 @@ declare(strict_types=1);
 namespace PhpStrike\app\controllers;
 
 use celionatti\Bolt\Http\Request;
-use celionatti\Bolt\Http\Response;
 
 use celionatti\Bolt\Controller;
 
-class {CLASSNAME} extends Controller
+class {{CLASSNAME}} extends Controller
 {
-    public $currentUser = null;
-
-    public function onConstruct(): void
-    {
-        $this->currentUser = user();
-        // To add middleware, if middleware is for all the controller page, dont all the array. ['users'].
-        $this->registerMiddleware(new AuthMiddleware(['users'])); 
-
-        // if (!hasAccess([], 'all', ['user', 'guest'])) {
-        //     redirect("/", 401);
-        // }   
-    }
-
     public function index($name, Request $request, Response $reponse)
     {
         $rules = [
@@ -83,5 +69,73 @@ class {CLASSNAME} extends Controller
         ];
 
         $this->view->render("welcome", $view);
+    }
+
+    /**
+     * Create Page of the Resources.
+     * GET Request
+     * @return void
+     */
+    public function create()
+    {
+        
+    }
+
+    /**
+     * Store the Created data- Page of the Resources.
+     * POST Request
+     * @return void
+     */
+    public function store()
+    {
+        
+    }
+
+    /**
+     * Show a single data- Page of the Resources.
+     * GET Request
+     * Usage: www.bolt.com/posts/2
+     * @return void
+     */
+    public function show()
+    {
+
+    }
+
+    /**
+     * Show Editable data of a single data- Page of the Resources.
+     * GET Request
+     * Usage: www.bolt.com/posts/2/edit
+     * @return void
+     */
+    public function edit()
+    {
+
+    }
+
+    /**
+     * Update Editable data of a single data- Page of the Resources.
+     * PUT Request or PATCH
+     * Usage: www.bolt.com/posts/2
+     * @return void
+     */
+    public function update()
+    {
+
+    }
+    
+    /**
+     * Delete a single data- Page of the Resources.
+     * DELETE Request
+     * Usage: www.bolt.com/posts/2/
+     * @return void
+     */
+    public function destory()
+    {
+
+    }
+
+    public function onConstruct(): void
+    {   
     }
 }
