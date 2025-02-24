@@ -179,4 +179,35 @@ class Container implements ContainerInterface
     {
         return $this->make($name);
     }
+
+    public function productionOptimizations(): void
+    {
+        // Cache resolved instances
+        $this->singleton(RouteBinding::class);
+        $this->singleton(MiddlewarePipeline::class);
+
+        // Preload frequently used classes
+        $this->preload([
+            Request::class,
+            Response::class,
+            ErrorHandler::class
+        ]);
+    }
+
+    public function preload(array $classes): void
+    {
+        foreach ($classes as $class) {
+            if (class_exists($class)) {
+                $this->make($class);
+            }
+        }
+    }
+
+    public function cacheResolvedInstances(): void
+    {
+        $this->instances = array_merge($this->instances, [
+            'router' => $this->make(Router::class),
+            'middleware.pipeline' => $this->make(MiddlewarePipeline::class)
+        ]);
+    }
 }

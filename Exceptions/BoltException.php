@@ -10,7 +10,7 @@ declare(strict_types=1);
  * ==============================================
  */
 
-namespace celionatti\Bolt\BoltException;
+namespace celionatti\Bolt\Exceptions;
 
 use Exception;
 use Throwable;

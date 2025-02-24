@@ -15,27 +15,49 @@ use ReflectionFunction;
 use ReflectionParameter;
 use celionatti\Bolt\Http\Request;
 use celionatti\Bolt\Http\Response;
+use celionatti\Bolt\Container\Container;
 use celionatti\Bolt\BoltException\BoltException;
 use celionatti\Bolt\Debug\Error;
+use celionatti\Bolt\Middleware\MiddlewarePipeline;
+use celionatti\Bolt\Router\RouteBinding;
 
 class Router
 {
     protected array $routes = [];
+    protected array $wildcardRoutes = [];
     protected array $groupStack = [];
     protected Request $request;
     protected Response $response;
+    protected Container $container;
     protected array $currentRoute = [];
     protected string $defaultApiVersion = 'v1';
+    protected array $globalMiddleware = [];
+    protected array $routeCache = [];
+    protected bool $cacheRoutes = false;
 
-    public function __construct()
+    public function __construct(Request $request, Response $response, Container $container)
     {
-        $this->request = new Request();
-        $this->response = new Response();
+        $this->request = $request;
+        $this->response = $response;
+        $this->container = $container;
+
+        // Register core dependencies
+        $this->container->singleton(Request::class, $request);
+        $this->container->singleton(Response::class, $response);
+
+        // Configure RouteBinding
+        RouteBinding::setContainer($this->container);
     }
 
-    public function setDefaultApiVersion(string $version): self
+    public function enableRouteCaching(bool $enabled = true): self
     {
-        $this->defaultApiVersion = $version;
+        $this->cacheRoutes = $enabled;
+        return $this;
+    }
+
+    public function setGlobalMiddleware(array $middleware): self
+    {
+        $this->globalMiddleware = $middleware;
         return $this;
     }
 
@@ -52,175 +74,222 @@ class Router
 
     protected function prepareApiAttributes(string $version, array $attributes): array
     {
-        // Handle prefix
-        $apiPrefix = 'api/' . $version;
-        if (isset($attributes['prefix'])) {
-            $attributes['prefix'] = $apiPrefix . '/' . ltrim($attributes['prefix'], '/');
-        } else {
-            $attributes['prefix'] = $apiPrefix;
-        }
-
-        // Handle name prefix
-        $namePrefix = 'api.' . $version . '.';
-        if (isset($attributes['as'])) {
-            $attributes['as'] = $namePrefix . ltrim($attributes['as'], '.');
-        } else {
-            $attributes['as'] = $namePrefix;
-        }
-
-        // Set default API middleware if none provided
-        if (!isset($attributes['middleware'])) {
-            $attributes['middleware'] = ['api'];
-        }
-
+        $attributes['prefix'] = 'api/' . $version . (isset($attributes['prefix']) ? '/' . ltrim($attributes['prefix'], '/') : '');
+        $attributes['as'] = 'api.' . $version . (isset($attributes['as']) ? '.' . ltrim($attributes['as'], '.') : '');
+        $attributes['middleware'] = $attributes['middleware'] ?? ['api'];
         return $attributes;
     }
 
     public function addRoute(string $method, string $path, $action): self
     {
-        $group = end($this->groupStack);
-        $middleware = [];
-        $originalPath = $path;
+        $method = strtoupper($method);
+        $route = $this->createRoute($method, $path, $action);
 
-        if ($group) {
-            $originalPath = rtrim($group['prefix'], '/') . '/' . ltrim($originalPath, '/');
-            $middleware = $group['middleware'] ?? [];
+        if ($this->isWildcardRoute($path)) {
+            $this->wildcardRoutes[$method][] = $route;
+        } else {
+            $this->routes[$method][] = $route;
         }
 
-        $this->routes[] = [
+        $this->currentRoute = &$route;
+        return $this;
+    }
+
+    protected function isWildcardRoute(string $path): bool
+    {
+        return $path === '*' || strpos($path, '/*') !== false;
+    }
+
+    protected function createRoute(string $method, string $path, $action): array
+    {
+        $group = end($this->groupStack);
+        $route = [
             'method' => $method,
-            'original_path' => $originalPath,
+            'original_path' => $this->applyGroupPrefix($path, $group),
             'action' => $action,
-            'name' => null,
-            'middleware' => $middleware,
+            'name' => $this->generateRouteName($group),
+            'middleware' => $this->mergeGroupMiddleware($group),
             'wheres' => [],
+            'bindings' => [],
+            'compiled_regex' => '',
         ];
 
-        $this->currentRoute = &$this->routes[count($this->routes) - 1];
-        return $this;
+        $route['compiled_regex'] = $this->compileRouteRegex(
+            $route['original_path'],
+            $route['wheres']
+        );
+
+        return $route;
     }
 
-    public function get(string $path, $action): self
+    protected function applyGroupPrefix(string $path, ?array $group): string
     {
-        return $this->addRoute('GET', $path, $action);
+        if (!$group) return $path;
+
+        $prefix = $group['prefix'] ?? '';
+        return rtrim($prefix, '/') . '/' . ltrim($path, '/');
     }
 
-    public function post(string $path, $action): self
+    protected function generateRouteName(?array $group): string
     {
-        return $this->addRoute('POST', $path, $action);
-    }
-
-    public function put(string $path, $action): self
-    {
-        return $this->addRoute('PUT', $path, $action);
-    }
-
-    public function delete(string $path, $action): self
-    {
-        return $this->addRoute('DELETE', $path, $action);
-    }
-
-    public function patch(string $path, $action): self
-    {
-        return $this->addRoute('PATCH', $path, $action);
-    }
-
-    public function head(string $path, $action): self
-    {
-        return $this->addRoute('HEAD', $path, $action);
-    }
-
-    public function name(string $name): self
-    {
-        $prefix = '';
-        foreach ($this->groupStack as $group) {
-            if (isset($group['as'])) {
-                $prefix .= $group['as'];
-            }
+        $name = '';
+        if ($group && isset($group['as'])) {
+            $name = rtrim($group['as'], '.') . '.';
         }
-        $this->currentRoute['name'] = $prefix . $name;
-        return $this;
+        return $name;
     }
 
-    public function middleware($middleware): self
+    protected function mergeGroupMiddleware(?array $group): array
     {
-        $this->currentRoute['middleware'][] = $middleware;
-        return $this;
-    }
-
-    public function group(array $attributes, callable $callback): void
-    {
-        $attributes['middleware'] = $attributes['middleware'] ?? [];
-        $this->groupStack[] = $attributes;
-        call_user_func($callback, $this);
-        array_pop($this->groupStack);
+        return array_merge(
+            $group['middleware'] ?? [],
+            $this->globalMiddleware
+        );
     }
 
     public function resolve()
     {
-        foreach ($this->routes as $route) {
+        if ($this->cacheRoutes && !empty($this->routeCache)) {
+            return $this->resolveFromCache();
+        }
+
+        $method = $this->request->getMethod();
+        $path = $this->request->getPath();
+
+        // Check regular routes first
+        foreach ($this->routes[$method] ?? [] as $route) {
             $matches = [];
-            if ($this->matchRoute($route, $matches)) {
+            if ($this->matchRoute($route, $path, $matches)) {
                 return $this->runRoute($route, $matches);
             }
         }
-        Error::render("Route Not Found", 404);
-    }
 
-    public function url(string $name, array $parameters = []): string
-    {
-        foreach ($this->routes as $route) {
-            if ($route['name'] === $name) {
-                $url = $route['original_path'];
-                foreach ($parameters as $key => $value) {
-                    $url = str_replace('{' . $key . '}', $value, $url);
-                }
-                $url = preg_replace('/{[a-zA-Z0-9_]+}/', '', $url);
-                return $url;
+        // Check wildcard routes next
+        foreach ($this->wildcardRoutes[$method] ?? [] as $route) {
+            $matches = [];
+            if ($this->matchRoute($route, $path, $matches)) {
+                return $this->runRoute($route, $matches);
             }
         }
-        throw new BoltException("Route not found for name: {$name}");
+
+        $this->handleNotFound();
     }
 
-    public function where(string $param, string $regex): self
+    protected function resolveFromCache()
     {
-        $this->currentRoute['wheres'][$param] = $regex;
-        return $this;
+        // Cached route resolution implementation
     }
 
-    protected function matchRoute(array $route, array &$matches): bool
+    protected function matchRoute(array $route, string $path, array &$matches): bool
     {
-        $pattern = $this->compileRouteRegex($route['original_path'], $route['wheres']);
-        return preg_match($pattern, $this->request->getPath(), $matches) &&
-            $this->request->getMethod() === $route['method'];
+        return (bool) preg_match($route['compiled_regex'], $path, $matches);
     }
 
     protected function compileRouteRegex(string $path, array $wheres): string
     {
+        // Handle wildcard routes
+        if ($path === '*') {
+            return '@^.*$@D';
+        }
+
+        // Convert path parameters to regex patterns
         $regexPath = preg_replace_callback('/{\:(\w+)}/', function ($matches) use ($wheres) {
             $param = $matches[1];
             $regex = $wheres[$param] ?? '[^/]+';
             return "(?P<{$param}>{$regex})";
         }, $path);
 
+        // Handle trailing wildcards
+        $regexPath = str_replace('/*', '(?:/.*)?', $regexPath);
+
         return "@^{$regexPath}$@D";
     }
 
     protected function runRoute(array $route, array $matches)
     {
-        $middlewareQueue = array_reverse($route['middleware']);
-        $controllerAction = function () use ($route, $matches) {
-            return $this->executeAction($route, $matches);
-        };
+        $this->applyRouteBindings($route, $matches);
+        $middleware = array_merge($this->globalMiddleware, $route['middleware']);
+        $pipeline = new MiddlewarePipeline($middleware, $this->container);
 
-        $next = array_reduce($middlewareQueue, function ($next, $middleware) {
-            return function () use ($middleware, $next) {
-                $middlewareInstance = new $middleware();
-                return $middlewareInstance->handle($this->request, $next);
-            };
-        }, $controllerAction);
+        return $pipeline->handle(
+            $this->request,
+            function ($request) use ($route, $matches) {
+                return $this->executeAction($route, $matches);
+            }
+        );
+    }
 
-        return $next();
+    protected function applyRouteBindings(array $route, array &$matches)
+    {
+        foreach ($route['bindings'] as $param => $binding) {
+            if (isset($matches[$param])) {
+                $matches[$param] = RouteBinding::resolve($binding, $matches[$param]);
+            }
+        }
+    }
+
+    // HTTP method shortcuts
+    public function get(string $path, $action): self { return $this->addRoute('GET', $path, $action); }
+    public function post(string $path, $action): self { return $this->addRoute('POST', $path, $action); }
+    public function put(string $path, $action): self { return $this->addRoute('PUT', $path, $action); }
+    public function delete(string $path, $action): self { return $this->addRoute('DELETE', $path, $action); }
+    public function patch(string $path, $action): self { return $this->addRoute('PATCH', $path, $action); }
+    public function head(string $path, $action): self { return $this->addRoute('HEAD', $path, $action); }
+    public function options(string $path, $action): self { return $this->addRoute('OPTIONS', $path, $action); }
+
+    // Wildcard method
+    public function any(string $path, $action): self
+    {
+        $this->addRoute('GET', $path, $action);
+        $this->addRoute('POST', $path, $action);
+        $this->addRoute('PUT', $path, $action);
+        $this->addRoute('PATCH', $path, $action);
+        $this->addRoute('DELETE', $path, $action);
+        $this->addRoute('HEAD', $path, $action);
+        $this->addRoute('OPTIONS', $path, $action);
+        return $this;
+    }
+
+    public function name(string $name): self
+    {
+        $this->currentRoute['name'] = $name;
+        return $this;
+    }
+
+    public function middleware($middleware): self
+    {
+        $this->currentRoute['middleware'] = array_merge(
+            $this->currentRoute['middleware'],
+            (array)$middleware
+        );
+        return $this;
+    }
+
+    public function group(array $attributes, callable $callback): void
+    {
+        $this->groupStack[] = array_merge([
+            'prefix' => '',
+            'as' => '',
+            'middleware' => []
+        ], $attributes);
+
+        call_user_func($callback, $this);
+        array_pop($this->groupStack);
+    }
+
+    public function where(array $constraints): self
+    {
+        $this->currentRoute['wheres'] = array_merge(
+            $this->currentRoute['wheres'],
+            $constraints
+        );
+        return $this;
+    }
+
+    public function bind(string $param, string $model): self
+    {
+        $this->currentRoute['bindings'][$param] = $model;
+        return $this;
     }
 
     protected function executeAction(array $route, array $matches)
@@ -229,55 +298,91 @@ class Router
 
         if (is_callable($route['action'])) {
             return $this->callAction($route['action'], $matches);
-        } elseif (is_array($route['action']) && count($route['action']) === 2) {
+        }
+
+        if (is_array($route['action']) && count($route['action']) === 2) {
             return $this->runControllerAction($route['action'], $matches);
+        }
+
+        if (is_string($route['action']) && str_contains($route['action'], '@')) {
+            return $this->runControllerStringAction($route['action'], $matches);
         }
 
         throw new BoltException('Invalid route action');
     }
 
+    protected function runControllerStringAction(string $action, array $parameters)
+    {
+        [$controller, $method] = explode('@', $action, 2);
+        return $this->runControllerAction([$controller, $method], $parameters);
+    }
+
     protected function runControllerAction(array $action, array $parameters)
     {
-        [$controller, $method] = $action;
-        $controllerInstance = new $controller();
-        if (!method_exists($controllerInstance, $method)) {
-            throw new BoltException('Controller method not found');
+        [$controllerClass, $method] = $action;
+        $controller = $this->container->make($controllerClass);
+
+        if (!method_exists($controller, $method)) {
+            throw new BoltException("Controller method {$method} not found");
         }
-        return $this->callAction([$controllerInstance, $method], $parameters);
+
+        return $this->callAction([$controller, $method], $parameters);
     }
 
     protected function callAction(callable $action, array $parameters)
     {
-        $reflection = is_array($action)
-            ? new ReflectionMethod($action[0], $action[1])
-            : new ReflectionFunction($action);
-
-        $args = [];
-        foreach ($reflection->getParameters() as $parameter) {
-            $name = $parameter->getName();
-            if (array_key_exists($name, $parameters)) {
-                $args[] = $parameters[$name];
-            } elseif ($parameter->getClass()) {
-                $args[] = $this->resolveClass($parameter);
-            } elseif ($parameter->isDefaultValueAvailable()) {
-                $args[] = $parameter->getDefaultValue();
-            } else {
-                throw new BoltException("Cannot resolve parameter '$name'");
-            }
-        }
-
-        return call_user_func_array($action, $args);
+        return $this->container->call($action, $parameters);
     }
 
-    protected function resolveClass(ReflectionParameter $parameter)
+    public function url(string $name, array $parameters = [], bool $absolute = false): string
     {
-        $class = $parameter->getClass()->getName();
-        if ($class === Request::class) {
-            return $this->request;
-        } elseif ($class === Response::class) {
-            return $this->response;
-        } else {
-            throw new BoltException("Cannot resolve class '$class'");
+        foreach ($this->routes as $method => $routes) {
+            foreach ($routes as $route) {
+                if ($route['name'] === $name) {
+                    return $this->generateUrl($route, $parameters, $absolute);
+                }
+            }
         }
+        throw new BoltException("Route '{$name}' not found");
+    }
+
+    protected function generateUrl(array $route, array $parameters, bool $absolute): string
+    {
+        $url = $route['original_path'];
+        $missing = [];
+
+        $url = preg_replace_callback('/{\:(\w+)}/', function ($m) use (&$parameters, &$missing) {
+            if (!isset($parameters[$m[1]])) {
+                $missing[] = $m[1];
+                return '';
+            }
+            $value = $parameters[$m[1]];
+            unset($parameters[$m[1]]);
+            return $value;
+        }, $url);
+
+        if (!empty($missing)) {
+            throw new BoltException("Missing parameters: " . implode(', ', $missing));
+        }
+
+        if ($absolute) {
+            $url = $this->request->getBaseUrl() . $url;
+        }
+
+        if (!empty($parameters)) {
+            $url .= '?' . http_build_query($parameters);
+        }
+
+        return $url;
+    }
+
+    protected function handleNotFound()
+    {
+        if ($this->request->prefersJson()) {
+            $this->response->json(['error' => 'Not Found'], 404)->send();
+        } else {
+            Error::render("Route Not Found", 404);
+        }
+        exit;
     }
 }

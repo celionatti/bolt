@@ -11,388 +11,236 @@ declare(strict_types=1);
 namespace celionatti\Bolt\Http;
 
 use celionatti\Bolt\Validation\Validator;
+use celionatti\Bolt\Exceptions\SecurityException;
 
 class Request
 {
-    protected $headers = [];
-    protected $queryParams = [];
-    protected $bodyParams = [];
-    protected $serverParams = [];
-    protected $cookies = [];
-    protected $files = [];
-    protected $method;
-    protected $path;
-    protected $body;
-    protected $errors = [];
+    private array $queryParams;
+    private array $bodyParams;
+    private array $serverParams;
+    private array $cookies;
+    private array $files;
+    private string $method;
+    private string $path;
+    private string $content;
+    private array $headers;
+    private array $errors = [];
+    private array $validated = [];
 
-    public function __construct()
-    {
+    public function __construct(
+        array $query = [],
+        array $body = [],
+        array $server = [],
+        array $cookies = [],
+        array $files = [],
+        string $content = ''
+    ) {
+        $this->queryParams = $this->sanitizeArray($query);
+        $this->bodyParams = $this->sanitizeArray($body);
+        $this->serverParams = $server;
+        $this->cookies = $this->sanitizeArray($cookies);
+        $this->files = $this->processFiles($files);
+        $this->content = $content;
+        $this->method = $this->determineMethod();
+        $this->path = $this->determinePath();
         $this->headers = $this->parseHeaders();
-        $this->queryParams = $this->sanitizeArray($_GET);
-        $this->body = file_get_contents('php://input') ?: '';
-        $this->bodyParams = $this->sanitizeArray($this->parseBody());
-        $this->serverParams = $_SERVER;
-        $this->cookies = $this->sanitizeArray($_COOKIE);
-        $this->files = $_FILES;
-        $this->method = $this->detectMethod();
-        $this->path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
     }
 
-    public function validate(array $rules, array $data = null): bool
+    public static function createFromGlobals(): self
     {
-        $dataToValidate = $data ?? $this->bodyParams;
-        $validator = new Validator($dataToValidate, $rules);
+        return new self(
+            $_GET,
+            self::parseRequestBody(),
+            $_SERVER,
+            $_COOKIE,
+            $_FILES,
+            file_get_contents('php://input') ?: ''
+        );
+    }
+
+    private static function parseRequestBody(): array
+    {
+        $contentType = $_SERVER['CONTENT_TYPE'] ?? '';
+        $input = file_get_contents('php://input');
+
+        if (str_starts_with($contentType, 'application/json')) {
+            return json_decode($input, true) ?? [];
+        }
+
+        if (str_starts_with($contentType, 'application/x-www-form-urlencoded')) {
+            parse_str($input, $data);
+            return $data;
+        }
+
+        return $_POST;
+    }
+
+    public function validate(array $rules, bool $throw = true): bool
+    {
+        $validator = new Validator($this->all(), $rules);
+
         if ($validator->fails()) {
             $this->errors = $validator->errors();
+            if ($throw) {
+                throw new SecurityException('Validation failed', 422, $this->errors);
+            }
             return false;
         }
+
+        $this->validated = $validator->validated();
         return true;
     }
 
-    public function getErrors(): array
+    public function validated(): array
     {
-        return $this->errors;
+        if (empty($this->validated)) {
+            throw new \LogicException('No validated data available');
+        }
+        return $this->validated;
     }
 
-    protected function parseHeaders(): array
+    public function all(): array
+    {
+        return array_merge($this->queryParams, $this->bodyParams);
+    }
+
+    public function input(string $key, mixed $default = null): mixed
+    {
+        return $this->bodyParams[$key] ?? $this->queryParams[$key] ?? $default;
+    }
+
+    public function query(string $key, mixed $default = null): mixed
+    {
+        return $this->queryParams[$key] ?? $default;
+    }
+
+    public function cookie(string $key, mixed $default = null): mixed
+    {
+        return $this->cookies[$key] ?? $default;
+    }
+
+    public function file(string $key): ?UploadedFile
+    {
+        return $this->files[$key] ?? null;
+    }
+
+    public function method(): string
+    {
+        return $this->method;
+    }
+
+    public function path(): string
+    {
+        return $this->path;
+    }
+
+    public function isJson(): bool
+    {
+        return str_contains($this->header('Content-Type', ''), 'application/json');
+    }
+
+    public function wantsJson(): bool
+    {
+        return str_contains($this->header('Accept', ''), 'application/json');
+    }
+
+    public function isSecure(): bool
+    {
+        return ($this->serverParams['HTTPS'] ?? '') !== 'off'
+            || ($this->serverParams['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https';
+    }
+
+    public function ip(): string
+    {
+        foreach (['HTTP_CLIENT_IP', 'HTTP_X_FORWARDED_FOR', 'REMOTE_ADDR'] as $key) {
+            if ($ip = $this->serverParams[$key] ?? null) {
+                return filter_var($ip, FILTER_VALIDATE_IP) ?: '';
+            }
+        }
+        return '';
+    }
+
+    public function header(string $name, string $default = ''): string
+    {
+        return $this->headers[strtolower($name)] ?? $default;
+    }
+
+    public function hasHeader(string $name): bool
+    {
+        return isset($this->headers[strtolower($name)]);
+    }
+
+    public function bearerToken(): ?string
+    {
+        $header = $this->header('Authorization');
+        return preg_match('/Bearer\s+(\S+)/', $header, $matches) ? $matches[1] : null;
+    }
+
+    private function determineMethod(): string
+    {
+        $method = strtoupper($this->serverParams['REQUEST_METHOD'] ?? 'GET');
+
+        if ($method === 'POST') {
+            return strtoupper($this->serverParams['HTTP_X_HTTP_METHOD_OVERRIDE'] ?? $method);
+        }
+
+        return $method;
+    }
+
+    private function determinePath(): string
+    {
+        $path = parse_url($this->serverParams['REQUEST_URI'] ?? '/', PHP_URL_PATH);
+        return '/' . trim(rawurldecode($path), '/');
+    }
+
+    private function parseHeaders(): array
     {
         $headers = [];
-        foreach ($_SERVER as $key => $value) {
-            if (strpos($key, 'HTTP_') === 0) {
-                $header = str_replace(' ', '-', ucwords(strtolower(str_replace('_', ' ', substr($key, 5)))));
-                $headers[$header] = $value;
+        foreach ($this->serverParams as $key => $value) {
+            if (str_starts_with($key, 'HTTP_')) {
+                $name = str_replace(' ', '-', ucwords(strtolower(str_replace('_', ' ', substr($key, 5)))));
+                $headers[strtolower($name)] = $value;
             }
         }
         return $headers;
     }
 
-    protected function parseBody(): array
+    private function sanitizeArray(array $data): array
     {
-        if (in_array($this->getMethod(), ['POST', 'PUT', 'PATCH', 'DELETE']) && $this->isFormData()) {
-            parse_str($this->body, $bodyParams);
-            return $bodyParams;
-        }
-        if ($this->isJson()) {
-            return json_decode($this->body, true);
-        }
-        return [];
+        return array_map(fn($value) => $this->sanitize($value), $data);
     }
 
-    protected function detectMethod(): string
+    private function sanitize(mixed $value): mixed
     {
-        $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
-        if ($method === 'POST' && isset($_SERVER['HTTP_X_HTTP_METHOD_OVERRIDE'])) {
-            $overrideMethod = strtoupper($_SERVER['HTTP_X_HTTP_METHOD_OVERRIDE']);
-            if (in_array($overrideMethod, ['PUT', 'DELETE', 'PATCH'])) {
-                return $overrideMethod;
-            }
-        }
-        return $method;
-    }
-
-    public function isJson(): bool
-    {
-        return isset($this->headers['Content-Type']) && strpos($this->headers['Content-Type'], 'application/json') !== false;
-    }
-
-    public function isFormData(): bool
-    {
-        return isset($this->headers['Content-Type']) && strpos($this->headers['Content-Type'], 'application/x-www-form-urlencoded') !== false;
-    }
-
-    public function getHeader($name): ?string
-    {
-        return $this->headers[$name] ?? null;
-    }
-
-    public function getQueryParam($name, $default = null)
-    {
-        return $this->sanitize($this->queryParams[$name] ?? $default);
-    }
-
-    public function getBodyParam($name, $default = null)
-    {
-        return $this->sanitize($this->bodyParams[$name] ?? $default);
-    }
-
-    public function getServerParam($name, $default = null)
-    {
-        return $this->serverParams[$name] ?? $default;
-    }
-
-    public function getCookie($name, $default = null)
-    {
-        return $this->sanitize($this->cookies[$name] ?? $default);
-    }
-
-    public function getFile($name)
-    {
-        return $this->files[$name] ?? null;
-    }
-
-    public function getMethod()
-    {
-        return $this->method;
-    }
-
-    public function getPath(): string
-    {
-        return $this->path;
-    }
-
-    public function getBody(): string
-    {
-        return $this->body;
-    }
-
-    public function isAjax(): bool
-    {
-        return $this->getHeader('X-Requested-With') === 'XMLHttpRequest';
-    }
-
-    public function isSecure(): bool
-    {
-        return (!empty($this->serverParams['HTTPS']) && $this->serverParams['HTTPS'] !== 'off')
-            || $this->serverParams['SERVER_PORT'] == 443;
-    }
-
-    public function getIp(): ?string
-    {
-        return $this->serverParams['REMOTE_ADDR'] ?? null;
-    }
-
-    public function getUserAgent(): ?string
-    {
-        return $this->getHeader('User-Agent');
-    }
-
-    public function getReferer(): ?string
-    {
-        return $this->getHeader('Referer');
-    }
-
-    public function is($pattern): bool
-    {
-        $path = $this->getPath();
-        $pattern = '/' . trim($pattern, '/');
-
-        // Handle wildcard matching for simplicity
-        if (strpos($pattern, '*') !== false) {
-            $regex = str_replace('\*', '.*', preg_quote($pattern, '/'));
-            return preg_match('/^' . $regex . '$/', $path);
+        if (is_array($value)) {
+            return array_map([$this, 'sanitize'], $value);
         }
 
-        return $path === $pattern;
-    }
-
-    public function with($key, $value)
-    {
-        // Add flash message or session data
-        $_SESSION[$key] = $value;
-        return $this;
-    }
-
-    public function toast($type, $message)
-    {
-        // Validate the message type
-        $validTypes = ['success', 'error', 'info', 'warning'];
-        if (!in_array($type, $validTypes)) {
-            throw new BoltException('Invalid toastr message type');
+        if (is_numeric($value)) {
+            return filter_var($value, FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
         }
 
-        // Store the message, type, and attributes in the session
-        $_SESSION['__bv_flash_toastr'] = [
-            'message' => $message,
-            'type' => $type,
-        ];
-
-        $_SESSION['__bv_flash_toastr'] ?? null;
-        return $this;
+        $value = strip_tags((string)$value);
+        return htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
     }
 
-    public function back()
+    private function processFiles(array $files): array
     {
-        $_SERVER['HTTP_REFERER'] ?? '/';
-        return $this;
+        $processed = [];
+        foreach ($files as $key => $file) {
+            $processed[$key] = new UploadedFile(
+                $file['tmp_name'],
+                $file['name'],
+                $file['type'],
+                $file['error'],
+                $file['size']
+            );
+        }
+        return $processed;
     }
 
-    // protected function sanitize($data)
-    // {
-    //     if (is_array($data)) {
-    //         return array_map([$this, 'sanitize'], $data);
-    //     }
-
-    //     return htmlspecialchars(strip_tags($data), ENT_QUOTES, 'UTF-8');
-    // }
-
-    protected function sanitize($data)
+    public function getErrors(): array
     {
-        if (is_array($data)) {
-            return array_map([$this, 'sanitize'], $data);
-        }
-
-        // Advanced sanitization for specific data types
-        if (is_numeric($data)) {
-            return filter_var($data, FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
-        }
-
-        return htmlspecialchars(strip_tags($data), ENT_QUOTES, 'UTF-8');
-    }
-
-    protected function sanitizeArray(array $data)
-    {
-        foreach ($data as $key => $value) {
-            $data[$key] = $this->sanitize($value);
-        }
-
-        return $data;
-    }
-
-    public static function instance()
-    {
-        static $instance = null;
-        if ($instance === null) {
-            $instance = new self();
-        }
-        return $instance;
-    }
-
-    public function get($name, $default = null)
-    {
-        if (isset($this->bodyParams[$name])) {
-            return $this->getBodyParam($name, $default);
-        }
-
-        if (isset($this->queryParams[$name])) {
-            return $this->getQueryParam($name, $default);
-        }
-
-        if (isset($this->serverParams[$name])) {
-            return $this->getServerParam($name, $default);
-        }
-
-        if (isset($this->headers[$name])) {
-            return $this->getHeader($name);
-        }
-
-        return $default;
-    }
-
-    public function set($name, $value): void
-    {
-        if (isset($this->bodyParams[$name])) {
-            $this->bodyParams[$name] = $this->sanitize($value);
-        } elseif (isset($this->queryParams[$name])) {
-            $this->queryParams[$name] = $this->sanitize($value);
-        } elseif (isset($this->serverParams[$name])) {
-            $this->serverParams[$name] = $value;
-        } elseif (isset($this->headers[$name])) {
-            $this->headers[$name] = $value;
-        } elseif (isset($this->cookies[$name])) {
-            $this->cookies[$name] = $this->sanitize($value);
-        } elseif (isset($this->files[$name])) {
-            $this->files[$name] = $value;
-        } else {
-            $this->bodyParams[$name] = $this->sanitize($value);
-        }
-    }
-
-    public function validateFile($name, $allowedTypes = ['image/jpeg', 'image/png']): bool
-    {
-        if (!isset($this->files[$name])) {
-            $this->errors[$name] = "File not found.";
-            return false;
-        }
-
-        $file = $this->files[$name];
-        if (!in_array($file['type'], $allowedTypes)) {
-            $this->errors[$name] = "Invalid file type.";
-            return false;
-        }
-
-        return true;
-    }
-
-    public function loadData(): array
-    {
-        return $this->sanitize($_POST);
-    }
-
-    public function loadDataExcept(array $excludedKeys): array
-    {
-        // Merge query parameters, body parameters, and $_POST
-        $allData = $this->getMergeData();
-
-        // Remove the excluded keys from the data
-        foreach ($excludedKeys as $key) {
-            unset($allData[$key]);
-        }
-
-        return $allData;
-    }
-
-    public function getMergeData(): array
-    {
-        return $this->sanitize(array_merge($this->queryParams, $this->bodyParams, $_POST));
-    }
-
-    public function has($key): bool
-    {
-        return isset($this->bodyParams[$key])
-            || isset($this->queryParams[$key])
-            || isset($this->serverParams[$key])
-            || isset($this->headers[$key])
-            || isset($this->cookies[$key])
-            || isset($_POST[$key]);
-    }
-
-    public function only(array $keys): array
-    {
-        $data = [];
-        foreach ($keys as $key) {
-            // Check if the key exists in any of the request sources, including form data ($_POST)
-            if ($this->has($key)) {
-                // Prefer bodyParams and queryParams, but check $_POST as well
-                if (isset($this->bodyParams[$key])) {
-                    $data[$key] = $this->getBodyParam($key);
-                } elseif (isset($this->queryParams[$key])) {
-                    $data[$key] = $this->getQueryParam($key);
-                } elseif (isset($_POST[$key])) {
-                    $data[$key] = $this->sanitize($_POST[$key]);  // Fetch and sanitize from $_POST
-                } elseif (isset($_REQUEST[$key])) {
-                    $data[$key] = $this->sanitize($_REQUEST[$key]);
-                }
-            }
-        }
-        return $data;
-    }
-
-    /**
-     * Method to provide information about the available methods in the Request class.
-     *
-     * @return array
-     */
-    public function help(): array
-    {
-        return [
-            'get' => 'Retrieve a request parameter by name.',
-            'set' => 'Set a value for a request parameter.',
-            'has' => 'Check if a specific request parameter exists.',
-            'validate' => 'Validate request parameters based on rules.',
-            'getErrors' => 'Get validation errors if any exist.',
-            'isJson' => 'Check if the request content type is JSON.',
-            'isFormData' => 'Check if the request is form data.',
-            'getMethod' => 'Retrieve the HTTP method of the request.',
-            'getPath' => 'Get the request path.',
-            'isAjax' => 'Check if the request is an Ajax (XHR) request.',
-            'isSecure' => 'Check if the request is served over HTTPS.',
-            'getIp' => 'Get the client IP address.',
-            'getUserAgent' => 'Get the user agent string from the request.',
-            'getReferer' => 'Get the referer from the request.',
-            'validateFile' => 'Validate a file upload based on allowed types.',
-            'with' => 'Set a variable in the session.',
-            'toast' => 'Session toast method.',
-            'back' => 'Return back to the previous URL.',
-        ];
+        return $this->errors;
     }
 }

@@ -12,209 +12,222 @@ namespace celionatti\Bolt\CLI\Strike;
 
 use celionatti\Bolt\CLI\CliActions;
 use celionatti\Bolt\CLI\CommandInterface;
+use RuntimeException;
 
 class MigrationCommand extends CliActions implements CommandInterface
 {
-    private const MIGRATE = 'migrate';
-    private const ROLLBACK = 'rollback';
-    private const REFRESH = 'refresh';
-    private const CREATE = 'create';
-
-    private const ACTIONS = [
-        self::MIGRATE => 'Run all outstanding migrations',
-        self::ROLLBACK => 'Rollback the last migration',
-        self::REFRESH => 'Rollback all migrations and re-run them',
-        self::CREATE => 'Create a new migration class',
-        // Add other actions and their descriptions here
+    private const MIGRATION_ACTIONS = [
+        'migrate' => [
+            'description' => 'Run all outstanding migrations',
+            'method' => 'handleMigrate'
+        ],
+        'rollback' => [
+            'description' => 'Rollback the last migration',
+            'method' => 'handleRollback'
+        ],
+        'refresh' => [
+            'description' => 'Rollback all migrations and re-run them',
+            'method' => 'handleRefresh'
+        ],
+        'create' => [
+            'description' => 'Create a new migration class',
+            'method' => 'handleCreateMigration'
+        ]
     ];
 
-    public function __construct()
+    public function execute(array $args, array $options = []): void
     {
-        $this->configure();
-    }
+        $action = $args[0] ?? null;
 
-    public function execute(array $args)
-    {
-        // Check if no action is provided
-        if (empty($args) || empty($args["args"])) {
-            $this->listAvailableActions();
+        if (!$action || !isset(self::MIGRATION_ACTIONS[$action])) {
+            $this->showAvailableActions();
             return;
         }
 
-        $action = $args["args"][0] ?? null;
-
-        if ($action === null) {
-            $this->listAvailableActions();
-            return;
-        }
-
-        $this->callAction($action);
-    }
-
-    private function callAction($action)
-    {
-        // Check for the action type.
-        switch ($action) {
-            case self::MIGRATE:
-                $this->migrate();
-                return;
-            case self::ROLLBACK:
-                $this->rollback();
-                return;
-            case self::REFRESH:
-                $this->refresh();
-                return;
-            case self::CREATE:
-                $this->makeMigration();
-                return;
-            default:
-                $this->message("Unknown Command - You can check help or docs to see the list of commands and methods of calling.", true, true, 'warning');
-                return;
-        }
-    }
-
-    private function migrate()
-    {
-        $migrationDir = $this->basePath . DIRECTORY_SEPARATOR . "database" . DIRECTORY_SEPARATOR . "migrations" . DIRECTORY_SEPARATOR;
-
-        if (!is_dir($migrationDir)) {
-            $this->message("Migrations directory not found.", true, true, "error");
-            return;
-        }
-
-        $migrationFiles = glob($migrationDir . '*.php');
-
-        if (empty($migrationFiles)) {
-            $this->message("No migrations found.", false, true, "info");
-            return;
-        }
-
-        foreach ($migrationFiles as $file) {
-            $migrationClass = include $file;
-
-            if (method_exists($migrationClass, 'up')) {
-                $migrationClass->up();
-                $this->message("Migrated: " . basename($file), false, true, "info");
-            } else {
-                $this->message("Migration class does not have an up method: " . basename($file), true, true, "error");
-            }
-        }
-    }
-
-    private function rollback()
-    {
-        $migrationDir = $this->basePath . DIRECTORY_SEPARATOR . "database" . DIRECTORY_SEPARATOR . "migrations" . DIRECTORY_SEPARATOR;
-
-        if (!is_dir($migrationDir)) {
-            $this->message("Migrations directory not found.", true, true, "error");
-            return;
-        }
-
-        $migrationFiles = glob($migrationDir . '*.php');
-
-        if (empty($migrationFiles)) {
-            $this->message("No migrations found.", false, true, "info");
-            return;
-        }
-
-        $latestMigrationFile = end($migrationFiles);
-        $migrationClass = include $latestMigrationFile;
-
-        if (method_exists($migrationClass, 'down')) {
-            $migrationClass->down();
-            $this->message("Rolled back: " . basename($latestMigrationFile), false, true, "info");
+        $methodName = self::MIGRATION_ACTIONS[$action]['method'];
+        if (method_exists($this, $methodName)) {
+            $this->$methodName($options);
         } else {
-            $this->message("Migration class does not have a down method: " . basename($latestMigrationFile), true, true, "error");
+            $this->message("Action handler not implemented: {$action}", 'error');
         }
     }
 
-    private function refresh()
+    public function getHelp(): string
     {
-        $migrationDir = $this->basePath . DIRECTORY_SEPARATOR . "database" . DIRECTORY_SEPARATOR . "migrations" . DIRECTORY_SEPARATOR;
+        return implode(PHP_EOL, [
+            "Usage: migration <action> [options]",
+            "Available actions:",
+            ...array_map(
+                fn($action, $config) => "  {$action}: {$config['description']}",
+                array_keys(self::MIGRATION_ACTIONS),
+                self::MIGRATION_ACTIONS
+            ),
+            "Options:",
+            "  --force    Overwrite existing files (for create action)",
+        ]);
+    }
 
-        if (!is_dir($migrationDir)) {
-            $this->message("Migrations directory not found.", true, true, "error");
-            return;
-        }
-
-        // $migrationFiles = glob($migrationDir . '*.php');
-        $migrationFiles = glob("{$migrationDir}*.php");
-
-        if (empty($migrationFiles)) {
-            $this->message("No migrations found.", false, true, "info");
-            return;
-        }
-
-        foreach (array_reverse($migrationFiles) as $file) {
-            $migrationClass = include $file;
-
-            if (method_exists($migrationClass, 'down')) {
-                $migrationClass->down();
-                $this->message("Rolled back: " . basename($file), false, true, "info");
-            } else {
-                $this->message("Migration class does not have a down method: " . basename($file), true, true, "error");
-            }
-        }
+    private function handleMigrate(array $options): void
+    {
+        $migrationDir = $this->getMigrationPath();
+        $migrationFiles = $this->getMigrationFiles($migrationDir);
 
         foreach ($migrationFiles as $file) {
-            $migrationClass = include $file;
+            $this->runMigration($file, 'up');
+        }
+    }
 
-            if (method_exists($migrationClass, 'up')) {
-                $migrationClass->up();
-                $this->message("Migrated: " . basename($file), false, true, "info");
+    private function handleRollback(array $options): void
+    {
+        $migrationDir = $this->getMigrationPath();
+        $migrationFiles = $this->getMigrationFiles($migrationDir);
+
+        if (!empty($migrationFiles)) {
+            $this->runMigration(end($migrationFiles), 'down');
+        }
+    }
+
+    private function handleRefresh(array $options): void
+    {
+        $migrationDir = $this->getMigrationPath();
+        $migrationFiles = $this->getMigrationFiles($migrationDir);
+
+        // Rollback all
+        foreach (array_reverse($migrationFiles) as $file) {
+            $this->runMigration($file, 'down');
+        }
+
+        // Migrate all
+        foreach ($migrationFiles as $file) {
+            $this->runMigration($file, 'up');
+        }
+    }
+
+    private function handleCreateMigration(array $options): void
+    {
+        $name = $this->promptMigrationName();
+        $className = 'Create' . $this->pascalCase($name) . 'Table';
+        $fileName = date('Y_m_d_His') . "_create_{$name}_table.php";
+        $path = "database/migrations/{$fileName}";
+
+        $this->createFromTemplate(
+            'migrations/migration',
+            $path,
+            [
+                'CLASSNAME' => $className,
+                'TABLENAME' => strtolower($name)
+            ],
+            $options
+        );
+    }
+
+    private function runMigration(string $filePath, string $method): void
+    {
+        try {
+            $migrationClass = include $filePath;
+
+            if ($migrationClass instanceof \Bolt\CLI\Database\Migration) {
+                if (method_exists($migrationClass, $method)) {
+                    $migrationClass->$method();
+                    $this->message("Executed {$method}: " . basename($filePath), 'success');
+                } else {
+                    $this->message("Missing {$method} method in: " . basename($filePath), 'warning');
+                }
             } else {
-                $this->message("Migration class does not have an up method: " . basename($file), true, true, "error");
+                $this->message("Invalid migration class: " . basename($filePath), 'error');
             }
+        } catch (\Throwable $e) {
+            $this->message("Error processing " . basename($filePath) . ": " . $e->getMessage(), 'error');
         }
     }
 
-    private function makeMigration()
+    private function showAvailableActions(): void
     {
-        $migrationName = $this->prompt("Enter the migration name (e.g., users)");
-
-        if (empty($migrationName)) {
-            $this->message("Migration name cannot be empty.", true, true, "error");
-            return;
+        $this->message("Available migration actions:", 'info');
+        foreach (self::MIGRATION_ACTIONS as $action => $config) {
+            $this->output(sprintf(
+                "  %s%-12s%s %s",
+                self::COLORS['primary'],
+                $action,
+                self::COLORS['reset'],
+                $config['description']
+            ));
         }
-
-        $migrationDir = $this->basePath . DIRECTORY_SEPARATOR . "database" . DIRECTORY_SEPARATOR . "migrations" . DIRECTORY_SEPARATOR;
-
-        if (!is_dir($migrationDir)) {
-            if (!mkdir($migrationDir, 0755, true)) {
-                $this->message("Unable to create the migrations directory.", true, true, "error");
-                return;
-            }
-        }
-
-        $migrationFile = $migrationDir . date("Y_m_d_His_") . 'create_' . strtolower($migrationName) . '_table' . '.php';
-
-        $sampleFile = __DIR__ . "/samples/migration/migration-sample.php";
-
-        if (!file_exists($sampleFile)) {
-            $this->message("Migration sample file not found.", true, true, "error");
-            return;
-        }
-
-        $className = ucfirst($migrationName);
-        $table_name = strtolower($migrationName);
-
-        $content = file_get_contents($sampleFile);
-        $content = str_replace("{TABLENAME}", $table_name, $content);
-        $content = str_replace("{CLASSNAME}", $className, $content);
-
-        if (file_put_contents($migrationFile, $content) === false) {
-            $this->message("Unable to create the migration file.", true, true, "error");
-            return;
-        }
-
-        $this->message("Migration: [{$migrationFile}] created successfully", false, true, "created");
     }
 
-    private function listAvailableActions()
+    private function getMigrationPath(): string
     {
-        $this->message("Available Migration Commands:", false, false, 'info');
-        foreach (self::ACTIONS as $action => $description) {
-            $this->output("  \033[0;37m{$action}\033[0m: \033[0;36m{$description}\033[0m", 1);
+        $path = $this->basePath . DIRECTORY_SEPARATOR . 'database/migrations';
+        $this->ensureDirectoryExists($path);
+        return $path;
+    }
+
+    private function getMigrationFiles(string $migrationDir): array
+    {
+        $files = glob($migrationDir . DIRECTORY_SEPARATOR . '*.php');
+        return is_array($files) ? $files : [];
+    }
+
+    private function promptMigrationName(): string
+    {
+        while (true) {
+            $name = $this->prompt("Enter migration name (e.g., users)");
+            $name = preg_replace('/[^a-zA-Z0-9_\-]/', '', $name);
+
+            if (!empty($name)) {
+                return $name;
+            }
+
+            $this->message(
+                "Invalid name. Use only letters, numbers and underscores",
+                'warning'
+            );
+        }
+    }
+
+    protected function pascalCase(string $input): string
+    {
+        return str_replace(' ', '', ucwords(str_replace(['-', '_'], ' ', $input)));
+    }
+
+    private function createFromTemplate(string $template, string $path, array $replacements, array $options): void
+    {
+        $fullPath = $this->basePath . DIRECTORY_SEPARATOR . ltrim($path, '/');
+        $templatePath = __DIR__ . "/samples/{$template}.php";
+
+        if (!file_exists($templatePath)) {
+            throw new RuntimeException("Template not found: {$template}");
+        }
+
+        if (file_exists($fullPath) && !($options['force'] ?? false)) {
+            $this->message("File already exists: {$path}", 'warning');
+            return;
+        }
+
+        $content = strtr(
+            file_get_contents($templatePath),
+            array_map(
+                fn($value) => (string)$value,
+                array_combine(
+                    array_map(fn($key) => "{{{$key}}}", array_keys($replacements)),
+                    $replacements
+                )
+            )
+        );
+
+        $this->ensureDirectoryExists(dirname($fullPath));
+
+        if (file_put_contents($fullPath, $content) === false) {
+            throw new RuntimeException("Failed to create file: {$path}");
+        }
+
+        $this->message("Created successfully: {$path}", 'success');
+    }
+
+    private function ensureDirectoryExists(string $path): void
+    {
+        if (!is_dir($path) && !mkdir($path, 0755, true)) {
+            throw new RuntimeException("Failed to create directory: {$path}");
         }
     }
 }

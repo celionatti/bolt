@@ -287,9 +287,9 @@ abstract class DatabaseModel
             $countQuery = "SELECT COUNT(*) as total FROM ($query) as count_table";
             $totalResult = $this->query($countQuery, $params, "assoc");
 
-            $totalItems = $totalResult[0]['total'] ?? 0;
+            $totalItems = $totalResult['result'][0]['total'] ?? 0;
             return [
-                'data' => $results,
+                'data' => $results['result'],
                 'pagination' => [
                     'total_items'   => (int)$totalItems,
                     'current_page'  => $page,

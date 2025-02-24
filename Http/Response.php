@@ -10,15 +10,22 @@ declare(strict_types=1);
 
 namespace celionatti\Bolt\Http;
 
+use celionatti\Bolt\Exceptions\HttpException;
+use celionatti\Bolt\Security\SecurityHeaders;
+
 class Response
 {
-    protected $headers = [];
-    protected $cookies = [];
-    protected $statusCode = 200;
-    protected $statusText = 'OK';
-    protected $body;
+    private array $headers = [];
+    private array $cookies = [];
+    private int $statusCode = 200;
+    private string $statusText = 'OK';
+    private $body;
+    private bool $sent = false;
+    private bool $compressionEnabled = false;
 
-    protected static $statusTexts = [
+    private const STATUS_TEXTS = [
+        100 => 'Continue',
+        101 => 'Switching Protocols',
         200 => 'OK',
         201 => 'Created',
         202 => 'Accepted',
@@ -31,190 +38,225 @@ class Response
         403 => 'Forbidden',
         404 => 'Not Found',
         405 => 'Method Not Allowed',
+        406 => 'Not Acceptable',
+        415 => 'Unsupported Media Type',
+        429 => 'Too Many Requests',
         500 => 'Internal Server Error',
         502 => 'Bad Gateway',
         503 => 'Service Unavailable',
     ];
 
-    public function __construct(string $body = '', int $statusCode = 200, array $headers = [])
+    public function __construct($body = '', int $statusCode = 200, array $headers = [])
     {
         $this->body = $body;
         $this->setStatusCode($statusCode);
-        $this->headers = $headers;
-        $this->cookies = [];
+        $this->setDefaultSecurityHeaders();
+        $this->setMultipleHeaders($headers);
     }
 
-    public function setHeader(string $name, string $value): self
+    public function setHeader(string $name, string $value, bool $replace = true): self
     {
-        $this->headers[$name] = $value;
-        return $this;
-    }
+        $normalized = strtolower($name);
 
-    public function addHeader(string $name, string $value): self
-    {
-        if (!isset($this->headers[$name])) {
-            $this->headers[$name] = [];
+        if ($replace || !isset($this->headers[$normalized])) {
+            $this->headers[$normalized] = [$value];
+        } else {
+            $this->headers[$normalized][] = $value;
         }
-        $this->headers[$name][] = $value;
+
         return $this;
     }
 
     public function removeHeader(string $name): self
     {
-        unset($this->headers[$name]);
+        unset($this->headers[strtolower($name)]);
         return $this;
     }
 
-    public function getHeader(string $name)
-    {
-        return $this->headers[$name] ?? null;
-    }
+    public function setCookie(
+        string $name,
+        string $value,
+        int $expire = 0,
+        string $path = '/',
+        string $domain = '',
+        bool $secure = true,
+        bool $httpOnly = true,
+        string $sameSite = 'Lax'
+    ): self {
+        $this->validateCookieParams($name, $value);
 
-    public function setCookie(string $name, string $value, int $expire = 0, string $path = '', string $domain = '', bool $secure = false, bool $httponly = false): self
-    {
         $this->cookies[] = [
             'name' => $name,
-            'value' => $value,
+            'value' => rawurlencode($value),
             'expire' => $expire,
             'path' => $path,
             'domain' => $domain,
             'secure' => $secure,
-            'httponly' => $httponly,
+            'httponly' => $httpOnly,
+            'samesite' => $sameSite,
         ];
+
         return $this;
+    }
+
+    public function deleteCookie(string $name): self
+    {
+        return $this->setCookie($name, '', time() - 3600);
     }
 
     public function setStatusCode(int $code, string $text = null): self
     {
+        if ($code < 100 || $code > 599) {
+            throw new HttpException("Invalid HTTP status code: {$code}", 500);
+        }
+
         $this->statusCode = $code;
-        $this->statusText = $text ?? (self::$statusTexts[$code] ?? 'unknown status');
+        $this->statusText = $text ?? self::STATUS_TEXTS[$code] ?? 'unknown status';
         return $this;
     }
 
-    public function getStatusCode(): int
+    public function json($data, int $status = 200, int $options = 0): self
     {
-        return $this->statusCode;
-    }
-
-    public function setBody(string $body): self
-    {
-        $this->body = $body;
-        return $this;
-    }
-
-    public function appendBody(string $content): self
-    {
-        $this->body .= $content;
-        return $this;
-    }
-
-    public function getBody(): string
-    {
-        return $this->body;
-    }
-
-    public function send(): void
-    {
-        // Send headers
-        if (!headers_sent()) {
-            header(sprintf('HTTP/1.1 %d %s', $this->statusCode, $this->statusText));
-
-            foreach ($this->headers as $name => $values) {
-                if (is_array($values)) {
-                    foreach ($values as $value) {
-                        header(sprintf('%s: %s', $name, $value), false);
-                    }
-                } else {
-                    header(sprintf('%s: %s', $name, $values));
-                }
-            }
-
-            foreach ($this->cookies as $cookie) {
-                setcookie(
-                    $cookie['name'],
-                    $cookie['value'],
-                    $cookie['expire'],
-                    $cookie['path'],
-                    $cookie['domain'],
-                    $cookie['secure'],
-                    $cookie['httponly']
-                );
-            }
-        }
-
-        // Send body
-        echo $this->body;
-    }
-
-    public function json($data, int $status = 200, array $headers = []): self
-    {
-        $this->setHeader('Content-Type', 'application/json');
+        $this->setHeader('Content-Type', 'application/json; charset=utf-8');
         $this->setStatusCode($status);
-        $this->setBody(json_encode($data));
-
-        foreach ($headers as $name => $value) {
-            $this->setHeader($name, $value);
-        }
-
+        $this->body = json_encode($data, $options | JSON_THROW_ON_ERROR);
         return $this;
     }
 
     public function redirect(string $url, int $status = 302): self
     {
-        $this->setStatusCode($status);
+        if (!filter_var($url, FILTER_VALIDATE_URL)) {
+            throw new HttpException("Invalid redirect URL: {$url}", 500);
+        }
+
         $this->setHeader('Location', $url);
+        return $this->setStatusCode($status);
+    }
+
+    public function file(string $filePath, string $downloadName = null, bool $asAttachment = true): self
+    {
+        if (!is_readable($filePath) || !is_file($filePath)) {
+            throw new HttpException("File not found: {$filePath}", 404);
+        }
+
+        $this->body = static function () use ($filePath) {
+            readfile($filePath);
+        };
+
+        $this->setHeader('Content-Type', mime_content_type($filePath));
+        $this->setHeader('Content-Length', (string)filesize($filePath));
+
+        if ($asAttachment) {
+            $name = $downloadName ?? basename($filePath);
+            $this->setHeader('Content-Disposition', 'attachment; filename="' . rawurlencode($name) . '"');
+        }
+
         return $this;
     }
 
-    public function file(string $filePath, string $fileName = '', string $mimeType = 'application/octet-stream'): self
+    public function html(string $content, int $status = 200): self
     {
-        if (!file_exists($filePath)) {
-            throw new \Exception('File not found.');
-        }
-
-        if (empty($fileName)) {
-            $fileName = basename($filePath);
-        }
-
-        $this->setHeader('Content-Description', 'File Transfer');
-        $this->setHeader('Content-Type', $mimeType);
-        $this->setHeader('Content-Disposition', 'attachment; filename="' . $fileName . '"');
-        $this->setHeader('Expires', '0');
-        $this->setHeader('Cache-Control', 'must-revalidate');
-        $this->setHeader('Pragma', 'public');
-        $this->setBody(file_get_contents($filePath));
-
-        return $this;
-    }
-
-    public function html(string $html, int $status = 200): self
-    {
-        $this->setHeader('Content-Type', 'text/html');
+        $this->setHeader('Content-Type', 'text/html; charset=utf-8');
         $this->setStatusCode($status);
-        $this->setBody($html);
+        $this->body = $content;
         return $this;
     }
 
-    public function clearHeaders(): self
+    public function send(): void
     {
-        $this->headers = [];
+        if ($this->sent) {
+            throw new HttpException('Response already sent', 500);
+        }
+
+        $this->sent = true;
+
+        if (!headers_sent()) {
+            $this->sendHeaders();
+            $this->sendCookies();
+        }
+
+        $this->sendBody();
+    }
+
+    public function enableCompression(): self
+    {
+        if (extension_loaded('zlib') && !ob_start('ob_gzhandler')) {
+            throw new HttpException('Failed to enable output compression', 500);
+        }
+
+        $this->compressionEnabled = true;
         return $this;
     }
 
-    public function setMultipleHeaders(array $headers): self
+    private function sendHeaders(): void
+    {
+        header("HTTP/1.1 {$this->statusCode} {$this->statusText}", true, $this->statusCode);
+
+        foreach ($this->headers as $name => $values) {
+            foreach ($values as $value) {
+                header("{$name}: {$value}", false);
+            }
+        }
+    }
+
+    private function sendCookies(): void
+    {
+        foreach ($this->cookies as $cookie) {
+            setcookie(
+                $cookie['name'],
+                $cookie['value'],
+                [
+                    'expires' => $cookie['expire'],
+                    'path' => $cookie['path'],
+                    'domain' => $cookie['domain'],
+                    'secure' => $cookie['secure'],
+                    'httponly' => $cookie['httponly'],
+                    'samesite' => $cookie['samesite'],
+                ]
+            );
+        }
+    }
+
+    private function sendBody(): void
+    {
+        if ($this->body instanceof \Closure) {
+            ($this->body)();
+        } else {
+            echo $this->body;
+        }
+
+        if ($this->compressionEnabled) {
+            ob_end_flush();
+        }
+    }
+
+    private function setDefaultSecurityHeaders(): void
+    {
+        $this->setMultipleHeaders(SecurityHeaders::getDefaults());
+    }
+
+    private function setMultipleHeaders(array $headers): void
     {
         foreach ($headers as $name => $value) {
             $this->setHeader($name, $value);
         }
-        return $this;
     }
 
-    public static function instance()
+    private function validateCookieParams(string $name, string $value): void
     {
-        static $instance = null;
-        if ($instance === null) {
-            $instance = new self();
+        if (preg_match('/[=,; \t\r\n\013\014]/', $name)) {
+            throw new HttpException("Invalid cookie name: {$name}", 500);
         }
-        return $instance;
+
+        if (strlen($value) > 4096) {
+            throw new HttpException("Cookie value too long: {$name}", 500);
+        }
+    }
+
+    public function __destruct()
+    {
+        if (!$this->sent) {
+            $this->send();
+        }
     }
 }

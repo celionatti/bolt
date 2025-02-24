@@ -113,18 +113,13 @@ class MakeCommand extends CliActions implements CommandInterface
         $templatePath = "controller/{$controllerType}";
         $replacements = [
             'CLASSNAME' => $className,
-            'NAMESPACE' => 'App\\Controllers',
-            'BASE_CONTROLLER' => 'BaseController',
+            'NAMESPACE' => 'PhpStrike\app\controllers',
+            'CONTROLLER' => 'Controller',
             'MODEL_NAME' => $this->pascalCase($name),
             'VIEW_PATH' => strtolower($name)
         ];
 
-        $this->createFromTemplate(
-            $templatePath,
-            $path,
-            $replacements,
-            $options
-        );
+        $this->createFromTemplate($templatePath, $path, $replacements, $options);
 
         // If it's a resource controller, ask to create associated view files
         if ($controllerType === 'resource' && $this->confirm("Create associated view files?")) {
@@ -140,9 +135,7 @@ class MakeCommand extends CliActions implements CommandInterface
 
         $path = "{$config['subfolder']}/{$className}.php";
 
-        $this->createFromTemplate(
-            $type,
-            $path,
+        $this->createFromTemplate($type, $path,
             [
                 'CLASSNAME' => $className,
                 'NAMESPACE' => $this->generateNamespace($config['subfolder'])
@@ -157,7 +150,7 @@ class MakeCommand extends CliActions implements CommandInterface
         $className = $this->pascalCase($name);
         $path = "app/models/{$className}.php";
 
-        $templateType = $this->choice(
+        $modelType = $this->choice(
             "Select model type:",
             [
                 'empty' => 'Empty model structure',
@@ -166,16 +159,14 @@ class MakeCommand extends CliActions implements CommandInterface
             'basic'
         );
 
-        $this->createFromTemplate(
-            "model/{$templateType}",
-            $path,
-            [
-                'CLASSNAME' => $className,
-                'TABLENAME' => strtolower($className . 's'),
-                'NAMESPACE' => 'App\\Models'
-            ],
-            $options
-        );
+        $templatePath = "model/{$modelType}";
+        $replacements = [
+            'CLASSNAME' => $className,
+            'NAMESPACE' => 'PhpStrike\app\models',
+            'TABLENAME' => strtolower($className)
+        ];
+
+        $this->createFromTemplate($templatePath, $path, $replacements, $options);
 
         if ($this->confirm("Create migration for this model?")) {
             $this->createMigration($name, $options);
@@ -228,12 +219,7 @@ class MakeCommand extends CliActions implements CommandInterface
                 ($subfolder ? trim($subfolder, '/') . '/' : '') .
                 "{$name}" . self::VIEW_ENGINES[$engine];
 
-        $this->createFromTemplate(
-            "view/{$type}",
-            $path,
-            ['CONTENT' => "<h1>{$name}</h1>"],
-            $options
-        );
+        $this->createFromTemplate("view/{$type}", $path, ['CONTENT' => "<h1>{$name}</h1>"], $options);
     }
 
     private function createMigration(string $modelName, array $options): void
@@ -242,15 +228,14 @@ class MakeCommand extends CliActions implements CommandInterface
         $fileName = date('Y_m_d_His') . "_create_{$modelName}_table.php";
         $path = "database/migrations/{$fileName}";
 
-        $this->createFromTemplate(
-            'migration',
-            $path,
-            [
-                'CLASSNAME' => $className,
-                'TABLENAME' => strtolower($modelName . 's')
-            ],
-            $options
-        );
+        $templatePath = "migrations/migration";
+        $replacements = [
+            'CLASSNAME' => $className,
+            'UNIQUENAME' => strtolower($modelName),
+            'TABLENAME' => strtolower($modelName . 's')
+        ];
+
+        $this->createFromTemplate($templatePath, $path, $replacements, $options);
     }
 
     private function createFromTemplate(string $template, string $path, array $replacements, array $options): void
